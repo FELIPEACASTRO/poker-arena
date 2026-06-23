@@ -94,7 +94,9 @@ melhor e como "pensam" diferente.
   "raciocínio" para o painel. A interface comum é o que permite o Modo
   Laboratório: qualquer cérebro pluga em qualquer cadeira.
 - `api/` — FastAPI: setup (REST) + eventos do jogo (WebSocket).
-- `state/` — máquina de estado da partida.
+- `engine/` (sessão) — `Hand` (uma mão: blinds, apostas validadas com regras de
+  No-Limit, side pots, showdown) + `Table` (várias mãos: rotação de botão,
+  eliminação de quem zera, fim de jogo). É a base que mede "IA vence em N mãos".
 
 **Frontend (React + TS)**
 - Tela de setup — **Modo Laboratório**: menu por cadeira escolhendo o cérebro

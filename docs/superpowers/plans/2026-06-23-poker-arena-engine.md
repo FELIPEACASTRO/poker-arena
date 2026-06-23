@@ -711,3 +711,29 @@ def test_chips_are_conserved_over_a_full_hand():
 
 **Próximo plano:** Fase 2 — Bots baseline (Random, Heuristic, MonteCarlo) jogando
 sobre este motor.
+
+---
+
+## Pós-auditoria (2026-06-23) — itens implementados além do plano original
+
+Uma auditoria isenta apontou gaps; todos os críticos/médios foram corrigidos
+nesta mesma fase (38 testes, ruff + mypy limpos):
+
+| Item | O que foi feito |
+|---|---|
+| 1. Validação de ação | `legal_actions()` + `IllegalActionError`: rejeita CHECK ilegal e RAISE negativo |
+| 2. Raise sem teste | `test_raises.py` cobre raise, re-raise, reabertura, ilegais |
+| 3. Regras No-Limit | min-bet (≥ BB) e min-raise (≥ último incremento); all-in sempre legal |
+| 4. **Sessão/múltiplas mãos** | nova `table.py` (`Table`): várias mãos, rotação de botão, fim de jogo |
+| 5. Casos não testados | split/empate, ficha ímpar, run-out de board, heads-up |
+| 6. `play_out` robusto | levanta erro se a rodada não converge (em vez de mascarar) |
+| 7. Análise estática | ruff + mypy no loop, zero issues |
+
+### Dívida técnica conhecida (simplificações documentadas, aceitáveis p/ a feira)
+- **Direitos de reabertura:** um all-in "curto" (abaixo do min-raise) sobe a
+  aposta a pagar, mas não trava o direito do raiser anterior de re-aumentar
+  (regra fina de NL). Raríssimo importar numa demo.
+- **Sem burn cards** e a distribuição não começa na small blind — cosmético
+  (baralho embaralhado mantém a justiça).
+- **`self.pot`** é só exibição; a resolução usa `total_committed` (fonte única).
+- **`evaluator.compare`** ficou usado só em teste — manter para os bots da Fase 2.

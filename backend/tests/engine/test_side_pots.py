@@ -11,7 +11,7 @@ def _c(s):
 
 
 def _all_in(players, commits):
-    for p, c in zip(players, commits):
+    for p, c in zip(players, commits, strict=True):
         p.total_committed = c
         p.status = PlayerStatus.ALL_IN
 

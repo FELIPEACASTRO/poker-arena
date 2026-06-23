@@ -15,33 +15,47 @@ eles. O bot mais avançado é uma **rede neural treinada por self-play
 (Reinforcement Learning)** — IA de verdade. Os bots mais simples são *baselines*
 que provam, de forma mensurável, a superioridade da IA.
 
-**Tese científica:** *Um agente que aprende sozinho, jogando milhões de mãos
+**Tese científica (1):** *Um agente que aprende sozinho, jogando milhões de mãos
 contra si mesmo via deep reinforcement learning, supera estratégias programadas
 à mão.* — provada por win-rate, curvas de treino e (em jogos menores)
 exploitability.
+
+**Tese científica (2) — o diferencial "Modo Laboratório":** *Duas escolas de IA
+podem ser comparadas ao vivo no mesmo jogo:* uma que **aprende pela experiência**
+(NFSP / Reinforcement Learning) e outra que **raciocina pela teoria dos jogos**
+(Deep CFR / rumo ao ótimo de Nash). O usuário escolhe, antes da partida, qual
+cérebro ocupa cada cadeira — inclusive colocando NFSP × Deep CFR na mesma mesa —
+e os dados (win-rate, exploitability, estilo de decisão) respondem qual joga
+melhor e como "pensam" diferente.
 
 ---
 
 ## 2. Visão de Negócio (Business Architecture)
 
-- **Proposta de valor:** demonstrar de forma interativa e *quantificável* que IA
-  moderna (deep RL) supera estratégias programadas, usando poker como vitrine que
-  qualquer pessoa entende em segundos.
+- **Proposta de valor:** transformar o projeto num **laboratório vivo de IA** —
+  não só demonstrar que IA moderna supera estratégias programadas, mas permitir
+  que o avaliador **escolha e compare paradigmas de IA** (aprender × raciocinar)
+  jogando contra eles, usando poker como vitrine que qualquer pessoa entende em
+  segundos.
 - **Stakeholders:**
   - *Autor (Felipe)* — constrói e apresenta.
   - *Banca da feira* — avalia rigor científico e inovação.
   - *Público / jogadores* — interagem jogando contra a IA.
 - **Capacidades de negócio (o que a solução precisa entregar):**
   1. Jogar Texas Hold'em corretamente (regras à prova de erro).
-  2. Oferecer múltiplos níveis de inteligência selecionáveis.
-  3. Treinar uma IA por self-play (NFSP).
+  2. Oferecer múltiplos níveis de inteligência **selecionáveis por cadeira antes
+     da partida** (Modo Laboratório).
+  3. Treinar duas IAs: **NFSP** (self-play) e **Deep CFR** (teoria dos jogos).
   4. Provar quantitativamente a superioridade da IA sobre os baselines.
-  5. Explicar visualmente as decisões dos bots.
-  6. Permitir partida ao vivo (humano vs bots).
+  5. **Comparar NFSP × Deep CFR ao vivo** (duelo na mesma mesa + placar).
+  6. Explicar visualmente as decisões dos bots.
+  7. Permitir partida ao vivo (humano vs bots).
 - **Métricas de sucesso:**
   - A IA vence cada baseline com margem estatística clara (em N mãos).
   - Exploitability cai ao longo do treino nos jogos pequenos (prova de
     convergência ao ótimo).
+  - **O duelo NFSP × Deep CFR é demonstrável ao vivo**, com placar de win-rate e
+    comparação de exploitability entre os dois paradigmas.
   - Um juiz entende a diferença entre níveis em < 1 minuto.
   - A demo roda do início ao fim sem travar.
 - **Restrições:** GPU somente gratuita (Kaggle / HF PRO), sem dinheiro real,
@@ -75,16 +89,21 @@ exploitability.
   jogada, determinação de vencedor.
 - `evaluation/` — wrapper sobre biblioteca testada de avaliação de mãos.
 - `bots/` — interface `Bot` comum + implementações: Random, Heuristic,
-  MonteCarlo, **MLBot (inferência da rede NFSP)**. Cada bot expõe seu
-  "raciocínio" para o painel.
+  MonteCarlo, e **MLBot** parametrizável pelo cérebro carregado
+  (**checkpoint NFSP** ou **checkpoint Deep CFR**). Cada bot expõe seu
+  "raciocínio" para o painel. A interface comum é o que permite o Modo
+  Laboratório: qualquer cérebro pluga em qualquer cadeira.
 - `api/` — FastAPI: setup (REST) + eventos do jogo (WebSocket).
 - `state/` — máquina de estado da partida.
 
 **Frontend (React + TS)**
-- Tela de setup (nº de bots + nível de cada um).
+- Tela de setup — **Modo Laboratório**: menu por cadeira escolhendo o cérebro
+  (`Random / Heurística / Monte Carlo / NFSP / Deep CFR`).
 - Mesa de poker (6 lugares, cartas, pote, fichas).
 - Controles de aposta do humano.
 - Painel de raciocínio do bot da vez.
+- **Tela de comparação** — placar NFSP × Deep CFR (win-rate, exploitability,
+  estilo de decisão) ao longo de muitas mãos.
 
 **Pipeline de ML (offline, na nuvem)**
 - Treino NFSP/Deep CFR em GPU grátis (Kaggle / HF Jobs).
@@ -117,11 +136,16 @@ exploitability.
 | 🟢 Iniciante | Aleatório com viés | baseline (chão) |
 | 🟡 Amador | Heurística por força da mão | baseline |
 | 🟠 Intermediário | Monte Carlo (equity) + pot odds | baseline forte (matemático) |
-| 🔴 **IA** | **Rede neural treinada por self-play (NFSP)** | ⭐ a estrela — ML de ponta |
+| 🔴 **IA — NFSP** | **Rede neural treinada por self-play** (aprende pela experiência) | ⭐ estrela — ML de ponta |
+| 🟣 **IA — Deep CFR** | **Rede que raciocina pela teoria dos jogos** (rumo ao ótimo de Nash) | ⭐ 2ª estrela — rigor/GTO |
 
-**Capítulo de rigor (opcional):** Deep CFR em Leduc/Limit, medindo
-*exploitability* (distância do equilíbrio de Nash) para provar convergência ao
-ótimo.
+**Modo Laboratório:** os dois cérebros de IA (e os baselines) são **selecionáveis
+por cadeira antes da partida**. Dá pra jogar contra um, contra os dois, ou pôr
+**NFSP × Deep CFR** frente a frente.
+
+**Capítulo de rigor:** Deep CFR em Leduc/Limit, medindo *exploitability*
+(distância do equilíbrio de Nash) para provar convergência ao ótimo. Entrega via
+escada de risco: NFSP primeiro (garante o projeto), Deep CFR depois.
 
 ---
 
@@ -147,13 +171,21 @@ exploitability.
 
 ---
 
-## 8. Recurso-chave para a feira
+## 8. Recursos-chave para a feira
+
+**Modo Laboratório (o grande diferencial):** antes da partida, o avaliador
+escolhe o cérebro de cada cadeira e pode pôr **NFSP × Deep CFR** frente a frente.
+Transforma o projeto de "uma IA" em **uma bancada que compara dois paradigmas de
+IA ao vivo** e deixa os dados decidirem qual joga melhor. Raro num projeto de
+feira — eleva o nível para "cara de pesquisa".
 
 **Painel de raciocínio:** ao jogar, cada bot mostra chance estimada de ganhar,
-pot odds e o porquê da decisão — torna a IA *visível*, não caixa-preta.
+pot odds e o porquê da decisão — torna a IA *visível*, não caixa-preta. No duelo,
+mostra os dois paradigmas decidindo *diferente* na mesma situação.
 
 **Evidências científicas a exibir:** curva de treino (recompensa), win-rate da IA
-vs cada baseline, e exploitability caindo (jogos pequenos).
+vs cada baseline, **placar NFSP × Deep CFR**, e exploitability caindo (jogos
+pequenos).
 
 ---
 

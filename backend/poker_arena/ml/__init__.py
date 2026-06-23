@@ -12,12 +12,16 @@ from .encoder import (
     legal_mask,
     to_action,
 )
+from .self_play_env import OpponentPolicy, SelfPlayEnv, random_opponent
 
 __all__ = [
     "ACTIONS",
     "FEATURE_SIZE",
     "N_ACTIONS",
+    "OpponentPolicy",
+    "SelfPlayEnv",
     "encode",
     "legal_mask",
+    "random_opponent",
     "to_action",
 ]

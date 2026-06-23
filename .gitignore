@@ -1,0 +1,48 @@
+# ===== Segredos (NUNCA commitar) =====
+*.env
+.env
+.env.*
+*kaggle.json
+kaggle.json
+CHAVE.txt
+*secret*
+*token*
+.huggingface/
+.kaggle/
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.ipynb_checkpoints
+
+# ===== ML / modelos / dados (pesados) =====
+*.pt
+*.pth
+*.ckpt
+*.onnx
+data/
+datasets/
+checkpoints/
+runs/
+wandb/
+mlruns/
+
+# ===== Node / React =====
+node_modules/
+dist/
+build/
+.vite/
+*.local
+
+# ===== Editor / SO =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

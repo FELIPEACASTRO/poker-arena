@@ -15,6 +15,29 @@ OpenSpiel/PyTorch. O backend só baixa o checkpoint pronto.
 2. `Runtime → Run all`.
 3. Saídas: `kuhn_cfr_convergence.png`, `leduc_cfr_convergence.png` + a política aprendida.
 
+## Autenticação no Colab (Secrets)
+
+As credenciais já estão nos **Secrets do Colab** (🔑), com acesso ao notebook ligado:
+`HF_TOKEN`, `HF_KEY`, `KAGGLE_USERNAME`, `KAGGLE_KEY`. Os notebooks de treino (que
+baixam datasets do Kaggle e publicam checkpoints no HF Hub) usam este bloco —
+**sem nunca imprimir as chaves**:
+
+```python
+import os
+from google.colab import userdata
+
+os.environ["HF_TOKEN"]        = userdata.get("HF_TOKEN")
+os.environ["KAGGLE_USERNAME"] = userdata.get("KAGGLE_USERNAME")
+os.environ["KAGGLE_KEY"]      = userdata.get("KAGGLE_KEY")
+print("Auth OK (HF + Kaggle)")  # nao imprime valores
+```
+
+- `huggingface_hub` lê **`HF_TOKEN`** automaticamente (prefira-o ao `HF_KEY`).
+- `kaggle` / `kagglehub` leem **`KAGGLE_USERNAME` + `KAGGLE_KEY`** automaticamente.
+- O notebook 01 (Kuhn/Leduc) **não** precisa disso — é auto-contido. Vale para os
+  próximos (NFSP/Deep CFR/PPO), que puxam dados e publicam modelos.
+- **Segurança:** nunca dar `print()` no valor de um secret; só usar via `os.environ`.
+
 ## Stack (verificada)
 - **OpenSpiel** (Apache-2.0) — CFR, MCCFR, **NFSP**, **Deep CFR**, exploitability.
 - **stable-baselines3** — **PPO self-play** (alternativa à Deep CFR; paper 2502.08938).

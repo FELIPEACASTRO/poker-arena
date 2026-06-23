@@ -8,7 +8,8 @@ OpenSpiel/PyTorch. O backend só baixa o checkpoint pronto.
 
 | Notebook | O que faz | Onde rodar |
 |---|---|---|
-| `notebooks/01_kuhn_cfr_convergence.ipynb` | CFR converge ao Nash no Kuhn + Leduc (exploitability → 0, com gráfico). **Evidência científica nº 1.** | Colab (CPU, minutos) |
+| `notebooks/01_kuhn_cfr_single_cell.ipynb` ⭐ | **Célula única** — instala + treina CFR (Kuhn+Leduc) + plota exploitability + imprime política. Rode tudo de uma vez. | Colab (CPU, minutos) |
+| `notebooks/01_kuhn_cfr_convergence.ipynb` | Mesma coisa, **passo a passo** (várias células, didático). | Colab (CPU, minutos) |
 
 ### Como rodar (Colab)
 1. Abrir o `.ipynb` no Google Colab.

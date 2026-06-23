@@ -9,9 +9,11 @@ from poker_arena.application import (
 from poker_arena.engine.game import IllegalActionError
 
 
-def _session(seed=7, n_bots=5, level="heuristic", stack=500):
+def _session(seed=7, n_bots=5, level="heuristic", stack=500, rebuy=True):
     cfg = SessionConfig(
-        bots=[BotSpec(f"B{i}", level) for i in range(n_bots)], starting_stack=stack
+        bots=[BotSpec(f"B{i}", level) for i in range(n_bots)],
+        starting_stack=stack,
+        rebuy=rebuy,
     )
     return build_session(cfg, seed=seed)
 
@@ -42,8 +44,9 @@ def test_legal_actions_present_on_human_turn():
         assert v.legal.max_raise_to >= v.legal.min_raise_to or "raise" not in v.legal.actions
 
 
-def test_chip_conservation_with_human_always_folding():
-    s = _session(stack=500)
+def test_chip_conservation_in_tournament_mode():
+    # modo torneio (sem recompra): fichas se conservam ao longo da sessão
+    s = _session(stack=500, rebuy=False)
     total = 6 * 500
     for _ in range(80):
         assert s.total_chips() == total
@@ -55,6 +58,19 @@ def test_chip_conservation_with_human_always_folding():
         else:  # game_over
             break
     assert s.total_chips() == total
+
+
+def test_cash_game_keeps_table_full_after_busts():
+    # stacks minusculos -> jogadores quebram rapido; com recompra a mesa segue com 6
+    s = _session(seed=3, stack=40, rebuy=True)
+    for _ in range(25):
+        v = s.view()
+        assert len(v.seats) == 6  # nunca encolhe
+        assert v.phase != "game_over"  # cash game não acaba por eliminação
+        if v.phase == "human_turn":
+            s.apply_human_action("fold")
+        else:  # hand_over
+            s.next_hand()
 
 
 def test_illegal_action_is_rejected_by_engine():

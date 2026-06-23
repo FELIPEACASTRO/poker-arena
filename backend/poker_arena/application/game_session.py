@@ -47,6 +47,7 @@ class SessionConfig:
     starting_stack: int = 1000
     small_blind: int = 10
     big_blind: int = 20
+    rebuy: bool = True  # cash game: quem zera recompra -> a mesa segue cheia
 
 
 def _cards(cards: list[Card]) -> list[str]:
@@ -61,15 +62,29 @@ class GameSession:
         human: Player,
         bot_by_player: dict[int, Bot],
         level_by_player: dict[int, str],
+        starting_stack: int,
+        rebuy: bool = True,
     ) -> None:
         self.id = session_id
         self._table = table
         self._human = human
         self._bot_by_player = bot_by_player
         self._level_by_player = level_by_player
-        self._hand: Hand = table.start_hand()
+        self._starting_stack = starting_stack
+        self._rebuy = rebuy
         self._last: list[ActionView] = []
         self._winners: list[int] | None = None
+        self._phase = "human_turn"
+        self._begin_hand()
+
+    def _begin_hand(self) -> None:
+        if self._rebuy:  # cash game: recompra quem zerou antes de distribuir
+            for p in self._table.players:
+                if p.stack <= 0:
+                    p.stack = self._starting_stack
+        self._hand: Hand = self._table.start_hand()
+        self._last = []
+        self._winners = None
         self._phase = "human_turn"
         self._drive()
 
@@ -88,11 +103,7 @@ class GameSession:
     def next_hand(self) -> None:
         if self._phase != "hand_over":
             raise InvalidActionError("a mão atual ainda não terminou")
-        self._hand = self._table.start_hand()
-        self._last = []
-        self._winners = None
-        self._phase = "human_turn"
-        self._drive()
+        self._begin_hand()
 
     # ---------- queries (CQRS: leitura) ----------
     def view(self) -> TableStateView:
@@ -137,7 +148,7 @@ class GameSession:
         winners = self._hand.resolve()
         self._winners = [self._hand.players.index(w) for w in winners]
         self._table.end_hand()
-        over = self._table.is_over() or self._human.stack <= 0
+        over = not self._rebuy and (self._table.is_over() or self._human.stack <= 0)
         self._phase = "game_over" if over else "hand_over"
 
     def _record(self, seat: int, action: Action) -> None:
@@ -198,4 +209,12 @@ def build_session(
         bot_by_player[id(p)] = create_bot(spec.level, seed=bot_seed)
         level_by_player[id(p)] = spec.level
     table = Table(players, config.small_blind, config.big_blind, seed=seed)
-    return GameSession(sid, table, players[0], bot_by_player, level_by_player)
+    return GameSession(
+        sid,
+        table,
+        players[0],
+        bot_by_player,
+        level_by_player,
+        starting_stack=config.starting_stack,
+        rebuy=config.rebuy,
+    )

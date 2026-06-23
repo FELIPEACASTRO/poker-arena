@@ -164,3 +164,21 @@ class Hand:
                 seen.add(id(w))
                 result.append(w)
         return result
+
+    # ---- orquestração de uma mão completa ----
+    def play_out(self, strategy) -> list[Player]:
+        """Joga a mão até o fim usando `strategy(hand) -> Action` para cada vez.
+
+        Avança street a street; encerra quando sobra um só contestante ou o river
+        termina. Retorna os vencedores (com os stacks já creditados).
+        """
+        while True:
+            guard = 0
+            while not self.round_complete() and guard < 1000:
+                self.apply(strategy(self))
+                guard += 1
+            contesting = [p for p in self.players if p.status != PlayerStatus.FOLDED]
+            if len(contesting) <= 1 or len(self.board) >= 5:
+                break
+            self.advance_street()
+        return self.resolve()

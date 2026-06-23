@@ -20,7 +20,6 @@ backend/          API + motor + bots (Python, Clean Architecture)
     bots/         domínio: cérebros (Strategy) + observação filtrada por assento
     application/  use cases: GameSession (Facade), BotFactory, Repository, DTOs
     api/          interface: FastAPI (REST + WebSocket), schemas, ACL/mappers, DI
-  scripts/        demo_play.py — joga uma partida via API (logs "Use a Cabeça")
   tests/          unidade + integração (pytest)
 frontend/         mesa em React + TypeScript (Vite) — consome a API
 ml/               notebooks de treino/prova (OpenSpiel) — rodam no Colab
@@ -121,11 +120,6 @@ Erros do domínio viram HTTP: inexistente → **404**; ação ilegal/inválida �
 ### Atalho (Windows) — subir tudo de uma vez
 Duplo-clique em **`subir.bat`** na raiz (ou rode `subir.bat` no terminal): sobe o
 **backend** e o **frontend** em janelas separadas e abre o navegador sozinho.
-
-### Demo ao vivo (sem frontend)
-```bash
-cd backend && uv run python scripts/demo_play.py   # sobe o servidor e joga
-```
 
 ### Frontend (a mesa visual)
 ```bash

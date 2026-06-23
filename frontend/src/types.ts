@@ -1,4 +1,4 @@
-export type Phase = 'human_turn' | 'hand_over' | 'game_over'
+export type Phase = 'human_turn' | 'bot_turn' | 'hand_over' | 'game_over'
 
 export interface Seat {
   seat: number
@@ -48,5 +48,6 @@ export interface CreateConfig {
   starting_stack: number
   small_blind: number
   big_blind: number
+  mode?: 'play' | 'watch'
   seed?: number | null
 }

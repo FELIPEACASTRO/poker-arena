@@ -109,6 +109,34 @@ def test_websocket_pushes_state_and_accepts_action(client):
             assert nxt["phase"] in ("hand_over", "game_over")
 
 
+def test_watch_mode_steps_through_a_hand(client):
+    body = {
+        "mode": "watch",
+        "bots": [{"name": f"B{i}", "level": "heuristic"} for i in range(6)],
+        "starting_stack": 500,
+        "seed": 7,
+    }
+    r = client.post("/tables", json=body)
+    assert r.status_code == 201
+    data = r.json()
+    tid = data["table_id"]
+    assert all(s["kind"] != "human" for s in data["seats"])
+    assert all(s["cards"] is not None for s in data["seats"])  # cartas abertas
+    assert data["phase"] in ("bot_turn", "hand_over")
+    for _ in range(200):
+        st = client.get(f"/tables/{tid}").json()
+        if st["phase"] == "bot_turn":
+            assert client.post(f"/tables/{tid}/step").status_code == 200
+        else:
+            break
+    assert client.get(f"/tables/{tid}").json()["phase"] in ("hand_over", "game_over")
+
+
+def test_step_in_play_mode_is_400(client):
+    tid = _create(client).json()["table_id"]  # modo jogar
+    assert client.post(f"/tables/{tid}/step").status_code == 400
+
+
 def test_websocket_reports_illegal_action(client):
     data = _create(client).json()
     tid = data["table_id"]

@@ -29,4 +29,7 @@ export const api = {
 
   nextHand: (id: string) =>
     fetch(`${BASE}/tables/${id}/next-hand`, POST).then((r) => asJson<TableState>(r)),
+
+  step: (id: string) =>
+    fetch(`${BASE}/tables/${id}/step`, POST).then((r) => asJson<TableState>(r)),
 }

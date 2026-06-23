@@ -85,6 +85,15 @@ def create_app() -> FastAPI:
             raise HTTPException(400, str(e)) from e
         return to_response(session.view())
 
+    @app.post("/tables/{table_id}/step", response_model=TableStateResponse)
+    def step(table_id: str, repo: RepoDep) -> TableStateResponse:
+        session = _get(repo, table_id)
+        try:
+            session.step()  # avança uma jogada de bot (modo assistir)
+        except InvalidActionError as e:
+            raise HTTPException(400, str(e)) from e
+        return to_response(session.view())
+
     @app.websocket("/tables/{table_id}/ws")
     async def ws(websocket: WebSocket, table_id: str, repo: RepoDep) -> None:
         await websocket.accept()

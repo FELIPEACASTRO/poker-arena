@@ -8,6 +8,9 @@ interface Props {
   onLeave: () => void
   busy: boolean
   error: string | null
+  watch?: boolean
+  paused?: boolean
+  onTogglePause?: () => void
 }
 
 function winnerNames(state: TableState): string {
@@ -16,7 +19,17 @@ function winnerNames(state: TableState): string {
     .join(', ')
 }
 
-export default function ActionBar({ state, onAction, onNext, onLeave, busy, error }: Props) {
+export default function ActionBar({
+  state,
+  onAction,
+  onNext,
+  onLeave,
+  busy,
+  error,
+  watch = false,
+  paused = false,
+  onTogglePause,
+}: Props) {
   const legal = state.legal
   const minR = legal?.min_raise_to ?? 0
   const maxR = legal?.max_raise_to ?? 0
@@ -25,6 +38,36 @@ export default function ActionBar({ state, onAction, onNext, onLeave, busy, erro
   useEffect(() => {
     setRaiseTo(minR)
   }, [minR, state.hand_number])
+
+  if (watch) {
+    const actor = state.seats.find((s) => s.is_turn)?.name
+    return (
+      <div className="actionbar">
+        {error && <div className="error">⚠ {error}</div>}
+        <div className="actions result-row">
+          {state.phase === 'bot_turn' && (
+            <span className="result">👀 Assistindo — <b>{actor}</b> vai jogar…</span>
+          )}
+          {state.phase === 'hand_over' && (
+            <span className="result">🏅 Venceu: <b>{winnerNames(state)}</b> — próxima mão…</span>
+          )}
+          {state.phase === 'game_over' ? (
+            <>
+              <span className="result">🏆 Campeão: <b>{winnerNames(state)}</b></span>
+              <button className="btn" onClick={onLeave}>Nova partida</button>
+            </>
+          ) : (
+            <>
+              <button className="btn btn-call" onClick={onTogglePause}>
+                {paused ? '▶ Continuar' : '⏸ Pausar'}
+              </button>
+              <button className="btn" onClick={onLeave}>Sair</button>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="actionbar">

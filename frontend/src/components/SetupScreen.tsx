@@ -6,7 +6,7 @@ const LEVELS = [
   { id: 'heuristic', label: '🟡 Amador — joga por regras' },
   { id: 'montecarlo', label: '🟠 Intermediário — calcula chances' },
 ]
-const NAMES = ['Luna', 'Caio', 'Sofia', 'Alex', 'Maya']
+const NAMES = ['Luna', 'Caio', 'Sofia', 'Alex', 'Maya', 'Rex']
 
 interface Props {
   onCreate: (cfg: CreateConfig) => void
@@ -15,6 +15,7 @@ interface Props {
 }
 
 export default function SetupScreen({ onCreate, busy, error }: Props) {
+  const [mode, setMode] = useState<'play' | 'watch'>('play')
   const [count, setCount] = useState(3)
   const [levels, setLevels] = useState<string[]>([
     'random',
@@ -22,8 +23,17 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
     'montecarlo',
     'heuristic',
     'montecarlo',
+    'heuristic',
   ])
   const [stack, setStack] = useState(1000)
+
+  function pickMode(m: 'play' | 'watch') {
+    setMode(m)
+    if (m === 'watch' && count < 2) setCount(2)
+    if (m === 'play' && count > 5) setCount(5)
+  }
+
+  const counts = mode === 'watch' ? [2, 3, 4, 5, 6] : [1, 2, 3, 4, 5]
 
   function start() {
     const bots: BotSpec[] = Array.from({ length: count }, (_, i) => ({
@@ -36,6 +46,7 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
       starting_stack: stack,
       small_blind: 10,
       big_blind: 20,
+      mode,
     })
   }
 
@@ -46,10 +57,25 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
         <h1 className="brand">Poker Arena</h1>
         <p className="tagline">Você contra a inteligência das máquinas.</p>
 
+        <div className="mode-toggle">
+          <button
+            className={mode === 'play' ? 'mode-btn active' : 'mode-btn'}
+            onClick={() => pickMode('play')}
+          >
+            🎮 Eu jogo
+          </button>
+          <button
+            className={mode === 'watch' ? 'mode-btn active' : 'mode-btn'}
+            onClick={() => pickMode('watch')}
+          >
+            👀 Assistir (só bots)
+          </button>
+        </div>
+
         <label className="field">
-          <span>Quantos bots na mesa?</span>
+          <span>{mode === 'watch' ? 'Quantos bots disputam?' : 'Quantos bots na mesa?'}</span>
           <select value={count} onChange={(e) => setCount(Number(e.target.value))}>
-            {[1, 2, 3, 4, 5].map((n) => (
+            {counts.map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
@@ -93,9 +119,14 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
         {error && <div className="error">⚠ {error}</div>}
 
         <button className="btn btn-start" disabled={busy} onClick={start}>
-          {busy ? 'Embaralhando…' : 'Sentar à mesa'}
+          {busy ? 'Embaralhando…' : mode === 'watch' ? 'Assistir à partida' : 'Sentar à mesa'}
         </button>
-        <p className="hint">Dica: rode o backend antes — <code>uvicorn poker_arena.api.app:app</code></p>
+        <p className="hint">
+          {mode === 'watch'
+            ? 'Os bots jogam sozinhos com as cartas abertas — você só assiste.'
+            : 'Dica: rode o backend antes — '}
+          {mode === 'play' && <code>uvicorn poker_arena.api.app:app</code>}
+        </p>
       </div>
     </div>
   )

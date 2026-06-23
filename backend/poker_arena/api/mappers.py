@@ -27,6 +27,7 @@ def to_config(req: CreateTableRequest) -> SessionConfig:
         small_blind=req.small_blind,
         big_blind=req.big_blind,
         rebuy=req.rebuy,
+        mode=req.mode,
     )
 
 

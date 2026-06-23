@@ -18,6 +18,7 @@ class CreateTableRequest(BaseModel):
     small_blind: int = 10
     big_blind: int = 20
     rebuy: bool = True  # cash game (mesa sempre cheia); False = torneio (eliminação)
+    mode: str = "play"  # "play" (você joga) | "watch" (só bots, você assiste)
     seed: int | None = None
 
 

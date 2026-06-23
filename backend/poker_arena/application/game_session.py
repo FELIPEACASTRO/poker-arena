@@ -1,8 +1,12 @@
 """GameSession — orquestra motor + bots (padrão Facade).
 
-Dirige a mão ação a ação: quando é a vez de um bot, ele joga; quando é a vez do
-humano, pausa e espera a ação (via `apply_human_action`). Separa comandos
-(escrita) de queries (leitura) — CQRS-lite. Depende só do domínio.
+Dois modos:
+- **jogar** (`mode="play"`): humano numa cadeira; pausa em `human_turn` esperando
+  a ação; os bots jogam sozinhos.
+- **assistir** (`mode="watch"`): todos são bots; pausa em `bot_turn` a cada jogada,
+  avançada via `step()` (pra dar pra acompanhar lance a lance, com cartas abertas).
+
+Separa comandos (escrita) de queries (leitura) — CQRS-lite. Depende só do domínio.
 """
 
 from __future__ import annotations
@@ -21,6 +25,7 @@ from .bot_factory import create_bot
 from .views import ActionView, LegalView, SeatView, TableStateView
 
 _MAX_LOG = 12
+_ACTIVE = ("human_turn", "bot_turn")
 _TYPES: dict[str, ActionType] = {
     "fold": ActionType.FOLD,
     "check": ActionType.CHECK,
@@ -48,6 +53,7 @@ class SessionConfig:
     small_blind: int = 10
     big_blind: int = 20
     rebuy: bool = True  # cash game: quem zera recompra -> a mesa segue cheia
+    mode: str = "play"  # "play" (humano joga) | "watch" (só bots, você assiste)
 
 
 def _cards(cards: list[Card]) -> list[str]:
@@ -59,7 +65,8 @@ class GameSession:
         self,
         session_id: str,
         table: Table,
-        human: Player,
+        human: Player | None,
+        human_seat: int | None,
         bot_by_player: dict[int, Bot],
         level_by_player: dict[int, str],
         starting_stack: int,
@@ -68,6 +75,7 @@ class GameSession:
         self.id = session_id
         self._table = table
         self._human = human
+        self._human_seat = human_seat
         self._bot_by_player = bot_by_player
         self._level_by_player = level_by_player
         self._starting_stack = starting_stack
@@ -85,8 +93,7 @@ class GameSession:
         self._hand: Hand = self._table.start_hand()
         self._last = []
         self._winners = None
-        self._phase = "human_turn"
-        self._drive()
+        self._advance()
 
     # ---------- comandos (CQRS: escrita) ----------
     def apply_human_action(self, action_type: str, amount: int = 0) -> None:
@@ -98,7 +105,14 @@ class GameSession:
         action = Action(at, amount=amount)
         self._record(self._hand.to_act, action)
         self._hand.apply(action)  # o motor valida a legalidade
-        self._drive()
+        self._advance()
+
+    def step(self) -> None:
+        """Avança uma jogada de bot (modo assistir)."""
+        if self._phase != "bot_turn":
+            raise InvalidActionError("não há jogada de bot pendente")
+        self._play_bot(self._hand.to_act)
+        self._advance()
 
     def next_hand(self) -> None:
         if self._phase != "hand_over":
@@ -122,33 +136,40 @@ class GameSession:
 
     def total_chips(self) -> int:
         """Invariante de conservação (todas as fichas, inclusive no pote)."""
-        in_pot = self._hand.pot if self._phase == "human_turn" else 0
+        in_pot = self._hand.pot if self._phase in _ACTIVE else 0
         return sum(p.stack for p in self._table.players) + in_pot
 
     # ---------- orquestração interna ----------
-    def _drive(self) -> None:
+    def _advance(self) -> None:
         hand = self._hand
         while True:
             while not hand.round_complete():
                 seat = hand.to_act
-                player = hand.players[seat]
-                if player is self._human:
+                if self._human_seat is not None and seat == self._human_seat:
                     self._phase = "human_turn"
                     return
-                action = self._bot_by_player[id(player)].act(observation_for(hand))
-                self._record(seat, action)
-                hand.apply(action)
+                if self._human_seat is None:  # modo assistir: pausa a cada bot
+                    self._phase = "bot_turn"
+                    return
+                self._play_bot(seat)  # modo jogar: bots jogam sozinhos
             contesting = [p for p in hand.players if p.status != PlayerStatus.FOLDED]
             if len(contesting) <= 1 or len(hand.board) >= 5:
                 self._finish_hand()
                 return
             hand.advance_street()
 
+    def _play_bot(self, seat: int) -> None:
+        hand = self._hand
+        action = self._bot_by_player[id(hand.players[seat])].act(observation_for(hand))
+        self._record(seat, action)
+        hand.apply(action)
+
     def _finish_hand(self) -> None:
         winners = self._hand.resolve()
         self._winners = [self._hand.players.index(w) for w in winners]
         self._table.end_hand()
-        over = not self._rebuy and (self._table.is_over() or self._human.stack <= 0)
+        human_broke = self._human is not None and self._human.stack <= 0
+        over = not self._rebuy and (self._table.is_over() or human_broke)
         self._phase = "game_over" if over else "hand_over"
 
     def _record(self, seat: int, action: Action) -> None:
@@ -169,11 +190,12 @@ class GameSession:
 
     def _seats(self) -> list[SeatView]:
         hand = self._hand
-        reveal = self._phase in ("hand_over", "game_over")
+        watch = self._human_seat is None
+        showdown = self._phase in ("hand_over", "game_over")
         seats: list[SeatView] = []
         for i, p in enumerate(hand.players):
-            is_human = p is self._human
-            show = is_human or (reveal and p.status != PlayerStatus.FOLDED)
+            is_human = self._human is not None and p is self._human
+            show = is_human or watch or (showdown and p.status != PlayerStatus.FOLDED)
             kind = "human" if is_human else "bot:" + self._level_by_player[id(p)]
             seats.append(
                 SeatView(
@@ -184,7 +206,7 @@ class GameSession:
                     current_bet=p.current_bet,
                     status=p.status.value,
                     is_button=(i == hand.button),
-                    is_turn=(self._phase == "human_turn" and i == hand.to_act),
+                    is_turn=(self._phase in _ACTIVE and i == hand.to_act),
                     cards=_cards(p.hole) if (show and p.hole) else None,
                 )
             )
@@ -199,20 +221,30 @@ def build_session(
 ) -> GameSession:
     """Monta jogadores, bots, mesa e a sessão (composição da aplicação)."""
     sid = session_id or uuid.uuid4().hex[:8]
-    players = [Player(config.human_name, config.starting_stack)]
+    players: list[Player] = []
     bot_by_player: dict[int, Bot] = {}
     level_by_player: dict[int, str] = {}
+
+    human: Player | None = None
+    human_seat: int | None = None
+    if config.mode == "play":
+        human = Player(config.human_name, config.starting_stack)
+        players.append(human)
+        human_seat = 0
+
     for i, spec in enumerate(config.bots):
         p = Player(spec.name, config.starting_stack)
         players.append(p)
         bot_seed = None if seed is None else seed + i + 1
         bot_by_player[id(p)] = create_bot(spec.level, seed=bot_seed)
         level_by_player[id(p)] = spec.level
+
     table = Table(players, config.small_blind, config.big_blind, seed=seed)
     return GameSession(
         sid,
         table,
-        players[0],
+        human,
+        human_seat,
         bot_by_player,
         level_by_player,
         starting_stack=config.starting_stack,

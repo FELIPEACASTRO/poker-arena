@@ -223,3 +223,29 @@ body {
   .seat-plate { min-width: 96px; }
   .card { width: 32px; height: 46px; }
 }
+
+/* ---------------- Modo: jogar x assistir ---------------- */
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0 18px;
+}
+.mode-btn {
+  font-family: var(--body);
+  font-size: 0.9rem;
+  padding: 11px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--gold-dim);
+  background: rgba(6, 22, 15, 0.5);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.mode-btn:hover { color: var(--text); border-color: var(--gold); }
+.mode-btn.active {
+  background: linear-gradient(165deg, rgba(214, 179, 94, 0.22), rgba(214, 179, 94, 0.06));
+  border-color: var(--gold);
+  color: var(--gold-soft);
+  box-shadow: 0 0 16px rgba(214, 179, 94, 0.25);
+}

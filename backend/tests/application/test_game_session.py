@@ -94,3 +94,43 @@ def test_unknown_action_type_raises():
     if s.view().phase == "human_turn":
         with pytest.raises(InvalidActionError):
             s.apply_human_action("teleport")
+
+
+# ---------- modo assistir (todos bots) ----------
+def _watch(seed=7, n=6, level="heuristic", stack=500):
+    cfg = SessionConfig(
+        bots=[BotSpec(f"B{i}", level) for i in range(n)],
+        starting_stack=stack,
+        mode="watch",
+    )
+    return build_session(cfg, seed=seed)
+
+
+def test_watch_mode_has_no_human():
+    v = _watch().view()
+    assert v.phase in ("bot_turn", "hand_over")
+    assert all(s.kind != "human" for s in v.seats)
+    assert len(v.seats) == 6
+
+
+def test_watch_mode_reveals_all_cards():
+    v = _watch().view()
+    assert all(s.cards is not None and len(s.cards) == 2 for s in v.seats)
+
+
+def test_watch_mode_plays_a_full_hand_via_step():
+    s = _watch(stack=500)
+    total = 6 * 500
+    for _ in range(300):
+        assert s.total_chips() == total
+        if s.view().phase == "bot_turn":
+            s.step()
+        else:  # hand_over
+            break
+    assert s.view().phase == "hand_over"
+
+
+def test_step_outside_bot_turn_raises():
+    s = _session()  # modo jogar nunca fica em bot_turn (bots jogam sozinhos)
+    with pytest.raises(InvalidActionError):
+        s.step()

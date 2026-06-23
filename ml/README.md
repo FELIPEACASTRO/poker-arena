@@ -10,6 +10,7 @@ OpenSpiel/PyTorch. O backend só baixa o checkpoint pronto.
 |---|---|---|
 | `notebooks/01_kuhn_cfr_single_cell.ipynb` ⭐ | **Célula única** — instala + treina CFR (Kuhn+Leduc) + plota + imprime política. **Logs amigáveis estilo _Use a Cabeça_** (boxes, "Não Tem Pergunta Idiota", barra da brecha encolhendo, marcos comemorados). | Colab (CPU, minutos) |
 | `notebooks/01_kuhn_cfr_convergence.ipynb` | Mesma coisa, **passo a passo** (várias células, didático). | Colab (CPU, minutos) |
+| `notebooks/02_nfsp_leduc_single_cell.ipynb` 🧠 | **NFSP** — a primeira IA que *aprende* por rede neural (self-play). A brecha cai conforme ela aprende. Fiel ao exemplo oficial do OpenSpiel. | Colab (CPU/GPU, minutos) |
 
 ### Como rodar (Colab)
 1. Abrir o `.ipynb` no Google Colab.

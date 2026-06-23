@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 
 from ..application import (
     GameSession,
@@ -34,8 +35,18 @@ def _get(repo: SessionRepository, table_id: str) -> GameSession:
         raise HTTPException(404, f"mesa {table_id} não encontrada") from e
 
 
+def _state(session: GameSession) -> dict[str, object]:
+    return to_response(session.view()).model_dump()
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="Poker Arena API", version="0.1.0")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -73,6 +84,29 @@ def create_app() -> FastAPI:
         except InvalidActionError as e:
             raise HTTPException(400, str(e)) from e
         return to_response(session.view())
+
+    @app.websocket("/tables/{table_id}/ws")
+    async def ws(websocket: WebSocket, table_id: str, repo: RepoDep) -> None:
+        await websocket.accept()
+        try:
+            session = repo.get(table_id)
+        except SessionNotFound:
+            await websocket.close(code=4404)
+            return
+        await websocket.send_json(_state(session))  # estado inicial
+        while True:
+            try:
+                msg = await websocket.receive_json()
+            except WebSocketDisconnect:
+                break
+            try:
+                session.apply_human_action(
+                    str(msg.get("type")), int(msg.get("amount", 0))
+                )
+            except (InvalidActionError, IllegalActionError) as e:
+                await websocket.send_json({"error": str(e)})
+                continue
+            await websocket.send_json(_state(session))  # push do novo estado
 
     return app
 

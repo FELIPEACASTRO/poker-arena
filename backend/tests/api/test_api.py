@@ -95,3 +95,27 @@ def test_next_hand_before_hand_over_is_400(client):
     if data["phase"] == "human_turn":
         r = client.post(f"/tables/{tid}/next-hand")
         assert r.status_code == 400
+
+
+def test_websocket_pushes_state_and_accepts_action(client):
+    tid = _create(client).json()["table_id"]
+    with client.websocket_connect(f"/tables/{tid}/ws") as ws:
+        state = ws.receive_json()  # estado inicial enviado no connect
+        assert state["table_id"] == tid
+        assert len(state["seats"]) == 6
+        if state["phase"] == "human_turn":
+            ws.send_json({"type": "fold"})
+            nxt = ws.receive_json()
+            assert nxt["phase"] in ("hand_over", "game_over")
+
+
+def test_websocket_reports_illegal_action(client):
+    data = _create(client).json()
+    tid = data["table_id"]
+    legal = (data.get("legal") or {}).get("actions", [])
+    if data["phase"] == "human_turn" and "check" not in legal:
+        with client.websocket_connect(f"/tables/{tid}/ws") as ws:
+            ws.receive_json()  # estado inicial
+            ws.send_json({"type": "check"})  # ilegal (há aposta a pagar)
+            resp = ws.receive_json()
+            assert "error" in resp

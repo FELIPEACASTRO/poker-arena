@@ -19,8 +19,10 @@ backend/          API + motor + bots (Python, Clean Architecture)
     engine/       domínio: regras do poker (Hand, Table, cartas, avaliador)
     bots/         domínio: cérebros (Strategy) + observação filtrada por assento
     application/  use cases: GameSession (Facade), BotFactory, Repository, DTOs
-    api/          interface: FastAPI, schemas (Pydantic), ACL/mappers, DI
+    api/          interface: FastAPI (REST + WebSocket), schemas, ACL/mappers, DI
+  scripts/        demo_play.py — joga uma partida via API (logs "Use a Cabeça")
   tests/          unidade + integração (pytest)
+frontend/         mesa em React + TypeScript (Vite) — consome a API
 ml/               notebooks de treino/prova (OpenSpiel) — rodam no Colab
 docs/             especificação, plano, dossiê de pesquisa verificada
 ```
@@ -112,8 +114,19 @@ uv run uvicorn poker_arena.api.app:app --reload      # http://127.0.0.1:8000/doc
 | `GET` | `/tables/{id}` | estado atual (query) |
 | `POST` | `/tables/{id}/actions` | humano joga (`fold/check/call/raise/all_in`) |
 | `POST` | `/tables/{id}/next-hand` | próxima mão |
+| `WS` | `/tables/{id}/ws` | estado em tempo real (push a cada ação) |
 
 Erros do domínio viram HTTP: inexistente → **404**; ação ilegal/inválida → **400**.
+
+### Demo ao vivo (sem frontend)
+```bash
+cd backend && uv run python scripts/demo_play.py   # sobe o servidor e joga
+```
+
+### Frontend (a mesa visual)
+```bash
+cd frontend && npm install && npm run dev          # http://localhost:5173
+```
 
 ---
 

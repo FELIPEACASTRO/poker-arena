@@ -1,0 +1,80 @@
+import pytest
+
+from poker_arena.application import (
+    BotSpec,
+    InvalidActionError,
+    SessionConfig,
+    build_session,
+)
+from poker_arena.engine.game import IllegalActionError
+
+
+def _session(seed=7, n_bots=5, level="heuristic", stack=500):
+    cfg = SessionConfig(
+        bots=[BotSpec(f"B{i}", level) for i in range(n_bots)], starting_stack=stack
+    )
+    return build_session(cfg, seed=seed)
+
+
+def test_initial_view_has_six_seats_and_valid_phase():
+    v = _session().view()
+    assert v.phase in ("human_turn", "hand_over", "game_over")
+    assert v.table_id
+    assert len(v.seats) == 6
+    assert v.hand_number >= 1
+
+
+def test_human_cards_visible_bots_hidden_during_play():
+    v = _session().view()
+    human = next(s for s in v.seats if s.kind == "human")
+    assert human.cards is not None and len(human.cards) == 2
+    if v.phase == "human_turn":
+        bots = [s for s in v.seats if s.kind.startswith("bot")]
+        assert all(b.cards is None for b in bots)  # escondidas durante o jogo
+
+
+def test_legal_actions_present_on_human_turn():
+    v = _session().view()
+    if v.phase == "human_turn":
+        assert v.legal is not None
+        assert "fold" in v.legal.actions
+        assert v.legal.to_call >= 0
+        assert v.legal.max_raise_to >= v.legal.min_raise_to or "raise" not in v.legal.actions
+
+
+def test_chip_conservation_with_human_always_folding():
+    s = _session(stack=500)
+    total = 6 * 500
+    for _ in range(80):
+        assert s.total_chips() == total
+        v = s.view()
+        if v.phase == "human_turn":
+            s.apply_human_action("fold")
+        elif v.phase == "hand_over":
+            s.next_hand()
+        else:  # game_over
+            break
+    assert s.total_chips() == total
+
+
+def test_illegal_action_is_rejected_by_engine():
+    s = _session()
+    v = s.view()
+    if v.phase == "human_turn" and v.legal is not None and "check" not in v.legal.actions:
+        with pytest.raises(IllegalActionError):
+            s.apply_human_action("check")  # há aposta a pagar -> check é ilegal
+
+
+def test_acting_when_not_human_turn_raises():
+    s = _session()
+    if s.view().phase == "human_turn":
+        s.apply_human_action("fold")  # humano sai da mão -> não é mais a vez dele
+    with pytest.raises(InvalidActionError):
+        s.apply_human_action("fold")
+
+
+def test_unknown_action_type_raises():
+    s = _session()
+    if s.view().phase == "human_turn":
+        with pytest.raises(InvalidActionError):
+            s.apply_human_action("teleport")

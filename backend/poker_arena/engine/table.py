@@ -27,6 +27,7 @@ class Table:
         self.button = 0
         self._rng = random.Random(seed)
         self.hand_count = 0
+        self._last_seated = 0
 
     def players_with_chips(self) -> list[Player]:
         return [p for p in self.players if p.stack > 0]
@@ -34,24 +35,34 @@ class Table:
     def is_over(self) -> bool:
         return len(self.players_with_chips()) <= 1
 
-    def play_hand(self, strategy: Strategy) -> tuple[Hand, list[Player]]:
+    def start_hand(self) -> Hand:
+        """Prepara e inicia uma mão SEM jogá-la (caller dirige as ações)."""
         seated = self.players_with_chips()
         if len(seated) <= 1:
             raise RuntimeError("o jogo já acabou — não há mãos a jogar")
         for p in seated:
             p.reset_for_new_hand()
-        button_idx = self.button % len(seated)
+        self._last_seated = len(seated)
         hand = Hand(
             seated,
-            button=button_idx,
+            button=self.button % len(seated),
             small_blind=self.sb,
             big_blind=self.bb,
             seed=self._rng.randrange(1 << 30),
         )
         hand.start()
-        winners = hand.play_out(strategy)
+        return hand
+
+    def end_hand(self) -> None:
+        """Fecha a mão: conta e anda o botão."""
         self.hand_count += 1
-        self.button = (button_idx + 1) % len(seated)  # botão anda
+        self.button = (self.button + 1) % max(self._last_seated, 1)
+
+    def play_hand(self, strategy: Strategy) -> tuple[Hand, list[Player]]:
+        """Joga uma mão inteira automaticamente (bots) — atalho de start+play+end."""
+        hand = self.start_hand()
+        winners = hand.play_out(strategy)
+        self.end_hand()
         return hand, winners
 
     def play_until_winner(

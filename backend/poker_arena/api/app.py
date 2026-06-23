@@ -1,0 +1,80 @@
+"""FastAPI app — rotas REST sobre a aplicação.
+
+CQRS na prática: POST cria/altera (comandos), GET lê (query). Erros do domínio/
+aplicação são traduzidos em códigos HTTP no único ponto que conhece HTTP.
+Dependência injetada via `Annotated[...]` (idioma moderno do FastAPI).
+"""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, HTTPException
+
+from ..application import (
+    GameSession,
+    InvalidActionError,
+    SessionNotFound,
+    SessionRepository,
+    UnknownBotLevel,
+    build_session,
+)
+from ..engine.game import IllegalActionError
+from .dependencies import get_repository
+from .mappers import to_config, to_response
+from .schemas import ActionRequest, CreateTableRequest, TableStateResponse
+
+RepoDep = Annotated[SessionRepository, Depends(get_repository)]
+
+
+def _get(repo: SessionRepository, table_id: str) -> GameSession:
+    try:
+        return repo.get(table_id)
+    except SessionNotFound as e:
+        raise HTTPException(404, f"mesa {table_id} não encontrada") from e
+
+
+def create_app() -> FastAPI:
+    app = FastAPI(title="Poker Arena API", version="0.1.0")
+
+    @app.get("/health")
+    def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.post("/tables", response_model=TableStateResponse, status_code=201)
+    def create_table(req: CreateTableRequest, repo: RepoDep) -> TableStateResponse:
+        try:
+            session = build_session(to_config(req), seed=req.seed)
+        except UnknownBotLevel as e:
+            raise HTTPException(400, str(e)) from e
+        repo.add(session)
+        return to_response(session.view())
+
+    @app.get("/tables/{table_id}", response_model=TableStateResponse)
+    def get_table(table_id: str, repo: RepoDep) -> TableStateResponse:
+        return to_response(_get(repo, table_id).view())
+
+    @app.post("/tables/{table_id}/actions", response_model=TableStateResponse)
+    def act(
+        table_id: str, action: ActionRequest, repo: RepoDep
+    ) -> TableStateResponse:
+        session = _get(repo, table_id)
+        try:
+            session.apply_human_action(action.type, action.amount)
+        except (InvalidActionError, IllegalActionError) as e:
+            raise HTTPException(400, str(e)) from e
+        return to_response(session.view())
+
+    @app.post("/tables/{table_id}/next-hand", response_model=TableStateResponse)
+    def next_hand(table_id: str, repo: RepoDep) -> TableStateResponse:
+        session = _get(repo, table_id)
+        try:
+            session.next_hand()
+        except InvalidActionError as e:
+            raise HTTPException(400, str(e)) from e
+        return to_response(session.view())
+
+    return app
+
+
+app = create_app()

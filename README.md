@@ -118,6 +118,10 @@ uv run uvicorn poker_arena.api.app:app --reload      # http://127.0.0.1:8000/doc
 
 Erros do domínio viram HTTP: inexistente → **404**; ação ilegal/inválida → **400**.
 
+### Atalho (Windows) — subir tudo de uma vez
+Duplo-clique em **`subir.bat`** na raiz (ou rode `subir.bat` no terminal): sobe o
+**backend** e o **frontend** em janelas separadas e abre o navegador sozinho.
+
 ### Demo ao vivo (sem frontend)
 ```bash
 cd backend && uv run python scripts/demo_play.py   # sobe o servidor e joga

@@ -50,14 +50,15 @@ melhor e como "pensam" diferente.
   5. **Comparar NFSP × Deep CFR ao vivo** (duelo na mesma mesa + placar).
   6. Explicar visualmente as decisões dos bots.
   7. Permitir partida ao vivo (humano vs bots).
-- **Métricas de sucesso:**
-  - A IA vence cada baseline com margem estatística clara (em N mãos).
-  - Exploitability cai ao longo do treino nos jogos pequenos (prova de
-    convergência ao ótimo).
-  - **O duelo NFSP × Deep CFR é demonstrável ao vivo**, com placar de win-rate e
-    comparação de exploitability entre os dois paradigmas.
-  - Um juiz entende a diferença entre níveis em < 1 minuto.
-  - A demo roda do início ao fim sem travar.
+- **Métricas de sucesso (com a separação de rigor correta — achado verificado):**
+  - **Jogos pequenos (Kuhn / Leduc / heads-up):** exploitability / NashConv cai ao
+    longo do treino → **prova matemática** de convergência ao ótimo (best-response).
+  - **Mesa de 6 (sem garantia de equilíbrio):** avaliar por **cross-play** (matriz
+    de duelos) + **bb/100 com intervalo de confiança** + **AIVAT** (redução de
+    variância) — **não** por exploitability (6-max não é soma-zero de 2 jogadores).
+  - A IA vence cada baseline com margem estatística clara (em N mãos duplicadas).
+  - **O duelo NFSP × Deep CFR é demonstrável ao vivo** (= a própria matriz de cross-play).
+  - Um juiz entende a diferença entre níveis em < 1 minuto; a demo roda sem travar.
 - **Restrições:** GPU somente gratuita (Kaggle / HF PRO), sem dinheiro real,
   prazo da feira (~2+ meses).
 
@@ -89,10 +90,11 @@ melhor e como "pensam" diferente.
   jogada, determinação de vencedor.
 - `evaluation/` — wrapper sobre biblioteca testada de avaliação de mãos.
 - `bots/` — interface `Bot` comum + implementações: Random, Heuristic,
-  MonteCarlo, e **MLBot** parametrizável pelo cérebro carregado
-  (**checkpoint NFSP** ou **checkpoint Deep CFR**). Cada bot expõe seu
-  "raciocínio" para o painel. A interface comum é o que permite o Modo
-  Laboratório: qualquer cérebro pluga em qualquer cadeira.
+  MonteCarlo, e **MLBot** parametrizável pelo cérebro carregado (**checkpoint
+  NFSP / Deep CFR / PPO**). Recebe apenas uma **observação filtrada por assento**
+  (`Observation`) — **nunca** as cartas de outros jogadores, garantido por teste.
+  Cada bot expõe seu "raciocínio" para o painel. A interface comum é o que permite
+  o Modo Laboratório: qualquer cérebro pluga em qualquer cadeira.
 - `api/` — FastAPI: setup (REST) + eventos do jogo (WebSocket).
 - `engine/` (sessão) — `Hand` (uma mão: blinds, apostas validadas com regras de
   No-Limit, side pots, showdown) + `Table` (várias mãos: rotação de botão,
@@ -115,19 +117,21 @@ melhor e como "pensam" diferente.
 ### Fluxo de dados
 1. **Jogo ao vivo:** setup → eventos via WebSocket → decisão do bot (inferência
    local da rede) → render na mesa.
-2. **Treino:** ambiente de poker (RLCard) → self-play em GPU na nuvem → modelo no
-   HF Hub → backend baixa e serve.
+2. **Treino:** ambiente de poker (**OpenSpiel**: curriculum Kuhn → Leduc → Hold'em
+   abstraído) → self-play (NFSP / Deep CFR / **PPO**) em GPU na nuvem (Kaggle / HF
+   Jobs) → modelo no HF Hub → backend baixa e serve.
 
 ### Decisões de arquitetura (ADRs resumidos)
 | Decisão | Por quê |
 |---|---|
 | **React** no front | UI rica/animada, padrão de mercado, impressiona na feira |
 | **FastAPI + WebSocket** | Tempo real + ecossistema Python (mesmo do ML) |
-| **RLCard + PyTorch** | SOTA pronto p/ poker (NFSP, Deep CFR), foca esforço na ciência |
-| **Biblioteca de mãos** (`treys`/`pokerkit`) | Corretude perfeita das regras sem reinventar |
-| **Treino na nuvem** (Kaggle/HF) | Sem GPU local; HF PRO acelera |
-| **HF Hub** p/ modelo | Hospedagem versionada do modelo treinado |
-| **venv Python 3.11** p/ ML | PyTorch/RLCard ainda sem wheel p/ o 3.14 local |
+| **OpenSpiel + PyTorch** | NFSP **e** Deep CFR **e** exploitability numa lib só (Apache-2.0). ⚠️ Correção verificada: **RLCard NÃO tem Deep CFR** (só NFSP/CFR) — por isso OpenSpiel |
+| **PPO self-play** (stable-baselines3) | Alternativa à Deep CFR: paper 2502.08938 (verificado) mostra PPO **competitivo/superior** a CFR/NFSP em jogos de info imperfeita — caminho mais simples e com respaldo acadêmico |
+| **`treys`** (mãos) + **PokerKit** (oráculo) | treys já no código; PokerKit (MIT, 99% cov) cruza 1M de mãos p/ validar o motor |
+| **Treino na nuvem** (Kaggle + HF Jobs) | Sem GPU local; **dois** caminhos grátis (redundância de prazo); HF PRO acelera |
+| **HF Hub** p/ modelo + **HF Spaces/ZeroGPU** p/ demo | Hospedagem versionada do modelo + demo pública grátis |
+| **venv Python 3.11** p/ ML | PyTorch/OpenSpiel ainda sem wheel p/ o 3.14 local |
 
 ---
 
@@ -145,9 +149,19 @@ melhor e como "pensam" diferente.
 por cadeira antes da partida**. Dá pra jogar contra um, contra os dois, ou pôr
 **NFSP × Deep CFR** frente a frente.
 
-**Capítulo de rigor:** Deep CFR em Leduc/Limit, medindo *exploitability*
-(distância do equilíbrio de Nash) para provar convergência ao ótimo. Entrega via
-escada de risco: NFSP primeiro (garante o projeto), Deep CFR depois.
+**Cérebro alternativo (achado verificado):** além de NFSP/Deep CFR, avaliar **PPO
+self-play** (`stable-baselines3`) — academicamente competitivo em jogos de info
+imperfeita (paper 2502.08938) e mais simples de treinar.
+
+**Dois eixos (Dificuldade × Personalidade):** o *nível* (qualidade da decisão) é
+ortogonal à *personalidade* (TAG/LAG/Tight-Passive/…). Um motor só gera muitos
+bots por **mistura**: `política = α·forte + β·estilo + γ·erro` (Σ=1) — sem treinar
+5 modelos.
+
+**Capítulo de rigor:** Deep CFR/NFSP em **Kuhn/Leduc**, medindo *exploitability*
+para provar convergência ao ótimo. ⚠️ No **6-max não há garantia de equilíbrio** —
+ali a força se mede por **cross-play**, não exploitability. Entrega via escada de
+risco: NFSP primeiro (garante o projeto), Deep CFR/PPO depois.
 
 ---
 
@@ -164,10 +178,14 @@ escada de risco: NFSP primeiro (garante o projeto), Deep CFR depois.
 ## 7. Stack técnica
 
 - **Backend:** Python 3.11 (venv p/ ML), FastAPI, WebSockets, NumPy.
-- **Avaliação de mãos:** `treys` ou `pokerkit`.
-- **ML:** PyTorch + **RLCard** (NFSP, Deep CFR). Alternativa: OpenSpiel.
-- **Treino/host:** Kaggle (GPU grátis) e/ou HF Jobs; modelo no **HF Hub** (conta
-  PRO: `felipesp1983`).
+- **Avaliação de mãos:** `treys` (já no código); **PokerKit** como oráculo de validação.
+- **ML:** PyTorch + **OpenSpiel** (NFSP + Deep CFR + exploitability). Cérebro
+  "que aprende" alternativo: **PPO self-play** (`stable-baselines3`).
+- **Dados auxiliares:** tabelas de **equity** pré-computadas (Kaggle) p/ cachear o
+  bot Monte Carlo; **PokerBench** (Apache-2.0) p/ baseline supervisionado/benchmark.
+- **Formato/repro:** **PHH** (histórico aberto) + event sourcing + replay determinístico.
+- **Treino/host:** Kaggle + **HF Jobs** (GPU grátis); modelo no **HF Hub**; demo
+  pública em **HF Spaces/ZeroGPU** (conta PRO: `felipesp1983`).
 - **Frontend:** React + Vite + TypeScript.
 - **Estrutura:** monorepo `backend/` + `frontend/` + `ml/`.
 
@@ -184,6 +202,12 @@ feira — eleva o nível para "cara de pesquisa".
 **Painel de raciocínio:** ao jogar, cada bot mostra chance estimada de ganhar,
 pot odds e o porquê da decisão — torna a IA *visível*, não caixa-preta. No duelo,
 mostra os dois paradigmas decidindo *diferente* na mesma situação.
+
+**Camada de explicação em linguagem natural (opcional):** um **LLM pequeno** (GGUF
+leve, ex. PokerBench-SFT) traduz a decisão *já tomada pelo engine* em português
+("aumentei: 72% de equity e o pote dava odds"). ⚠️ O LLM **explica, nunca decide**
+— benchmarks verificados (ToolPoker, GTO-Wizard) mostram LLMs abaixo do solver.
+Padrão *tool-use*: engine decide → LLM verbaliza.
 
 **Evidências científicas a exibir:** curva de treino (recompensa), win-rate da IA
 vs cada baseline, **placar NFSP × Deep CFR**, e exploitability caindo (jogos
@@ -210,9 +234,17 @@ Nunca chegar na feira de mãos vazias.
 
 ---
 
-## 11. Infraestrutura já provisionada
+## 11. Infraestrutura e descobertas (garimpo HF + Kaggle, verificado)
 
-- **Kaggle CLI** autenticada (`felipe1983`).
-- **HuggingFace** autenticado (`felipesp1983`, **PRO confirmado**).
-- Chaves mantidas FORA do repositório (em `POKER\`, pasta-pai); `.gitignore`
-  reforça o bloqueio de segredos.
+- **Kaggle CLI** autenticada (`felipe1983`) — GPU/TPU grátis p/ treino.
+- **HuggingFace** autenticado (`felipesp1983`, **PRO**) — destrava **HF Jobs**
+  (GPU: l4x4/a100/h200) p/ treino e **HF Spaces/ZeroGPU** p/ host grátis da demo.
+- **Não existe** Space "jogar Hold'em vs IA configurável" → nossa demo é original.
+- **Não existe** checkpoint NFSP/Deep CFR pronto no HF → o cérebro a gente **treina**.
+- **Licenças (requisito técnico):** nossa pilha é permissiva
+  (OpenSpiel/RLCard/PokerKit/treys/PokerBench = MIT/Apache). **Evitar** AGPL
+  (DecisionHoldem, TexasSolver, postflop-solver) e **CC-BY-NC** (PokerSkill, alguns
+  datasets) se houver publicação/demo.
+- **Já estamos à frente:** o motor (38 testes, 98% cobertura) já cumpre a "fundação
+  obrigatória" descrita nos dois documentos de pesquisa.
+- Chaves mantidas FORA do repositório; `.gitignore` reforça o bloqueio de segredos.

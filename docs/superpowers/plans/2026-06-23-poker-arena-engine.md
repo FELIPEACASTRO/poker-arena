@@ -737,3 +737,37 @@ nesta mesma fase (38 testes, ruff + mypy limpos):
   (baralho embaralhado mantém a justiça).
 - **`self.pot`** é só exibição; a resolução usa `total_committed` (fonte única).
 - **`evaluator.compare`** ficou usado só em teste — manter para os bots da Fase 2.
+
+---
+
+## Pós-pesquisa (2026-06-23) — achados aplicados ao roadmap
+
+Verificação na fonte + garimpo HF/Kaggle. Detalhe completo em
+`docs/superpowers/research/2026-06-23-findings-and-sources.md`.
+
+### Roadmap de ML revisado
+| Fase | Antes | Depois (corrigido) |
+|---|---|---|
+| ML estrela | "NFSP via RLCard" | **NFSP via OpenSpiel** (RLCard não tem Deep CFR) |
+| ML rigor | "Deep CFR" | **Deep CFR via OpenSpiel** + **exploitability** em Kuhn/Leduc |
+| ML alternativa | — | **PPO self-play** (`stable-baselines3`) — mais simples, paper 2502.08938 |
+| Avaliação 6-max | "exploitability" | **cross-play + bb/100 + IC + AIVAT** (6-max não tem garantia de equilíbrio) |
+
+### Itens novos no backlog (com fase sugerida)
+| Item | Fase | Esforço |
+|---|---|---|
+| `bots/` — contrato `Observation` filtrado por assento + `Bot` protocol | **2** (parcial já nesta branch) | baixo |
+| Cache de equity com tabelas do Kaggle (`*_equity.csv`) p/ o MonteCarloBot | 2 | baixo |
+| PokerKit como oráculo: cruzar 1M de mãos vs nosso motor | 2/3 | médio |
+| Export PHH + event sourcing + replay determinístico | 3 | médio |
+| Curriculum OpenSpiel: Kuhn (Nash fechado) → Leduc (exploitability) → Hold'em | 5 | alto |
+| Matriz de cross-play (NFSP × Deep CFR × PPO × baselines) | 6 | médio |
+| Treino em HF Jobs (`hf jobs uv run --flavor l4x4`) e/ou Kaggle | 5/6 | médio |
+| Demo pública em HF Spaces/ZeroGPU | 7 | médio |
+| Camada LLM de explicação (GGUF leve, tool-use; nunca decide) | 7 | médio |
+| Eixo Personalidade (TAG/LAG/…) por mistura `α·forte+β·estilo+γ·erro` | 2/4 | médio |
+
+### Disciplina de licença (requisito técnico)
+Ficar em **MIT/Apache** (OpenSpiel, RLCard, PokerKit, treys, PokerBench,
+stable-baselines3). **Evitar** AGPL (DecisionHoldem, TexasSolver, postflop-solver)
+e CC-BY-NC (PokerSkill, Poker-SFT-Mix) em qualquer publicação/demo.

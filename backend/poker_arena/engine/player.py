@@ -41,3 +41,11 @@ class Player:
         """Prepara o jogador para a próxima street (não zera total_committed)."""
         self.current_bet = 0
         self.acted = False
+
+    def reset_for_new_hand(self) -> None:
+        """Zera o estado de mão (mantém o stack) para começar uma mão nova."""
+        self.hole = []
+        self.status = PlayerStatus.ACTIVE
+        self.current_bet = 0
+        self.total_committed = 0
+        self.acted = False

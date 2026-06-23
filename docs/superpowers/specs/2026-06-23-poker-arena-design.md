@@ -184,8 +184,10 @@ risco: NFSP primeiro (garante o projeto), Deep CFR/PPO depois.
 - **Dados auxiliares:** tabelas de **equity** pré-computadas (Kaggle) p/ cachear o
   bot Monte Carlo; **PokerBench** (Apache-2.0) p/ baseline supervisionado/benchmark.
 - **Formato/repro:** **PHH** (histórico aberto) + event sourcing + replay determinístico.
-- **Treino/host:** Kaggle + **HF Jobs** (GPU grátis); modelo no **HF Hub**; demo
-  pública em **HF Spaces/ZeroGPU** (conta PRO: `felipesp1983`).
+- **Treino/host:** **Colab Pro+** (A100, ~24h, execução em background) como motor
+  **principal** de treino; **HF Jobs** (scripted + push pro Hub) e **Kaggle**
+  (experimentos rápidos) de apoio. Modelo no **HF Hub**; demo pública em **HF
+  Spaces/ZeroGPU** (conta PRO: `felipesp1983`).
 - **Frontend:** React + Vite + TypeScript.
 - **Estrutura:** monorepo `backend/` + `frontend/` + `ml/`.
 
@@ -236,9 +238,13 @@ Nunca chegar na feira de mãos vazias.
 
 ## 11. Infraestrutura e descobertas (garimpo HF + Kaggle, verificado)
 
-- **Kaggle CLI** autenticada (`felipe1983`) — GPU/TPU grátis p/ treino.
+- **Google Colab Pro+** — GPU **A100**, runtime ~24h e **execução em background**
+  (treino segue com a aba fechada). **Motor principal** dos treinos longos (Deep
+  CFR / self-play); Linux limpo onde OpenSpiel/PyTorch instalam sem o problema de
+  wheel do Python 3.14 local.
+- **Kaggle CLI** autenticada (`felipe1983`) — GPU/TPU grátis p/ experimentos rápidos.
 - **HuggingFace** autenticado (`felipesp1983`, **PRO**) — destrava **HF Jobs**
-  (GPU: l4x4/a100/h200) p/ treino e **HF Spaces/ZeroGPU** p/ host grátis da demo.
+  (GPU: l4x4/a100/h200) p/ treino reprodutível e **HF Spaces/ZeroGPU** p/ host da demo.
 - **Não existe** Space "jogar Hold'em vs IA configurável" → nossa demo é original.
 - **Não existe** checkpoint NFSP/Deep CFR pronto no HF → o cérebro a gente **treina**.
 - **Licenças (requisito técnico):** nossa pilha é permissiva

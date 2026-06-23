@@ -762,7 +762,7 @@ Verificação na fonte + garimpo HF/Kaggle. Detalhe completo em
 | Export PHH + event sourcing + replay determinístico | 3 | médio |
 | Curriculum OpenSpiel: Kuhn (Nash fechado) → Leduc (exploitability) → Hold'em | 5 | alto |
 | Matriz de cross-play (NFSP × Deep CFR × PPO × baselines) | 6 | médio |
-| Treino em HF Jobs (`hf jobs uv run --flavor l4x4`) e/ou Kaggle | 5/6 | médio |
+| Treino: **Colab Pro+ (A100, 24h, background)** principal; HF Jobs (push p/ Hub) + Kaggle de apoio | 5/6 | médio |
 | Demo pública em HF Spaces/ZeroGPU | 7 | médio |
 | Camada LLM de explicação (GGUF leve, tool-use; nunca decide) | 7 | médio |
 | Eixo Personalidade (TAG/LAG/…) por mistura `α·forte+β·estilo+γ·erro` | 2/4 | médio |

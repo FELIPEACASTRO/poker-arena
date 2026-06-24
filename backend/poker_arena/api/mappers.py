@@ -16,6 +16,7 @@ from .schemas import (
     HumanAnalysisSchema,
     LegalSchema,
     OpponentReadSchema,
+    RosterSeatSchema,
     SeatSchema,
     TableStateResponse,
     WatchStatsSchema,
@@ -46,6 +47,7 @@ def to_response(view: TableStateView) -> TableStateResponse:
         legal=LegalSchema(**asdict(view.legal)) if view.legal else None,
         last_actions=[ActionSchema(**asdict(a)) for a in view.last_actions],
         winners=view.winners,
+        roster=[RosterSeatSchema(**asdict(r)) for r in view.roster],
         opponent_read=(
             OpponentReadSchema(**asdict(view.opponent_read))
             if view.opponent_read

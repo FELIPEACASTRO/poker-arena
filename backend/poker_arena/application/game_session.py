@@ -33,6 +33,7 @@ from .views import (
     InsightView,
     LegalView,
     OpponentReadView,
+    RosterSeatView,
     SeatView,
     TableStateView,
     WatchStatsView,
@@ -83,6 +84,13 @@ def _insight_dict(ins: BotInsight | None) -> dict | None:
     if ins is None:
         return None
     return {"kind": ins.kind, "label": ins.label, "confidence": round(ins.confidence, 3)}
+
+
+MAX_SEATS = 6  # mesa 6-max
+_NAME_POOL = (
+    "Ana", "Beto", "Cleo", "Duda", "Edu", "Fil", "Gabi", "Hugo",
+    "Ivo", "Jana", "Kiko", "Lia", "Mia", "Nina", "Theo", "Vera",
+)
 
 
 class GameSession:
@@ -173,6 +181,62 @@ class GameSession:
             raise InvalidActionError("a mão atual ainda não terminou")
         self._begin_hand()
 
+    # ---------- gestão da mesa (entrar/sair de jogadores) ----------
+    def add_bot(self, level: str, name: str | None = None, buy_in: int | None = None) -> None:
+        """Senta um novo bot na mesa — entra na próxima mão."""
+        from .bot_factory import available_levels
+
+        if level not in available_levels():
+            raise InvalidActionError(f"nível inválido: {level!r}")
+        if len(self._table.players) >= MAX_SEATS:
+            raise InvalidActionError(f"a mesa está cheia (máx. {MAX_SEATS} cadeiras)")
+        nm = self._unique_name(name)
+        stack = buy_in if (buy_in and buy_in > 0) else self._starting_stack
+        p = Player(nm, stack)
+        if level == "adaptive":  # precisa da memória compartilhada
+            self._bot_by_player[id(p)] = AdaptiveBot(self._opp_model, name=nm)
+        else:
+            self._bot_by_player[id(p)] = create_bot(level)
+        self._level_by_player[id(p)] = level
+        self._table.players.append(p)
+        # se o jogo tinha acabado e agora há gente pra jogar, reabre pra próxima mão
+        if self._phase == "game_over" and len(self._table.players_with_chips()) >= 2:
+            self._phase = "hand_over"
+
+    def remove_player(self, seat: int) -> None:
+        """Remove um jogador da mesa — sai a partir da próxima mão.
+
+        Não mexe nos mapas de bot: se ele estiver na mão em andamento, ela
+        termina normalmente; a saída só vale para as próximas mãos.
+        """
+        players = self._table.players
+        if seat < 0 or seat >= len(players):
+            raise InvalidActionError("cadeira inválida")
+        target = players[seat]
+        if self._human is not None and target is self._human:
+            raise InvalidActionError("você não pode se remover da mesa")
+        if len(players) <= 2:
+            raise InvalidActionError("a mesa precisa de pelo menos 2 jogadores")
+        players.pop(seat)
+
+    def _unique_name(self, name: str | None) -> str:
+        taken = {p.name for p in self._table.players}
+        if name and name.strip():
+            base = name.strip()
+            if base not in taken:
+                return base
+            i = 2
+            while f"{base} {i}" in taken:
+                i += 1
+            return f"{base} {i}"
+        for nm in _NAME_POOL:
+            if nm not in taken:
+                return nm
+        i = 1
+        while f"Jogador {i}" in taken:
+            i += 1
+        return f"Jogador {i}"
+
     # ---------- queries (CQRS: leitura) ----------
     def view(self) -> TableStateView:
         hand = self._hand
@@ -186,39 +250,60 @@ class GameSession:
             legal=self._legal() if self._phase == "human_turn" else None,
             last_actions=list(self._last),
             winners=self._winners,
+            roster=self._roster(),
             opponent_read=self._opp_read(),
             analysis=self._analysis(),
             watch_stats=self._watch_stats_view(),
         )
+
+    def _roster(self) -> list[RosterSeatView]:
+        """Elenco atual da mesa (table.players) — base pra entrar/sair de jogadores."""
+        out = []
+        for i, p in enumerate(self._table.players):
+            is_human = self._human is not None and p is self._human
+            out.append(
+                RosterSeatView(
+                    seat=i,
+                    name=p.name,
+                    level="human" if is_human else self._level_by_player.get(id(p), "?"),
+                    stack=p.stack,
+                    is_human=is_human,
+                )
+            )
+        return out
 
     def _watch_stats_view(self) -> WatchStatsView | None:
         """Painéis do modo laboratório — só quando há estatísticas (sem humano)."""
         st = self._stats
         if st is None or st.hands == 0:
             return None
+        # só os jogadores que estão na mesa AGORA (quem saiu some dos painéis)
+        current = {p.name for p in self._table.players}
+        names = [n for n in st.per if n in current]
         bots = [
             BotStatView(
-                seat=info["seat"],
-                name=info["name"],
-                level=info["level"],
-                stack=p["stack"],
-                delta=p["stack"] - p["start"],
-                hands_won=p["hands_won"],
-                hands_dealt=p["hands_dealt"],
-                vpip=(p["vpip"] / p["hands_dealt"]) if p["hands_dealt"] else 0.0,
-                aggression=(p["aggressive"] / p["actions"]) if p["actions"] else 0.0,
+                seat=st.info[n]["seat"],
+                name=n,
+                level=st.info[n]["level"],
+                stack=st.per[n]["stack"],
+                delta=st.per[n]["stack"] - st.per[n]["start"],
+                hands_won=st.per[n]["hands_won"],
+                hands_dealt=st.per[n]["hands_dealt"],
+                vpip=(st.per[n]["vpip"] / st.per[n]["hands_dealt"]) if st.per[n]["hands_dealt"] else 0.0,
+                aggression=(st.per[n]["aggressive"] / st.per[n]["actions"]) if st.per[n]["actions"] else 0.0,
             )
-            for info, p in ((st.info[s], st.per[s]) for s in st.per)
+            for n in names
         ]
         bots.sort(key=lambda b: b.stack, reverse=True)
         series = [
             ChipSeriesView(
-                seat=info["seat"],
-                name=info["name"],
-                level=info["level"],
-                points=[t["stacks"].get(info["seat"], 0) for t in st.timeline],
+                seat=st.info[n]["seat"],
+                name=n,
+                level=st.info[n]["level"],
+                # None nas mãos antes do jogador entrar (linha começa onde ele entra)
+                points=[t["stacks"].get(n) for t in st.timeline],
             )
-            for info in (st.info[s] for s in st.per)
+            for n in names
         ]
         return WatchStatsView(
             bots=bots,
@@ -289,22 +374,21 @@ class GameSession:
         hand.apply(action)
 
     def _log_action(self, seat: int, action: Action, ins: BotInsight | None) -> None:
+        p = self._hand.players[seat]
         street = _STREET.get(len(self._hand.board), str(len(self._hand.board)))
         if self._stats is not None:
-            self._stats.action(seat, action.type.value, street)
-        if self._logger is None:
-            return
-        p = self._hand.players[seat]
-        self._logger.action(
-            seat,
-            p.name,
-            self._level_of(p),
-            action.type.value,
-            action.amount,
-            street,
-            _cards(self._hand.board),
-            _insight_dict(ins),
-        )
+            self._stats.action(p.name, action.type.value, street)
+        if self._logger is not None:
+            self._logger.action(
+                seat,
+                p.name,
+                self._level_of(p),
+                action.type.value,
+                action.amount,
+                street,
+                _cards(self._hand.board),
+                _insight_dict(ins),
+            )
 
     def _finish_hand(self) -> None:
         pot = self._hand.pot  # antes de distribuir

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ClipboardList, Cpu, FlaskConical, Gamepad2, GraduationCap, LogOut } from 'lucide-react'
+import { ClipboardList, Cpu, FlaskConical, Gamepad2, GraduationCap, LogOut, Users } from 'lucide-react'
 import ActionBar from './components/ActionBar'
 import AIMind from './components/AIMind'
 import { CouncilPanel, EquityPanel, EVPanel, HandPanel, ProfilePanel } from './components/Analysis'
 import AuditPage from './components/AuditPage'
 import GuideScreen from './components/GuideScreen'
+import ManageTable from './components/ManageTable'
 import LabHint from './components/LabHint'
 import PokerTable from './components/PokerTable'
 import SetupScreen from './components/SetupScreen'
@@ -23,6 +24,7 @@ export default function App() {
     useGame()
   const [guideOpen, setGuideOpen] = useState(false)
   const [auditOpen, setAuditOpen] = useState(false)
+  const [manageOpen, setManageOpen] = useState(false)
 
   // modo laboratório: avança sozinho no ritmo escolhido (dá pra acompanhar e pensar)
   useEffect(() => {
@@ -73,6 +75,14 @@ export default function App() {
                     {watch ? 'Modo laboratório' : 'Você joga'}
                   </span>
                 </span>
+                <button
+                  className="btn btn-ghost guide-open"
+                  onClick={() => setManageOpen(true)}
+                  title="Gerenciar mesa (entrar/sair de jogadores)"
+                >
+                  <Users size={16} />
+                  <span className="guide-open-label">Mesa</span>
+                </button>
                 <button
                   className="btn btn-ghost guide-open"
                   onClick={() => setAuditOpen(true)}
@@ -167,6 +177,7 @@ export default function App() {
           <AnimatePresence>
             {guideOpen && <GuideScreen onClose={() => setGuideOpen(false)} />}
             {auditOpen && <AuditPage onClose={() => setAuditOpen(false)} />}
+            {manageOpen && <ManageTable onClose={() => setManageOpen(false)} />}
           </AnimatePresence>
         </motion.div>
       )}

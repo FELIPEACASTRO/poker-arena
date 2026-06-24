@@ -142,13 +142,23 @@ export function ChipRacePanel() {
   const W = 240
   const H = 92
   const pad = 6
-  const flat = ws.series.flatMap((s) => s.points)
+  const flat = ws.series.flatMap((s) => s.points).filter((v): v is number => v != null)
   const hi = Math.max(...flat, 1)
   const lo = Math.min(...flat, 0)
   const range = Math.max(hi - lo, 1) // escala entre mín e máx -> disputa visível
   const n = ws.hands
-  const x = (i: number) => pad + (i / (n - 1)) * (W - 2 * pad)
+  const x = (i: number) => pad + (i / Math.max(n - 1, 1)) * (W - 2 * pad)
   const y = (v: number) => H - pad - ((v - lo) / range) * (H - 2 * pad)
+  // monta o path pulando buracos (null = mãos antes do jogador entrar)
+  const pathOf = (pts: (number | null)[]) =>
+    pts
+      .map((v, i) => {
+        if (v == null) return ''
+        const start = i === 0 || pts[i - 1] == null
+        return `${start ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`
+      })
+      .join(' ')
+      .trim()
   return (
     <div className="apanel">
       <div className="apanel-h">
@@ -156,9 +166,8 @@ export function ChipRacePanel() {
       </div>
       <svg className="race" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         {ws.series.map((s) => {
-          const d = s.points
-            .map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`)
-            .join(' ')
+          const d = pathOf(s.points)
+          if (!d) return null
           return (
             <path
               key={s.seat}

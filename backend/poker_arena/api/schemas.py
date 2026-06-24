@@ -119,7 +119,21 @@ class ChipSeriesSchema(BaseModel):
     seat: int
     name: str
     level: str
-    points: list[int]
+    points: list[int | None]
+
+
+class RosterSeatSchema(BaseModel):
+    seat: int
+    name: str
+    level: str
+    stack: int
+    is_human: bool
+
+
+class AddPlayerRequest(BaseModel):
+    level: str
+    name: str | None = None
+    buy_in: int | None = None
 
 
 class WatchStatsSchema(BaseModel):
@@ -141,6 +155,7 @@ class TableStateResponse(BaseModel):
     legal: LegalSchema | None
     last_actions: list[ActionSchema]
     winners: list[int] | None
+    roster: list[RosterSeatSchema] = []
     opponent_read: OpponentReadSchema | None = None
     analysis: HumanAnalysisSchema | None = None
     watch_stats: WatchStatsSchema | None = None

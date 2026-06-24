@@ -189,6 +189,54 @@ def test_play_mode_has_no_watch_stats():
     assert s.view().watch_stats is None
 
 
+# ---------- entrar/sair de jogadores (gestão da mesa) ----------
+def test_roster_reflects_table():
+    s = _watch(n=3)
+    roster = s.view().roster
+    assert len(roster) == 3
+    assert all(not r.is_human for r in roster)
+
+
+def test_add_and_remove_players():
+    s = _watch(n=3, stack=500)
+    s.add_bot("montecarlo", name="NovoBot")
+    roster = s.view().roster
+    assert len(roster) == 4
+    assert any(r.name == "NovoBot" and r.level == "montecarlo" for r in roster)
+    s.remove_player(0)
+    assert len(s.view().roster) == 3
+
+
+def test_add_bot_rejects_full_table_and_invalid_level():
+    cheia = _watch(n=6)  # mesa 6-max lotada
+    with pytest.raises(InvalidActionError):
+        cheia.add_bot("montecarlo")
+    s = _watch(n=3)
+    with pytest.raises(InvalidActionError):
+        s.add_bot("inexistente")
+
+
+def test_remove_keeps_minimum_two_players():
+    s = _watch(n=3)
+    s.remove_player(0)  # 3 -> 2 ok
+    with pytest.raises(InvalidActionError):
+        s.remove_player(0)  # 2 -> 1 proibido
+
+
+def test_cannot_remove_the_human():
+    s = _session()  # modo jogar: humano na cadeira 0
+    assert s.view().roster[0].is_human
+    with pytest.raises(InvalidActionError):
+        s.remove_player(0)
+
+
+def test_added_bot_gets_unique_name():
+    s = _watch(n=3)  # B0, B1, B2
+    s.add_bot("random", name="B0")  # colide -> deve virar único
+    names = [r.name for r in s.view().roster]
+    assert len(names) == len(set(names))
+
+
 # ---------- bot adaptativo (aprende o humano) ----------
 def test_adaptive_session_learns_from_the_human():
     cfg = SessionConfig(

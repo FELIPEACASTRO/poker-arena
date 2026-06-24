@@ -7,8 +7,7 @@ permite medir "a IA vence os baselines em N mãos".
 
 from __future__ import annotations
 
-import random
-
+from .cards import make_rng
 from .game import Hand, Strategy
 from .player import Player
 
@@ -25,7 +24,8 @@ class Table:
         self.sb = small_blind
         self.bb = big_blind
         self.button = 0
-        self._rng = random.Random(seed)
+        self._seed = seed
+        self._rng = make_rng(seed)
         self.hand_count = 0
         self._last_seated = 0
 
@@ -48,7 +48,8 @@ class Table:
             button=self.button % len(seated),
             small_blind=self.sb,
             big_blind=self.bb,
-            seed=self._rng.randrange(1 << 30),
+            # produção (sem seed): cada mão usa entropia do SO (cripto, imprevisível)
+            seed=None if self._seed is None else self._rng.randrange(1 << 30),
         )
         hand.start()
         return hand

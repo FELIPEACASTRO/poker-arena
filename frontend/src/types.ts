@@ -90,7 +90,7 @@ export interface ChipSeries {
   seat: number
   name: string
   level: string
-  points: number[]
+  points: (number | null)[] // null nas mãos antes do jogador entrar
 }
 export interface WatchStats {
   bots: BotStat[]
@@ -111,9 +111,23 @@ export interface TableState {
   legal: Legal | null
   last_actions: ActionLog[]
   winners: number[] | null
+  roster?: RosterSeat[]
   opponent_read?: OpponentRead | null
   analysis?: Analysis | null
   watch_stats?: WatchStats | null
+}
+
+export interface RosterSeat {
+  seat: number
+  name: string
+  level: string // "human" ou o nível do bot
+  stack: number
+  is_human: boolean
+}
+export interface AddPlayer {
+  level: string
+  name?: string
+  buy_in?: number | null
 }
 
 export interface BotSpec {

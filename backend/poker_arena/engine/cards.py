@@ -11,6 +11,16 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum
 
 
+def make_rng(seed: int | None) -> random.Random:
+    """RNG do jogo.
+
+    - Em produção (seed=None): `SystemRandom`, que sorteia da ENTROPIA do sistema
+      operacional (os.urandom) — aleatoriedade criptográfica, imprevisível.
+    - Nos testes (seed definido): `Random(seed)`, reproduzível pra fixar uma mão.
+    """
+    return random.Random(seed) if seed is not None else random.SystemRandom()
+
+
 class Rank(IntEnum):
     TWO = 2
     THREE = 3
@@ -51,7 +61,7 @@ class Deck:
     """Baralho de 52 cartas com embaralhamento determinístico por seed."""
 
     def __init__(self, seed: int | None = None):
-        self._rng = random.Random(seed)
+        self._rng = make_rng(seed)
         self.cards: list[Card] = [Card(r, s) for s in Suit for r in Rank]
 
     def shuffle(self) -> None:

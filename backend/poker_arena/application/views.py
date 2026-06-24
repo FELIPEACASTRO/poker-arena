@@ -6,7 +6,7 @@ isto independente de Pydantic é o que mantém a aplicação desacoplada da web.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -100,6 +100,17 @@ class HumanAnalysisView:
 
 
 @dataclass(frozen=True)
+class RosterSeatView:
+    """Uma cadeira do elenco atual da mesa (para entrar/sair de jogadores)."""
+
+    seat: int  # índice na mesa (table.players)
+    name: str
+    level: str  # "human" ou o nível do bot
+    stack: int
+    is_human: bool
+
+
+@dataclass(frozen=True)
 class BotStatView:
     """Estatística ao vivo de um bot no modo laboratório."""
 
@@ -121,7 +132,7 @@ class ChipSeriesView:
     seat: int
     name: str
     level: str
-    points: list[int]
+    points: list[int | None]  # None nas mãos antes do jogador entrar
 
 
 @dataclass(frozen=True)
@@ -147,6 +158,7 @@ class TableStateView:
     legal: LegalView | None
     last_actions: list[ActionView]
     winners: list[int] | None
+    roster: list[RosterSeatView] = field(default_factory=list)
     opponent_read: OpponentReadView | None = None
     analysis: HumanAnalysisView | None = None
     watch_stats: WatchStatsView | None = None

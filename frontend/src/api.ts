@@ -1,4 +1,4 @@
-import type { CreateConfig, GameLog, GameSummary, TableState } from './types'
+import type { AddPlayer, CreateConfig, GameLog, GameSummary, TableState } from './types'
 
 const BASE = import.meta.env.VITE_API ?? 'http://127.0.0.1:8000'
 
@@ -32,6 +32,16 @@ export const api = {
 
   step: (id: string) =>
     fetch(`${BASE}/tables/${id}/step`, POST).then((r) => asJson<TableState>(r)),
+
+  addPlayer: (id: string, body: AddPlayer) =>
+    fetch(`${BASE}/tables/${id}/players`, { ...POST, body: JSON.stringify(body) }).then((r) =>
+      asJson<TableState>(r),
+    ),
+
+  removePlayer: (id: string, seat: number) =>
+    fetch(`${BASE}/tables/${id}/players/${seat}`, { method: 'DELETE' }).then((r) =>
+      asJson<TableState>(r),
+    ),
 
   getLevels: () =>
     fetch(`${BASE}/levels`).then((r) => asJson<{ levels: string[] }>(r)),

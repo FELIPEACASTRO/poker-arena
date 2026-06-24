@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { api } from './api'
-import type { CreateConfig, TableState } from './types'
+import type { AddPlayer, CreateConfig, TableState } from './types'
 
 interface GameState {
   state: TableState | null
@@ -17,6 +17,8 @@ interface GameState {
   act: (type: string, amount?: number) => Promise<void>
   next: () => Promise<void>
   step: () => Promise<void>
+  addPlayer: (body: AddPlayer) => Promise<void>
+  removePlayer: (seat: number) => Promise<void>
   togglePause: () => void
   leave: () => void
 }
@@ -62,6 +64,8 @@ export const useGame = create<GameState>((set, get) => {
     act: (type, amount = 0) => run(() => api.act(id(), type, amount)),
     next: () => run(() => api.nextHand(id())),
     step: () => run(() => api.step(id())),
+    addPlayer: (body) => run(() => api.addPlayer(id(), body)),
+    removePlayer: (seat) => run(() => api.removePlayer(id(), seat)),
     togglePause: () => set((s) => ({ paused: !s.paused })),
     leave: () => set({ state: null, error: null, watch: false, paused: false, ...FRESH }),
   }

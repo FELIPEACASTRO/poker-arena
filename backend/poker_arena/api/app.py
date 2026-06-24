@@ -25,7 +25,12 @@ from ..application import (
 from ..engine.game import IllegalActionError
 from .dependencies import get_repository
 from .mappers import to_config, to_response
-from .schemas import ActionRequest, CreateTableRequest, TableStateResponse
+from .schemas import (
+    ActionRequest,
+    AddPlayerRequest,
+    CreateTableRequest,
+    TableStateResponse,
+)
 
 RepoDep = Annotated[SessionRepository, Depends(get_repository)]
 
@@ -113,6 +118,26 @@ def create_app() -> FastAPI:
         session = _get(repo, table_id)
         try:
             session.step()  # avança uma jogada de bot (modo assistir)
+        except InvalidActionError as e:
+            raise HTTPException(400, str(e)) from e
+        return to_response(session.view())
+
+    @app.post("/tables/{table_id}/players", response_model=TableStateResponse)
+    def add_player(
+        table_id: str, req: AddPlayerRequest, repo: RepoDep
+    ) -> TableStateResponse:
+        session = _get(repo, table_id)
+        try:
+            session.add_bot(req.level, name=req.name, buy_in=req.buy_in)
+        except InvalidActionError as e:
+            raise HTTPException(400, str(e)) from e
+        return to_response(session.view())
+
+    @app.delete("/tables/{table_id}/players/{seat}", response_model=TableStateResponse)
+    def remove_player(table_id: str, seat: int, repo: RepoDep) -> TableStateResponse:
+        session = _get(repo, table_id)
+        try:
+            session.remove_player(seat)
         except InvalidActionError as e:
             raise HTTPException(400, str(e)) from e
         return to_response(session.view())

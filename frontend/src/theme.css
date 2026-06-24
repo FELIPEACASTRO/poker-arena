@@ -144,6 +144,7 @@ body {
   min-height: 0;
   display: grid;
   grid-template-columns: 290px minmax(0, 1fr) 290px;
+  grid-template-rows: minmax(0, 1fr); /* a linha estica -> a mesa usa toda a altura */
   gap: var(--s4);
   padding: var(--s3) var(--s5) 0;
   overflow: hidden;
@@ -185,7 +186,7 @@ body {
   height: 100%;
   width: auto;
   max-width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2.2 / 1; /* mesa larga: aproveita o espaço e separa os assentos */
   margin: 0;
 }
 
@@ -200,21 +201,21 @@ body {
 .lab-stage .card-suit { font-size: 10px; }
 
 /* topo/base ficam FORA da mesa (acima/abaixo do feltro) -> não tampam o centro */
-.lab-stage .slot-bottom { left: 50%; bottom: -5%; transform: translateX(-50%); }
-.lab-stage .slot-top { left: 50%; top: -5%; transform: translateX(-50%); }
-.lab-stage .slot-left-high { left: -1%; top: 12%; }
-.lab-stage .slot-left-low { left: -1%; bottom: 12%; }
-.lab-stage .slot-right-high { right: -1%; top: 12%; }
-.lab-stage .slot-right-low { right: -1%; bottom: 12%; }
+.lab-stage .slot-bottom { left: 50%; bottom: -12%; transform: translateX(-50%); }
+.lab-stage .slot-top { left: 50%; top: -10%; transform: translateX(-50%); }
+.lab-stage .slot-left-high { left: -1%; top: 4%; }
+.lab-stage .slot-left-low { left: -1%; bottom: 4%; }
+.lab-stage .slot-right-high { right: -1%; top: 4%; }
+.lab-stage .slot-right-low { right: -1%; bottom: 4%; }
 
 /* board e pote no centro, sempre por cima */
-.lab-stage .board { top: 42%; z-index: 4; }
-.lab-stage .pot-badge { top: 58%; z-index: 4; }
+.lab-stage .board { top: 41%; z-index: 4; }
+.lab-stage .pot-badge { top: 57%; z-index: 4; }
 .lab-stage .board-empty { z-index: 4; }
 .lab-stage .seat-slot { z-index: 3; }
 
-/* mais respiro vertical no palco pra os assentos de topo/base caberem fora do feltro */
-.lab-stage { padding: 62px 8px; }
+/* respiro vertical no palco pra os assentos de topo/base caberem fora do feltro */
+.lab-stage { padding: 44px 8px; }
 
 /* barra de ação compacta no rodapé */
 .lab-main .actionbar {

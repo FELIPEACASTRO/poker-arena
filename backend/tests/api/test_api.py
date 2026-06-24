@@ -29,6 +29,14 @@ def test_health(client):
     assert r.json() == {"status": "ok"}
 
 
+def test_levels_lists_available(client):
+    r = client.get("/levels")
+    assert r.status_code == 200
+    levels = r.json()["levels"]
+    assert {"random", "heuristic", "montecarlo"} <= set(levels)
+    assert "expert" not in levels  # sem modelo treinado no ambiente de teste
+
+
 def test_create_table_returns_state(client):
     r = _create(client)
     assert r.status_code == 201

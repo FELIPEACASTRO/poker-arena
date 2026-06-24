@@ -32,4 +32,7 @@ export const api = {
 
   step: (id: string) =>
     fetch(`${BASE}/tables/${id}/step`, POST).then((r) => asJson<TableState>(r)),
+
+  getLevels: () =>
+    fetch(`${BASE}/levels`).then((r) => asJson<{ levels: string[] }>(r)),
 }

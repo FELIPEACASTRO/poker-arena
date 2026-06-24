@@ -13,11 +13,13 @@ from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconn
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..application import (
+    ExpertUnavailable,
     GameSession,
     InvalidActionError,
     SessionNotFound,
     SessionRepository,
     UnknownBotLevel,
+    available_levels,
     build_session,
 )
 from ..engine.game import IllegalActionError
@@ -52,11 +54,16 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/levels")
+    def levels() -> dict[str, list[str]]:
+        # Expert só aparece quando o modelo treinado existe (ready-to-plug)
+        return {"levels": list(available_levels())}
+
     @app.post("/tables", response_model=TableStateResponse, status_code=201)
     def create_table(req: CreateTableRequest, repo: RepoDep) -> TableStateResponse:
         try:
             session = build_session(to_config(req), seed=req.seed)
-        except UnknownBotLevel as e:
+        except (UnknownBotLevel, ExpertUnavailable) as e:
             raise HTTPException(400, str(e)) from e
         repo.add(session)
         return to_response(session.view())

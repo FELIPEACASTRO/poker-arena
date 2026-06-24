@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '../api'
 import type { BotSpec, CreateConfig } from '../types'
 
 const LEVELS = [
   { id: 'random', label: '🟢 Iniciante — joga no chute' },
   { id: 'heuristic', label: '🟡 Amador — joga por regras' },
   { id: 'montecarlo', label: '🟠 Intermediário — calcula chances' },
+  { id: 'expert', label: '🔴 Expert — IA treinada (solver + self-play)' },
 ]
 const NAMES = ['Luna', 'Caio', 'Sofia', 'Alex', 'Maya', 'Rex']
 
@@ -26,6 +28,13 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
     'heuristic',
   ])
   const [stack, setStack] = useState(1000)
+  const [available, setAvailable] = useState<string[]>(['random', 'heuristic', 'montecarlo'])
+
+  // o Expert só aparece quando o modelo treinado existe no backend
+  useEffect(() => {
+    api.getLevels().then((r) => setAvailable(r.levels)).catch(() => {})
+  }, [])
+  const levelOptions = LEVELS.filter((l) => available.includes(l.id))
 
   function pickMode(m: 'play' | 'watch') {
     setMode(m)
@@ -95,7 +104,7 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
                   setLevels(next)
                 }}
               >
-                {LEVELS.map((l) => (
+                {levelOptions.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.label}
                   </option>

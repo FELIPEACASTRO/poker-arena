@@ -3,7 +3,14 @@
 Não conhece HTTP/Pydantic. A API (camada externa) é que adapta isto para a web.
 """
 
-from .bot_factory import LEVELS, UnknownBotLevel, create_bot
+from .bot_factory import (
+    LEVELS,
+    ExpertUnavailable,
+    UnknownBotLevel,
+    available_levels,
+    create_bot,
+    expert_model_path,
+)
 from .game_session import (
     BotSpec,
     GameSession,
@@ -21,6 +28,9 @@ from .views import ActionView, LegalView, SeatView, TableStateView
 __all__ = [
     "LEVELS",
     "ActionView",
+    "ExpertUnavailable",
+    "available_levels",
+    "expert_model_path",
     "BotSpec",
     "GameSession",
     "InMemorySessionRepository",

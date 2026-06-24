@@ -192,3 +192,40 @@ body {
 .ico-btn:hover { color: var(--text); background: var(--surface-3); }
 
 :focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--r-sm); }
+
+/* ---------------- painel "quem mais ganha" ---------------- */
+.winstats {
+  max-width: min(560px, 94vw);
+  margin: var(--s4) auto 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s4) var(--s5);
+}
+.winstats-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s3); }
+.winstats-title { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--text); }
+.winstats-title svg { color: var(--accent); }
+.winstats-hands { font-size: 12px; color: var(--text-faint); }
+.winstats-empty { font-size: 13px; color: var(--text-faint); margin: 4px 0; }
+
+.winstats-leader {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
+  border-radius: var(--r-md);
+  padding: 9px 13px;
+  margin-bottom: var(--s4);
+}
+.winstats-leader svg { color: var(--accent); flex: none; }
+.winstats-leader-name { font-weight: 600; font-size: 15px; }
+.winstats-leader-pct { font-size: 18px; font-weight: 600; color: var(--text); }
+.winstats-leader-sub { margin-left: auto; font-size: 11px; color: var(--text-dim); }
+
+.winstats-list { display: flex; flex-direction: column; gap: 8px; }
+.winstats-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.winstats-row.is-lead .winstats-name { color: var(--text); font-weight: 500; }
+.winstats-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.winstats-name { width: 96px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.winstats-bar { flex: 1; height: 7px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; }
+.winstats-bar span { display: block; height: 100%; border-radius: var(--r-pill); transition: width var(--t) var(--ease); }
+.winstats-pct { width: 40px; text-align: right; color: var(--text); font-size: 12px; }

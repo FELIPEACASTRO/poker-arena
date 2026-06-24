@@ -3,6 +3,7 @@ import { Cpu, FlaskConical, Gamepad2, LogOut } from 'lucide-react'
 import ActionBar from './components/ActionBar'
 import PokerTable from './components/PokerTable'
 import SetupScreen from './components/SetupScreen'
+import WinStats from './components/WinStats'
 import { useGame } from './store'
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
                 : ' → jogo equilibrado, por enquanto.'}
           </div>
         )}
+        <WinStats />
         <PokerTable state={state} />
         <ActionBar
           state={state}

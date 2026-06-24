@@ -60,6 +60,7 @@ export default function WinStats() {
           >
             <span className="winstats-dot" style={{ background: r.color }} />
             <span className="winstats-name">{r.name}</span>
+            <span className="winstats-chips mono">{r.chips.toLocaleString('pt-BR')}</span>
             <span className="winstats-bar">
               <motion.span
                 animate={{ width: `${r.pct}%` }}

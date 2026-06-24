@@ -357,10 +357,11 @@ body {
 .winstats-leader-sub { margin-left: auto; font-size: 11px; color: var(--text-dim); }
 
 .winstats-list { display: flex; flex-direction: column; gap: 8px; }
-.winstats-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.winstats-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .winstats-row.is-lead .winstats-name { color: var(--text); font-weight: 500; }
 .winstats-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-.winstats-name { width: 96px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.winstats-name { width: 46px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.winstats-chips { width: 50px; text-align: right; font-size: 11px; color: var(--text-faint); white-space: nowrap; flex: none; }
 .winstats-bar { flex: 1; height: 7px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; }
 .winstats-bar span { display: block; height: 100%; border-radius: var(--r-pill); transition: width var(--t) var(--ease); }
 .winstats-pct { width: 40px; text-align: right; color: var(--text); font-size: 12px; }

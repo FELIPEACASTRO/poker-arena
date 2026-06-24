@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Cpu, FlaskConical, Gamepad2, LogOut } from 'lucide-react'
+import { Cpu, FlaskConical, Gamepad2, GraduationCap, LogOut } from 'lucide-react'
 import ActionBar from './components/ActionBar'
 import AIMind from './components/AIMind'
+import GuideScreen from './components/GuideScreen'
 import LabHint from './components/LabHint'
 import PokerTable from './components/PokerTable'
 import SetupScreen from './components/SetupScreen'
@@ -12,6 +13,7 @@ import { useGame } from './store'
 export default function App() {
   const { state, watch, paused, busy, error, stepDelay, create, act, next, step, togglePause, leave } =
     useGame()
+  const [guideOpen, setGuideOpen] = useState(false)
 
   // modo laboratório: avança sozinho no ritmo escolhido (dá pra acompanhar e pensar)
   useEffect(() => {
@@ -62,6 +64,14 @@ export default function App() {
                     {watch ? 'Modo laboratório' : 'Você joga'}
                   </span>
                 </span>
+                <button
+                  className="btn btn-ghost guide-open"
+                  onClick={() => setGuideOpen(true)}
+                  title="Guia dos cérebros"
+                >
+                  <GraduationCap size={16} />
+                  <span className="guide-open-label">Cérebros</span>
+                </button>
                 <button className="ico-btn" onClick={leave} aria-label="Sair da mesa">
                   <LogOut size={16} />
                 </button>
@@ -112,6 +122,10 @@ export default function App() {
               />
             </main>
           </div>
+
+          <AnimatePresence>
+            {guideOpen && <GuideScreen onClose={() => setGuideOpen(false)} />}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>

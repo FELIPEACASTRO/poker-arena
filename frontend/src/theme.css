@@ -740,3 +740,109 @@ kbd {
 .labhint-text b { color: var(--text); font-weight: 500; }
 .labhint-x { flex: none; width: 26px; height: 26px; border: none; background: transparent; }
 .labhint-x:hover { background: rgba(255, 255, 255, 0.06); }
+
+/* ============================================================
+   Guia "Os cérebros da Arena" (estilo Use a Cabeça)
+   ============================================================ */
+.guide-open { padding: 8px 12px; }
+@media (max-width: 640px) { .guide-open-label { display: none; } }
+
+.guide-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(4, 7, 11, 0.74);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 24px 16px; overflow-y: auto;
+}
+.guide-modal {
+  width: min(880px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-2);
+  padding: var(--s5) var(--s6);
+  margin: auto;
+}
+.guide-head { display: flex; align-items: center; gap: var(--s3); }
+.guide-head h1 { flex: 1; display: flex; align-items: center; gap: 9px; font-size: 21px; font-weight: 600; margin: 0; }
+.guide-head h1 > svg { color: var(--accent); }
+.guide-sub {
+  font-family: var(--mono); font-size: 10px; color: var(--accent);
+  border: 1px solid var(--accent-soft); background: var(--accent-soft);
+  padding: 2px 8px; border-radius: var(--r-sm); letter-spacing: 0.08em;
+}
+.guide-intro { font-size: 14px; color: var(--text-dim); line-height: 1.7; margin: var(--s4) 0 var(--s5); }
+.guide-intro b { color: var(--text); }
+.guide-intro i { color: var(--accent); }
+
+.guide-brain {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--c);
+  border-radius: var(--r-lg);
+  padding: var(--s4) var(--s5);
+  margin-bottom: var(--s4);
+  background: var(--surface-2);
+}
+.guide-brain-head { display: flex; align-items: center; gap: var(--s4); margin-bottom: var(--s3); }
+.guide-art {
+  color: var(--c); flex: none; width: 72px; height: 72px;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--c) 15%, transparent);
+  border-radius: var(--r-lg);
+}
+.guide-brain-id h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 18px; font-weight: 600; margin: 0; }
+.guide-tag {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--c); border: 1px solid var(--c); border-radius: var(--r-pill); padding: 2px 9px;
+}
+.guide-fala { font-style: italic; color: var(--text); font-size: 14px; margin: 6px 0 0; }
+
+.guide-como { font-size: 13.5px; color: var(--text-dim); line-height: 1.65; margin: 0 0 var(--s3); }
+.guide-como b, .guide-vidro b { color: var(--text); }
+.guide-imagine { display: flex; gap: 10px; background: var(--accent-soft); border-radius: var(--r-md); padding: 11px 14px; margin-bottom: var(--s3); }
+.guide-imagine > svg { color: var(--accent); flex: none; margin-top: 2px; }
+.guide-imagine b { font-size: 12px; color: var(--accent); }
+.guide-imagine p { font-size: 13px; color: var(--text); line-height: 1.6; margin: 3px 0 0; }
+
+.guide-pf { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-bottom: var(--s3); }
+.guide-pf h3 { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 0 0 6px; }
+.guide-fortes h3 { color: var(--pos); }
+.guide-fracos h3 { color: var(--neg); }
+.guide-pf ul { margin: 0; padding-left: 18px; }
+.guide-pf li { font-size: 12.5px; color: var(--text-dim); line-height: 1.5; margin-bottom: 5px; }
+
+.guide-vidro {
+  font-size: 12.5px; color: var(--text-dim); display: flex; align-items: center; gap: 6px;
+  margin: 0; padding-top: var(--s3); border-top: 1px solid var(--border);
+}
+.guide-vidro > svg { color: var(--accent); flex: none; }
+
+.guide-power { display: flex; gap: 12px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r-lg); padding: var(--s4) var(--s5); margin-bottom: var(--s4); }
+.guide-power > svg { color: var(--accent); flex: none; margin-top: 2px; }
+.guide-power b { color: var(--accent); }
+.guide-power p { font-size: 13px; color: var(--text); line-height: 1.65; margin: 4px 0 0; }
+.guide-power p b, .guide-power p i { color: var(--text); }
+
+.guide-qa, .guide-exercise, .guide-rank { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s4) var(--s5); margin-bottom: var(--s4); }
+.guide-qa h2, .guide-exercise h2, .guide-rank h2 { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; margin: 0 0 var(--s3); }
+.guide-qa h2 svg, .guide-exercise h2 svg, .guide-rank h2 svg { color: var(--accent); }
+.guide-qa p { font-size: 13px; color: var(--text-dim); line-height: 1.6; margin: 0 0 var(--s3); }
+.guide-qa p:last-child { margin-bottom: 0; }
+.guide-qa b { color: var(--text); }
+
+.guide-exercise ol { margin: var(--s2) 0 0; padding-left: 20px; }
+.guide-exercise li { font-size: 13px; color: var(--text-dim); line-height: 1.9; }
+.guide-ans { filter: blur(5px); background: var(--surface-3); border-radius: 4px; padding: 1px 7px; cursor: pointer; color: var(--text); font-weight: 500; transition: filter var(--t-fast) var(--ease); }
+.guide-ans:hover { filter: none; }
+
+.guide-rank p { font-size: 16px; font-weight: 600; margin: 0 0 var(--s2); }
+.guide-rank-note { font-size: 12.5px !important; font-weight: 400 !important; color: var(--text-dim) !important; line-height: 1.6; }
+.guide-rank-note b { color: var(--text); }
+
+.guide-back { width: 100%; justify-content: center; margin-top: var(--s2); }
+
+@media (max-width: 640px) {
+  .guide-modal { padding: var(--s4); }
+  .guide-pf { grid-template-columns: 1fr; }
+  .guide-brain-head { flex-direction: column; align-items: flex-start; }
+}

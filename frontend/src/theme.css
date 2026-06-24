@@ -380,3 +380,23 @@ body {
 .btn-start { background: var(--accent); color: #04201c; border: none; border-radius: var(--r-md); font-weight: 600; }
 .btn-start:hover { background: var(--accent-2); }
 .setup-card .error { justify-content: center; }
+
+/* ============================================================
+   Fase 2 — vida (animação). Pulso da vez + respeito a reduced-motion.
+   (deals, fichas, reorder do ranking e transições ficam no framer-motion)
+   ============================================================ */
+@keyframes turnPulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow-1); }
+  50% { box-shadow: 0 0 0 5px var(--accent-soft), var(--shadow-1); }
+}
+.seat.is-turn .seat-plate { animation: turnPulse 1.5s ease-in-out infinite; }
+
+.board-card { perspective: 600px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

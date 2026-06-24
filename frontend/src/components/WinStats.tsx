@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { Crown, Trophy } from 'lucide-react'
 import { useGame } from '../store'
 
@@ -54,14 +55,23 @@ export default function WinStats() {
 
           <div className="winstats-list">
             {rows.map((r, i) => (
-              <div key={r.seat} className={'winstats-row' + (i === 0 ? ' is-lead' : '')}>
+              <motion.div
+                layout
+                key={r.seat}
+                transition={{ type: 'spring', stiffness: 480, damping: 38 }}
+                className={'winstats-row' + (i === 0 ? ' is-lead' : '')}
+              >
                 <span className="winstats-dot" style={{ background: r.color }} />
                 <span className="winstats-name">{r.name}</span>
                 <span className="winstats-bar">
-                  <span style={{ width: `${r.pct}%`, background: r.color }} />
+                  <motion.span
+                    animate={{ width: `${r.pct}%` }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 26 }}
+                    style={{ background: r.color }}
+                  />
                 </span>
                 <span className="winstats-pct mono">{r.pct}%</span>
-              </div>
+              </motion.div>
             ))}
           </div>
         </>

@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import type { TableState } from '../types'
 import { CardFace } from './Card'
 import SeatView from './Seat'
@@ -22,16 +23,30 @@ export default function PokerTable({ state }: { state: TableState }) {
             <span className="board-empty">— aguardando as cartas —</span>
           ) : (
             state.board.map((c, i) => (
-              <div key={i} className="board-card" style={{ animationDelay: `${i * 70}ms` }}>
+              <motion.div
+                key={c}
+                className="board-card"
+                initial={{ opacity: 0, y: -16, rotateY: 55, scale: 0.82 }}
+                animate={{ opacity: 1, y: 0, rotateY: 0, scale: 1 }}
+                transition={{ delay: i * 0.08, type: 'spring', stiffness: 320, damping: 22 }}
+              >
                 <CardFace code={c} />
-              </div>
+              </motion.div>
             ))
           )}
         </div>
 
         <div className="pot-badge">
           <span className="pot-label">POTE</span>
-          <span className="pot-value">{state.pot.toLocaleString('pt-BR')}</span>
+          <motion.span
+            key={state.pot}
+            className="pot-value"
+            initial={{ scale: 1.28 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 16 }}
+          >
+            {state.pot.toLocaleString('pt-BR')}
+          </motion.span>
         </div>
 
         {state.seats.map((s, i) => (

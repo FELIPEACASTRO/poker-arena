@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { CircleUserRound } from 'lucide-react'
 import type { Seat } from '../types'
 import { CardBack, CardFace } from './Card'
@@ -46,7 +47,17 @@ export default function SeatView({ seat }: { seat: Seat }) {
         </div>
         <div className="seat-kind">{LABEL[level] ?? level}</div>
         <div className="seat-stack mono">{seat.stack.toLocaleString('pt-BR')}</div>
-        {seat.current_bet > 0 && <div className="seat-bet mono">{seat.current_bet}</div>}
+        {seat.current_bet > 0 && (
+          <motion.div
+            key={seat.current_bet}
+            className="seat-bet mono"
+            initial={{ scale: 0.4, opacity: 0, y: -4 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 520, damping: 20 }}
+          >
+            {seat.current_bet}
+          </motion.div>
+        )}
       </div>
     </div>
   )

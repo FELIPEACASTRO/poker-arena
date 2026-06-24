@@ -12,6 +12,7 @@ from .encoder import (
     legal_mask,
     to_action,
 )
+from .evaluate import eval_bb100
 from .self_play_env import OpponentPolicy, SelfPlayEnv, random_opponent
 
 __all__ = [
@@ -21,6 +22,7 @@ __all__ = [
     "OpponentPolicy",
     "SelfPlayEnv",
     "encode",
+    "eval_bb100",
     "legal_mask",
     "random_opponent",
     "to_action",

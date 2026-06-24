@@ -83,7 +83,8 @@ class SelfPlayEnv:
             action_index = 1 if mask[1] else 0
         self._hand.apply(to_action(obs, action_index))
         if self._advance_to_agent():  # mão acabou
-            reward = float(self._agent.stack - self._start)
+            # recompensa em BIG BLINDS (não em fichas cruas) -> PPO estável
+            reward = float(self._agent.stack - self._start) / self.bb
             return [0.0] * FEATURE_SIZE, [False] * N_ACTIONS, reward, True
         nobs = observation_for(self._hand)
         return encode(nobs), legal_mask(nobs), 0.0, False

@@ -140,61 +140,82 @@ export default function ActionBar({
       )}
 
       {state.phase === 'human_turn' && legal && (
-        <div className="actions">
-          {legal.actions.includes('fold') && (
-            <button className="btn btn-fold" disabled={busy} onClick={() => onAction('fold')}>
-              Desistir <kbd>F</kbd>
-            </button>
-          )}
-          {legal.actions.includes('check') && (
-            <button className="btn" disabled={busy} onClick={() => onAction('check')}>
-              Passar <kbd>C</kbd>
-            </button>
-          )}
-          {legal.actions.includes('call') && (
-            <button className="btn btn-call" disabled={busy} onClick={() => onAction('call')}>
-              Pagar <b className="mono">{legal.to_call}</b> <kbd>C</kbd>
-            </button>
-          )}
+        <div className="actions-v2">
           {canRaise && (
-            <div className="raise-group">
-              <div className="raise-presets">
-                <button className="raise-chip" onClick={() => setRaiseTo(sizeTo(0.5))}>
-                  ½ pote
-                </button>
-                <button className="raise-chip" onClick={() => setRaiseTo(sizeTo(0.75))}>
-                  ¾ pote
-                </button>
-                <button className="raise-chip" onClick={() => setRaiseTo(sizeTo(1))}>
-                  pote
-                </button>
-                <button className="raise-chip" onClick={() => setRaiseTo(maxR)}>
-                  máx
-                </button>
+            <div className="betsize">
+              <div className="betsize-tabs">
+                <button onClick={() => setRaiseTo(minR)}>Min</button>
+                <button onClick={() => setRaiseTo(sizeTo(0.5))}>½ Pote</button>
+                <button onClick={() => setRaiseTo(sizeTo(1))}>Pote</button>
+                <button onClick={() => setRaiseTo(sizeTo(2.5))}>2.5x</button>
+                <button onClick={() => setRaiseTo(maxR)}>Máx</button>
               </div>
-              <div className="raise-row">
+              <div className="betsize-step">
+                <button
+                  className="step-btn"
+                  onClick={() => setRaiseTo(clamp(raiseTo - 20, minR, maxR))}
+                  aria-label="Diminuir aposta"
+                >
+                  −
+                </button>
                 <input
-                  type="range"
+                  type="number"
+                  className="mono"
+                  value={raiseTo}
                   min={minR}
                   max={maxR}
-                  value={raiseTo}
-                  onChange={(e) => setRaiseTo(Number(e.target.value))}
+                  onChange={(e) => setRaiseTo(clamp(Number(e.target.value), minR, maxR))}
                 />
                 <button
-                  className="btn btn-raise"
-                  disabled={busy}
-                  onClick={() => onAction('raise', raiseTo)}
+                  className="step-btn"
+                  onClick={() => setRaiseTo(clamp(raiseTo + 20, minR, maxR))}
+                  aria-label="Aumentar aposta"
                 >
-                  Aumentar p/ <b className="mono">{raiseTo}</b> <kbd>R</kbd>
+                  +
                 </button>
               </div>
+              <p className="betsize-total">
+                Aposta total: <b className="mono">{raiseTo}</b>
+              </p>
             </div>
           )}
-          {legal.actions.includes('all_in') && (
-            <button className="btn btn-allin" disabled={busy} onClick={() => onAction('all_in')}>
-              All-in <kbd>A</kbd>
-            </button>
-          )}
+
+          <div className="actbtns">
+            {legal.actions.includes('fold') && (
+              <button className="actbtn act-fold" disabled={busy} onClick={() => onAction('fold')}>
+                <span className="actbtn-label">Desistir</span>
+                <kbd>F</kbd>
+              </button>
+            )}
+            {legal.actions.includes('check') && (
+              <button className="actbtn act-call" disabled={busy} onClick={() => onAction('check')}>
+                <span className="actbtn-label">Passar</span>
+                <kbd>C</kbd>
+              </button>
+            )}
+            {legal.actions.includes('call') && (
+              <button className="actbtn act-call" disabled={busy} onClick={() => onAction('call')}>
+                <span className="actbtn-label">Pagar</span>
+                <span className="actbtn-val mono">{legal.to_call}</span>
+              </button>
+            )}
+            {canRaise && (
+              <button
+                className="actbtn act-raise"
+                disabled={busy}
+                onClick={() => onAction('raise', raiseTo)}
+              >
+                <span className="actbtn-label">Aumentar p/</span>
+                <span className="actbtn-val mono">{raiseTo}</span>
+              </button>
+            )}
+            {legal.actions.includes('all_in') && !canRaise && (
+              <button className="actbtn act-allin" disabled={busy} onClick={() => onAction('all_in')}>
+                <span className="actbtn-label">All-in</span>
+                <kbd>A</kbd>
+              </button>
+            )}
+          </div>
         </div>
       )}
 

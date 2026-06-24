@@ -584,6 +584,70 @@ body {
 .speed-ctrl svg { color: var(--accent); flex: none; }
 .speed-ctrl input[type="range"] { width: 116px; accent-color: var(--accent); }
 .speed-val { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+
+/* ============================================================
+   Redesign v2 — barra de ação futurista (bet-sizing + botões biselados)
+   ============================================================ */
+.actions-v2 { display: flex; flex-direction: column; gap: var(--s3); }
+
+.betsize-tabs { display: flex; gap: 6px; justify-content: center; }
+.betsize-tabs button {
+  flex: 1; max-width: 96px;
+  font-family: var(--font); font-size: 12px; font-weight: 500;
+  color: var(--text-dim); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 6px 8px; cursor: pointer;
+  transition: color var(--t-fast), border-color var(--t-fast);
+}
+.betsize-tabs button:hover { color: var(--accent); border-color: var(--accent); }
+
+.betsize-step { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.step-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid var(--border-2); background: var(--surface-2);
+  color: var(--text); font-size: 20px; line-height: 1; cursor: pointer;
+  display: grid; place-items: center; transition: all var(--t-fast);
+}
+.step-btn:hover { border-color: var(--accent); color: var(--accent); }
+.betsize-step input {
+  width: 150px; text-align: center; font-size: 19px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--border-2);
+  border-radius: var(--r-md); padding: 7px 8px; color: var(--text);
+}
+.betsize-step input:focus { border-color: var(--accent); outline: none; }
+.betsize-total { text-align: center; font-size: 12px; color: var(--text-dim); margin: 0; }
+.betsize-total b { color: var(--text); }
+
+.actbtns { display: flex; gap: var(--s3); }
+.actbtn {
+  flex: 1; min-width: 130px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 13px 18px;
+  font-family: var(--font); font-weight: 600; font-size: 14px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border: 1.5px solid; border-radius: var(--r-md);
+  clip-path: polygon(11px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 11px);
+  cursor: pointer; position: relative;
+  transition: background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), transform var(--t-fast);
+}
+.actbtn:active { transform: translateY(1px); }
+.actbtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.actbtn-val { font-size: 18px; font-weight: 700; }
+.actbtn kbd { position: absolute; top: 6px; right: 9px; opacity: 0.5; }
+
+.act-fold { color: #fb7185; border-color: rgba(251, 113, 133, 0.55); background: linear-gradient(180deg, rgba(251, 113, 133, 0.16), rgba(251, 113, 133, 0.05)); }
+.act-fold:hover:not(:disabled) { background: rgba(251, 113, 133, 0.24); box-shadow: 0 0 20px rgba(251, 113, 133, 0.3); }
+.act-call { color: var(--accent); border-color: rgba(45, 212, 191, 0.55); background: linear-gradient(180deg, rgba(45, 212, 191, 0.16), rgba(45, 212, 191, 0.05)); }
+.act-call:hover:not(:disabled) { background: rgba(45, 212, 191, 0.24); box-shadow: 0 0 20px rgba(45, 212, 191, 0.3); }
+.act-raise { color: #e7c06a; border-color: rgba(214, 179, 94, 0.6); background: linear-gradient(180deg, rgba(214, 179, 94, 0.18), rgba(214, 179, 94, 0.05)); }
+.act-raise:hover:not(:disabled) { background: rgba(214, 179, 94, 0.26); box-shadow: 0 0 20px rgba(214, 179, 94, 0.3); }
+.act-allin { color: var(--lvl-expert); border-color: var(--lvl-expert); background: linear-gradient(180deg, rgba(255, 91, 110, 0.18), rgba(255, 91, 110, 0.05)); }
+
+@media (max-width: 640px) {
+  .actbtns { flex-wrap: wrap; }
+  .actbtn { min-width: 100px; padding: 11px 12px; font-size: 13px; }
+  .betsize-tabs button { font-size: 11px; padding: 5px 6px; }
+}
 @media (max-width: 640px) {
   .speed-ctrl { margin-left: 0; padding: 5px 10px; }
   .speed-ctrl input[type="range"] { width: 88px; }

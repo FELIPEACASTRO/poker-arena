@@ -1,5 +1,14 @@
 export type Phase = 'human_turn' | 'bot_turn' | 'hand_over' | 'game_over'
 
+export interface Insight {
+  kind: string // expert | montecarlo | heuristic | adaptive | random
+  label: string
+  confidence: number
+  probs?: number[] | null // expert: 5 probabilidades (fold/pagar/½/pote/all-in)
+  fold_to_bet?: number | null // adaptive
+  bias?: number | null // adaptive
+}
+
 export interface Seat {
   seat: number
   name: string
@@ -10,6 +19,7 @@ export interface Seat {
   is_button: boolean
   is_turn: boolean
   cards: string[] | null
+  insight?: Insight | null
 }
 
 export interface ActionLog {

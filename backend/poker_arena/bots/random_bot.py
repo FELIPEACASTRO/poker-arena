@@ -9,6 +9,7 @@ from __future__ import annotations
 import random
 
 from ..engine.actions import Action, ActionType
+from .insight import BotInsight
 from .observation import Observation
 
 
@@ -23,3 +24,10 @@ class RandomBot:
             # aposta o mínimo legal (já garantido como <= stack pela legal_actions)
             return Action(ActionType.RAISE, amount=obs.min_raise_to)
         return Action(choice)
+
+    def insight(self) -> BotInsight:
+        return BotInsight(
+            kind="random",
+            label="Joga aleatório — sem cálculo de força",
+            confidence=0.0,
+        )

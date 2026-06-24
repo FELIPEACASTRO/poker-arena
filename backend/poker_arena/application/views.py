@@ -10,6 +10,18 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class InsightView:
+    """O raciocínio REAL da última decisão do bot (glass-box)."""
+
+    kind: str
+    label: str
+    confidence: float
+    probs: list[float] | None = None
+    fold_to_bet: float | None = None
+    bias: float | None = None
+
+
+@dataclass(frozen=True)
 class SeatView:
     seat: int
     name: str
@@ -20,6 +32,7 @@ class SeatView:
     is_button: bool
     is_turn: bool
     cards: list[str] | None  # só as do humano, ou reveladas no showdown
+    insight: InsightView | None = None  # raciocínio do bot (glass-box), se houver
 
 
 @dataclass(frozen=True)

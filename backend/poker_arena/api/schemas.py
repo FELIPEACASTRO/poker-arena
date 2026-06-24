@@ -28,6 +28,15 @@ class ActionRequest(BaseModel):
 
 
 # ---- saída (estado da mesa) ----
+class InsightSchema(BaseModel):
+    kind: str
+    label: str
+    confidence: float
+    probs: list[float] | None = None
+    fold_to_bet: float | None = None
+    bias: float | None = None
+
+
 class SeatSchema(BaseModel):
     seat: int
     name: str
@@ -38,6 +47,7 @@ class SeatSchema(BaseModel):
     is_button: bool
     is_turn: bool
     cards: list[str] | None
+    insight: InsightSchema | None = None
 
 
 class ActionSchema(BaseModel):

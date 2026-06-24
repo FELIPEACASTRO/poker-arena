@@ -30,11 +30,14 @@ def test_health(client):
 
 
 def test_levels_lists_available(client):
+    from poker_arena.application.bot_factory import expert_model_path
+
     r = client.get("/levels")
     assert r.status_code == 200
     levels = r.json()["levels"]
-    assert {"random", "heuristic", "montecarlo"} <= set(levels)
-    assert "expert" not in levels  # sem modelo treinado no ambiente de teste
+    assert {"random", "heuristic", "montecarlo", "adaptive"} <= set(levels)
+    # 'expert' aparece exatamente quando o modelo treinado existe no ambiente
+    assert ("expert" in levels) == expert_model_path().exists()
 
 
 def test_create_table_returns_state(client):
@@ -138,6 +141,30 @@ def test_watch_mode_steps_through_a_hand(client):
         else:
             break
     assert client.get(f"/tables/{tid}").json()["phase"] in ("hand_over", "game_over")
+
+
+def test_glass_box_exposes_bot_reasoning(client):
+    """Glass-box: ao jogar, o bot expõe o raciocínio REAL no assento."""
+    body = {
+        "mode": "watch",
+        "bots": [{"name": f"B{i}", "level": "montecarlo"} for i in range(6)],
+        "starting_stack": 500,
+        "seed": 7,
+    }
+    tid = client.post("/tables", json=body).json()["table_id"]
+    for _ in range(8):  # avança algumas jogadas pros bots decidirem
+        st = client.get(f"/tables/{tid}").json()
+        if st["phase"] == "bot_turn":
+            client.post(f"/tables/{tid}/step")
+        else:
+            break
+    seats = client.get(f"/tables/{tid}").json()["seats"]
+    insights = [s["insight"] for s in seats if s["insight"] is not None]
+    assert insights, "algum bot já deveria ter exposto seu raciocínio"
+    ins = insights[0]
+    assert ins["kind"] == "montecarlo"
+    assert 0.0 <= ins["confidence"] <= 1.0
+    assert ins["label"]
 
 
 def test_step_in_play_mode_is_400(client):

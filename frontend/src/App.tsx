@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Cpu, FlaskConical, Gamepad2, LogOut } from 'lucide-react'
 import ActionBar from './components/ActionBar'
+import AIMind from './components/AIMind'
 import PokerTable from './components/PokerTable'
 import SetupScreen from './components/SetupScreen'
 import WinStats from './components/WinStats'
@@ -85,6 +86,7 @@ export default function App() {
               </AnimatePresence>
               <WinStats />
               <PokerTable state={state} />
+              <AIMind />
               <ActionBar
                 state={state}
                 busy={busy}

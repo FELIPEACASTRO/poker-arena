@@ -15,7 +15,8 @@ import uuid
 from dataclasses import dataclass, field
 
 from ..bots.adaptive_bot import AdaptiveBot
-from ..bots.base import Bot
+from ..bots.base import Bot, Explainable
+from ..bots.insight import BotInsight
 from ..bots.observation import observation_for
 from ..bots.opponent_model import OpponentModel
 from ..engine.actions import Action, ActionType
@@ -26,6 +27,7 @@ from ..engine.table import Table
 from .bot_factory import create_bot
 from .views import (
     ActionView,
+    InsightView,
     LegalView,
     OpponentReadView,
     SeatView,
@@ -92,6 +94,7 @@ class GameSession:
         self._opp_model = opponent_model
         self._last: list[ActionView] = []
         self._winners: list[int] | None = None
+        self._insight_by_seat: dict[int, BotInsight] = {}
         self._phase = "human_turn"
         self._begin_hand()
 
@@ -103,6 +106,7 @@ class GameSession:
         self._hand: Hand = self._table.start_hand()
         self._last = []
         self._winners = None
+        self._insight_by_seat = {}
         self._advance()
 
     # ---------- comandos (CQRS: escrita) ----------
@@ -179,7 +183,12 @@ class GameSession:
 
     def _play_bot(self, seat: int) -> None:
         hand = self._hand
-        action = self._bot_by_player[id(hand.players[seat])].act(observation_for(hand))
+        bot = self._bot_by_player[id(hand.players[seat])]
+        action = bot.act(observation_for(hand))
+        if isinstance(bot, Explainable):  # glass-box: guarda o porquê da jogada
+            ins = bot.insight()
+            if ins is not None:
+                self._insight_by_seat[seat] = ins
         self._record(seat, action)
         hand.apply(action)
 
@@ -227,9 +236,23 @@ class GameSession:
                     is_button=(i == hand.button),
                     is_turn=(self._phase in _ACTIVE and i == hand.to_act),
                     cards=_cards(p.hole) if (show and p.hole) else None,
+                    insight=self._insight_view(self._insight_by_seat.get(i)),
                 )
             )
         return seats
+
+    @staticmethod
+    def _insight_view(ins: BotInsight | None) -> InsightView | None:
+        if ins is None:
+            return None
+        return InsightView(
+            kind=ins.kind,
+            label=ins.label,
+            confidence=ins.confidence,
+            probs=list(ins.probs) if ins.probs is not None else None,
+            fold_to_bet=ins.fold_to_bet,
+            bias=ins.bias,
+        )
 
 
 def build_session(

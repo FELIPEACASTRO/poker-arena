@@ -15,6 +15,7 @@ from treys import Evaluator as TEvaluator
 from ..engine.actions import Action
 from ..engine.cards import Card
 from ._policy import decide_from_equity
+from .insight import BotInsight
 from .observation import Observation
 
 _EVAL = TEvaluator()
@@ -75,3 +76,10 @@ class MonteCarloBot:
         )
         self.last_equity = equity
         return decide_from_equity(obs, equity, self.raise_threshold)
+
+    def insight(self) -> BotInsight:
+        return BotInsight(
+            kind="montecarlo",
+            label=f"Equity {round(self.last_equity * 100)}% ({self.n_samples} simulações)",
+            confidence=self.last_equity,
+        )

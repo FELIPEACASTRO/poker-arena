@@ -400,3 +400,45 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   Fase 3 — Glass-box: painel "mente da IA"
+   ============================================================ */
+.aimind {
+  max-width: min(560px, 94vw);
+  margin: var(--s4) auto 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: var(--r-lg);
+  padding: var(--s4) var(--s5);
+}
+.aimind-head { display: flex; align-items: center; gap: 8px; margin-bottom: var(--s3); }
+.aimind-ico { display: grid; place-items: center; flex: none; }
+.aimind-who { font-weight: 600; font-size: 14px; }
+.aimind-act { font-size: 13px; color: var(--text-dim); }
+.aimind-tag {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text-faint); font-family: var(--mono); letter-spacing: 0.03em;
+}
+
+.aimind-probs { display: flex; flex-direction: column; gap: 7px; }
+.aimind-prob { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.aimind-prob-lbl { width: 104px; color: var(--text-dim); }
+.aimind-prob.is-top .aimind-prob-lbl { color: var(--text); font-weight: 500; }
+.aimind-prob-bar { flex: 1; height: 8px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; }
+.aimind-prob-bar span { display: block; height: 100%; border-radius: var(--r-pill); }
+.aimind-prob-pct { width: 40px; text-align: right; color: var(--text); font-size: 12px; }
+
+.aimind-single { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.aimind-gauge { flex: 1; min-width: 160px; height: 10px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; }
+.aimind-gauge span { display: block; height: 100%; border-radius: var(--r-pill); }
+.aimind-gauge-pct { font-size: 16px; font-weight: 600; min-width: 44px; text-align: right; }
+.aimind-label { font-size: 12px; color: var(--text-dim); flex-basis: 100%; }
+
+.aimind-note { font-size: 13px; color: var(--text-dim); margin: 2px 0 0; }
+.aimind-read {
+  font-size: 12px; color: var(--text-dim); margin: var(--s3) 0 0;
+  border-top: 1px solid var(--border); padding-top: var(--s2);
+}
+.aimind-read b { color: var(--text); font-weight: 500; }

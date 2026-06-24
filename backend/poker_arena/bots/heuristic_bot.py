@@ -11,6 +11,7 @@ from ..engine.actions import Action
 from ..engine.cards import Card
 from ..engine.evaluator import evaluate
 from ._policy import decide_from_equity
+from .insight import BotInsight
 from .observation import Observation
 
 _TREYS_BEST = 1
@@ -52,3 +53,10 @@ class HeuristicBot:
             strength = preflop_strength(obs.hole)
         self.last_strength = strength
         return decide_from_equity(obs, strength, self.raise_threshold)
+
+    def insight(self) -> BotInsight:
+        return BotInsight(
+            kind="heuristic",
+            label=f"Força da mão {round(self.last_strength * 100)}%",
+            confidence=self.last_strength,
+        )

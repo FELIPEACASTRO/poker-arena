@@ -1,161 +1,346 @@
-"""Schemas Pydantic — o contrato HTTP/JSON (DTOs de entrada e saída)."""
+"""Schemas Pydantic — o contrato HTTP/JSON (DTOs de entrada e saída).
+
+As descrições e exemplos abaixo alimentam o Swagger (/docs) — por isso são
+detalhados e didáticos: quem lê o /docs entende o jogo inteiro sem ler o código.
+"""
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
-# ---- entrada (comandos) ----
+# ============================================================
+# ENTRADA (comandos que o cliente envia)
+# ============================================================
 class BotSpecSchema(BaseModel):
-    name: str
-    level: str
+    """Um oponente controlado pela IA, definido por um nome e um nível."""
+
+    name: str = Field(description="Nome exibido do bot na mesa.", examples=["Luna"])
+    level: str = Field(
+        description=(
+            "Nível (paradigma) de IA do bot. Valores possíveis:\n"
+            "- `random` — Iniciante: joga no chute (baseline).\n"
+            "- `heuristic` — Amador: decide por regras de força de mão.\n"
+            "- `montecarlo` — Intermediário: estima equity por simulação.\n"
+            "- `adaptive` — Adaptativo: aprende seu estilo e explora.\n"
+            "- `expert` — Expert: IA treinada (solver + self-play), só aparece "
+            "em `GET /levels` quando o modelo treinado está disponível."
+        ),
+        examples=["montecarlo"],
+    )
 
 
 class CreateTableRequest(BaseModel):
-    human_name: str = "VOCE"
-    bots: list[BotSpecSchema] = Field(default_factory=list)
-    starting_stack: int = 1000
-    small_blind: int = 10
-    big_blind: int = 20
-    rebuy: bool = True  # cash game (mesa sempre cheia); False = torneio (eliminação)
-    mode: str = "play"  # "play" (você joga) | "watch" (só bots, você assiste)
-    hand_limit: int | None = None  # para após N mãos (None = sem limite)
-    seed: int | None = None
+    """Configuração para criar uma nova mesa (partida)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "summary": "Você joga contra 3 bots variados (cash game)",
+                    "value": {
+                        "human_name": "VOCE",
+                        "bots": [
+                            {"name": "Luna", "level": "random"},
+                            {"name": "Caio", "level": "heuristic"},
+                            {"name": "Sofia", "level": "montecarlo"},
+                        ],
+                        "starting_stack": 1000,
+                        "small_blind": 10,
+                        "big_blind": 20,
+                        "rebuy": True,
+                        "mode": "play",
+                        "hand_limit": None,
+                        "seed": None,
+                    },
+                },
+                {
+                    "summary": "Modo Laboratório: só bots, torneio de 50 mãos",
+                    "value": {
+                        "bots": [
+                            {"name": "Luna", "level": "random"},
+                            {"name": "Caio", "level": "heuristic"},
+                            {"name": "Sofia", "level": "montecarlo"},
+                            {"name": "Rex", "level": "adaptive"},
+                        ],
+                        "starting_stack": 1500,
+                        "small_blind": 10,
+                        "big_blind": 20,
+                        "rebuy": False,
+                        "mode": "watch",
+                        "hand_limit": 50,
+                        "seed": 42,
+                    },
+                },
+            ]
+        }
+    )
+
+    human_name: str = Field(
+        default="VOCE",
+        description="Nome do jogador humano. Usado só no modo `play`.",
+        examples=["VOCE"],
+    )
+    bots: list[BotSpecSchema] = Field(
+        default_factory=list,
+        description="Oponentes da mesa. A mesa é 6-max, então no `play` cabem até 5 bots (você + 5).",
+    )
+    starting_stack: int = Field(
+        default=1000, gt=0, description="Fichas iniciais de cada jogador.", examples=[1000]
+    )
+    small_blind: int = Field(default=10, gt=0, description="Valor do small blind.", examples=[10])
+    big_blind: int = Field(default=20, gt=0, description="Valor do big blind.", examples=[20])
+    rebuy: bool = Field(
+        default=True,
+        description=(
+            "`true` = cash game: quem zera as fichas recompra automaticamente, a mesa "
+            "nunca esvazia (jogo infinito). `false` = torneio: eliminação até sobrar 1."
+        ),
+    )
+    mode: str = Field(
+        default="play",
+        description=(
+            "`play` = você joga (a API pausa em `human_turn` esperando sua jogada). "
+            "`watch` = Modo Laboratório: só bots, com as cartas abertas; você avança "
+            "lance a lance via `POST /step`."
+        ),
+        examples=["play"],
+    )
+    hand_limit: int | None = Field(
+        default=None,
+        description="Encerra a partida após N mãos (`null` = sem limite). Vence quem tiver mais fichas.",
+        examples=[None],
+    )
+    seed: int | None = Field(
+        default=None,
+        description=(
+            "Semente do gerador de cartas. `null` = aleatoriedade criptográfica "
+            "(imprevisível, padrão). Um número fixo torna o embaralhamento reprodutível "
+            "(útil para testes/demonstração)."
+        ),
+        examples=[None],
+    )
 
 
 class ActionRequest(BaseModel):
-    type: str
-    amount: int = 0
+    """Uma jogada do humano no seu turno (`POST /tables/{id}/actions`)."""
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"summary": "Pagar", "value": {"type": "call", "amount": 0}},
+                {"summary": "Aumentar para 80 (total)", "value": {"type": "raise", "amount": 80}},
+                {"summary": "Desistir", "value": {"type": "fold", "amount": 0}},
+            ]
+        }
+    )
 
-# ---- saída (estado da mesa) ----
-class InsightSchema(BaseModel):
-    kind: str
-    label: str
-    confidence: float
-    probs: list[float] | None = None
-    fold_to_bet: float | None = None
-    bias: float | None = None
-
-
-class SeatSchema(BaseModel):
-    seat: int
-    name: str
-    kind: str
-    stack: int
-    current_bet: int
-    status: str
-    is_button: bool
-    is_turn: bool
-    cards: list[str] | None
-    insight: InsightSchema | None = None
-
-
-class ActionSchema(BaseModel):
-    seat: int
-    type: str
-    amount: int
-
-
-class LegalSchema(BaseModel):
-    actions: list[str]
-    to_call: int
-    min_raise_to: int
-    max_raise_to: int
-
-
-class OpponentReadSchema(BaseModel):
-    fold_to_bet: float
-    aggression: float
-    samples: int
-
-
-class WinProbSchema(BaseModel):
-    seat: int
-    prob: float
-
-
-class CouncilEntrySchema(BaseModel):
-    level: str
-    action: str
-    amount: int
-    confidence: float | None = None
-
-
-class HumanAnalysisSchema(BaseModel):
-    equity: float
-    win_probs: list[WinProbSchema]
-    hand_name: str | None
-    outs: int
-    draws: list[str]
-    pot_odds: float
-    ev_call: float
-    nut: str | None
-    texture: str | None
-    spr: float | None
-    position: str
-    council: list[CouncilEntrySchema]
-    best_action: str | None
-    best_amount: int | None
-    confidence: float | None
-    your_profile_fold: float
-    your_profile_aggr: float
-    your_profile_samples: int
-
-
-class BotStatSchema(BaseModel):
-    seat: int
-    name: str
-    level: str
-    stack: int
-    delta: int
-    hands_won: int
-    hands_dealt: int
-    vpip: float
-    aggression: float
-
-
-class ChipSeriesSchema(BaseModel):
-    seat: int
-    name: str
-    level: str
-    points: list[int | None]
-
-
-class RosterSeatSchema(BaseModel):
-    seat: int
-    name: str
-    level: str
-    stack: int
-    is_human: bool
+    type: str = Field(
+        description=(
+            "Tipo da jogada. Valores: `fold` (desistir), `check` (passar, sem dever nada), "
+            "`call` (pagar a aposta atual), `raise` (aumentar) e `all_in` (ir com tudo). "
+            "Só as jogadas em `legal.actions` são válidas no momento."
+        ),
+        examples=["call"],
+    )
+    amount: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Usado **só** no `raise`: é o valor TOTAL da aposta (não o incremento) e precisa "
+            "estar entre `legal.min_raise_to` e `legal.max_raise_to`. Ignorado nas outras jogadas."
+        ),
+        examples=[0],
+    )
 
 
 class AddPlayerRequest(BaseModel):
-    level: str
-    name: str | None = None
-    buy_in: int | None = None
+    """Sentar um novo bot na mesa ao vivo (`POST /tables/{id}/players`)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"value": {"level": "montecarlo", "name": "Ana", "buy_in": None}}]
+        }
+    )
+
+    level: str = Field(
+        description="Nível de IA do novo bot (veja os valores em `BotSpecSchema.level`).",
+        examples=["montecarlo"],
+    )
+    name: str | None = Field(
+        default=None,
+        description="Nome do bot. Se omitido, um nome único é gerado automaticamente.",
+        examples=["Ana"],
+    )
+    buy_in: int | None = Field(
+        default=None,
+        description="Fichas com que ele entra. Se omitido, usa o `starting_stack` da mesa.",
+        examples=[None],
+    )
+
+
+# ============================================================
+# SAÍDA (estado da mesa e análises)
+# ============================================================
+class InsightSchema(BaseModel):
+    """O raciocínio REAL da última decisão de um bot (a 'caixa de vidro' da IA)."""
+
+    kind: str = Field(description="Paradigma que gerou a decisão (random/heuristic/montecarlo/adaptive/expert).")
+    label: str = Field(description="Explicação curta e legível do porquê da jogada.", examples=["Equity 37% (200 simulações)"])
+    confidence: float = Field(description="Confiança da decisão, em [0,1].", examples=[0.37])
+    probs: list[float] | None = Field(default=None, description="Expert: 5 probabilidades [desistir, pagar, ½ pote, pote, all-in].")
+    fold_to_bet: float | None = Field(default=None, description="Adaptativo: o quanto ele acha que você desiste diante de apostas, em [0,1].")
+    bias: float | None = Field(default=None, description="Adaptativo: viés de agressão aprendido.")
+
+
+class SeatSchema(BaseModel):
+    """Uma cadeira da mão atual (jogador + estado)."""
+
+    seat: int = Field(description="Índice da cadeira na mão atual.")
+    name: str = Field(description="Nome do jogador.")
+    kind: str = Field(description="`human` ou `bot:<nivel>` (ex.: `bot:montecarlo`).")
+    stack: int = Field(description="Fichas atuais do jogador.")
+    current_bet: int = Field(description="Fichas que ele já colocou nesta rodada de apostas.")
+    status: str = Field(description="`active`, `folded` (desistiu) ou `all_in`.")
+    is_button: bool = Field(description="Se está com o botão do dealer (D).")
+    is_turn: bool = Field(description="Se é a vez dele agir.")
+    cards: list[str] | None = Field(
+        description="Cartas (ex.: `['Ah','Kd']`). Só as suas; as dos bots vêm `null`, exceto no showdown ou no modo `watch`."
+    )
+    insight: InsightSchema | None = Field(default=None, description="Raciocínio do bot na última jogada (se houver).")
+
+
+class ActionSchema(BaseModel):
+    """Uma ação que acabou de acontecer na mesa (para a UI animar/narrar)."""
+
+    seat: int = Field(description="Cadeira que agiu.")
+    type: str = Field(description="Tipo da ação (fold/check/call/raise/all_in).")
+    amount: int = Field(description="Valor envolvido (quando aplicável).")
+
+
+class LegalSchema(BaseModel):
+    """As jogadas válidas para o humano AGORA (presente só no turno dele)."""
+
+    actions: list[str] = Field(description="Jogadas permitidas neste momento.", examples=[["fold", "call", "raise"]])
+    to_call: int = Field(description="Quanto falta pagar para igualar a aposta atual.")
+    min_raise_to: int = Field(description="Menor valor TOTAL para um `raise`.")
+    max_raise_to: int = Field(description="Maior valor TOTAL para um `raise` (efetivamente um all-in).")
+
+
+class OpponentReadSchema(BaseModel):
+    """O que o bot adaptativo já aprendeu sobre o humano (auto-learning visível)."""
+
+    fold_to_bet: float = Field(description="Frequência com que você desiste diante de apostas, em [0,1].")
+    aggression: float = Field(description="Sua agressividade observada, em [0,1].")
+    samples: int = Field(description="Quantas jogadas suas já foram observadas.")
+
+
+class WinProbSchema(BaseModel):
+    """Probabilidade real de vitória de uma cadeira (via simulação de showdown)."""
+
+    seat: int = Field(description="Cadeira.")
+    prob: float = Field(description="Probabilidade de ganhar a mão, em [0,1].")
+
+
+class CouncilEntrySchema(BaseModel):
+    """O que um paradigma de IA recomendaria para a SUA jogada atual (o 'conselho')."""
+
+    level: str = Field(description="Nível de IA que deu a recomendação.")
+    action: str = Field(description="Ação recomendada (em português, ex.: 'Pagar').")
+    amount: int = Field(description="Valor sugerido (para aumentos).")
+    confidence: float | None = Field(default=None, description="Confiança da recomendação, em [0,1].")
+
+
+class HumanAnalysisSchema(BaseModel):
+    """Análise completa da SUA jogada (todos os painéis), calculada de verdade no turno do humano."""
+
+    equity: float = Field(description="Sua equity (chance de ganhar) na mão, em [0,1].")
+    win_probs: list[WinProbSchema] = Field(description="Probabilidade de vitória de cada cadeira.")
+    hand_name: str | None = Field(description="Nome da sua melhor mão atual (ex.: 'Par de Reis').")
+    outs: int = Field(description="Cartas que melhoram sua mão (outs).")
+    draws: list[str] = Field(description="Projetos em aberto (ex.: flush draw, straight draw).")
+    pot_odds: float = Field(description="Pot odds: razão entre o que você paga e o pote, em [0,1].")
+    ev_call: float = Field(description="Valor esperado (EV) de pagar, em fichas.")
+    nut: str | None = Field(description="A melhor mão possível ('the nuts') para o board atual.")
+    texture: str | None = Field(description="Textura do board (ex.: 'molhado', 'seco').")
+    spr: float | None = Field(description="Stack-to-Pot Ratio.")
+    position: str = Field(description="Sua posição relativa (ex.: 'na ponta', 'fora de posição').")
+    council: list[CouncilEntrySchema] = Field(description="O que cada paradigma de IA faria na sua vez.")
+    best_action: str | None = Field(description="Melhor ação segundo o Expert.")
+    best_amount: int | None = Field(description="Valor da melhor ação.")
+    confidence: float | None = Field(description="Confiança do Expert na recomendação, em [0,1].")
+    your_profile_fold: float = Field(description="Seu fold-to-bet observado, em [0,1].")
+    your_profile_aggr: float = Field(description="Sua agressão observada, em [0,1].")
+    your_profile_samples: int = Field(description="Tamanho da amostra do seu perfil.")
+
+
+class BotStatSchema(BaseModel):
+    """Estatística ao vivo de um bot no Modo Laboratório."""
+
+    seat: int = Field(description="Cadeira mais recente do bot.")
+    name: str = Field(description="Nome do bot.")
+    level: str = Field(description="Nível de IA.")
+    stack: int = Field(description="Fichas atuais.")
+    delta: int = Field(description="Lucro/prejuízo desde o início (fichas).")
+    hands_won: int = Field(description="Mãos vencidas.")
+    hands_dealt: int = Field(description="Mãos jogadas.")
+    vpip: float = Field(description="% de mãos que entrou voluntariamente (solto x apertado), em [0,1].")
+    aggression: float = Field(description="% de ações agressivas (agressivo x passivo), em [0,1].")
+
+
+class ChipSeriesSchema(BaseModel):
+    """Série do stack de um bot ao fim de cada mão (a 'corrida das fichas')."""
+
+    seat: int = Field(description="Cadeira do bot.")
+    name: str = Field(description="Nome do bot.")
+    level: str = Field(description="Nível de IA.")
+    points: list[int | None] = Field(description="Stack ao fim de cada mão. `null` nas mãos antes do bot entrar.")
+
+
+class RosterSeatSchema(BaseModel):
+    """Uma cadeira do elenco atual da mesa (base para entrar/sair de jogadores)."""
+
+    seat: int = Field(description="Índice da cadeira na mesa.")
+    name: str = Field(description="Nome do jogador.")
+    level: str = Field(description="`human` ou o nível do bot.")
+    stack: int = Field(description="Fichas atuais.")
+    is_human: bool = Field(description="Se é o jogador humano (não pode ser removido).")
 
 
 class WatchStatsSchema(BaseModel):
-    bots: list[BotStatSchema]
-    series: list[ChipSeriesSchema]
-    hands: int
-    showdowns: int
-    biggest_pot: int
-    biggest_pot_winner: str | None
+    """Painéis do Modo Laboratório — comparação dos paradigmas de IA ao vivo (só no modo `watch`)."""
+
+    bots: list[BotStatSchema] = Field(description="Placar dos bots, ordenado por fichas.")
+    series: list[ChipSeriesSchema] = Field(description="Corrida das fichas (uma série por bot).")
+    hands: int = Field(description="Mãos concluídas na sessão.")
+    showdowns: int = Field(description="Quantas chegaram ao showdown.")
+    biggest_pot: int = Field(description="Maior pote da sessão.")
+    biggest_pot_winner: str | None = Field(description="Quem levou o maior pote.")
 
 
 class TableStateResponse(BaseModel):
-    table_id: str
-    hand_number: int
-    phase: str
-    board: list[str]
-    pot: int
-    seats: list[SeatSchema]
-    legal: LegalSchema | None
-    last_actions: list[ActionSchema]
-    winners: list[int] | None
-    roster: list[RosterSeatSchema] = []
-    opponent_read: OpponentReadSchema | None = None
-    analysis: HumanAnalysisSchema | None = None
-    watch_stats: WatchStatsSchema | None = None
+    """O estado COMPLETO da mesa — a resposta de quase todos os endpoints de mesa.
+
+    A maioria dos campos opcionais só aparece no contexto certo: `legal` e `analysis`
+    no seu turno (`play`), `watch_stats` no Modo Laboratório (`watch`).
+    """
+
+    table_id: str = Field(description="ID da mesa (use nas próximas chamadas).")
+    hand_number: int = Field(description="Número da mão atual (começa em 1).")
+    phase: str = Field(
+        description=(
+            "Fase atual: `human_turn` (sua vez), `bot_turn` (vez de um bot — avance com "
+            "`/step` no modo watch), `hand_over` (mão terminou — chame `/next-hand`) ou "
+            "`game_over` (partida encerrada)."
+        )
+    )
+    board: list[str] = Field(description="Cartas comunitárias (0 no pré-flop, até 5 no river).")
+    pot: int = Field(description="Total de fichas no pote.")
+    seats: list[SeatSchema] = Field(description="As cadeiras da mão atual.")
+    legal: LegalSchema | None = Field(description="Jogadas válidas — presente só quando `phase == human_turn`.")
+    last_actions: list[ActionSchema] = Field(description="Últimas ações da mesa (para animar a UI).")
+    winners: list[int] | None = Field(description="Cadeiras vencedoras — presente quando a mão termina.")
+    roster: list[RosterSeatSchema] = Field(default=[], description="Elenco atual da mesa (para entrar/sair de jogadores).")
+    opponent_read: OpponentReadSchema | None = Field(default=None, description="O que o bot adaptativo aprendeu sobre você.")
+    analysis: HumanAnalysisSchema | None = Field(default=None, description="Análise da sua jogada — presente só no seu turno.")
+    watch_stats: WatchStatsSchema | None = Field(default=None, description="Estatísticas do Laboratório — presente só no modo `watch`.")

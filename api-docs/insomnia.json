@@ -1,0 +1,343 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-06-24T20:27:11.000Z",
+  "__export_source": "poker-arena:generate.py",
+  "resources": [
+    {
+      "_id": "wrk_poker_arena",
+      "_type": "workspace",
+      "name": "Poker Arena API",
+      "description": "Todos os serviços do Poker Arena. Fluxo: 1) 'Criar mesa' -> copie o table_id da resposta para o ambiente; 2) use as demais chamadas. O ambiente 'Base local' aponta para http://127.0.0.1:8000.",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_poker_base",
+      "_type": "environment",
+      "parentId": "wrk_poker_arena",
+      "name": "Base local",
+      "data": {
+        "base_url": "http://127.0.0.1:8000",
+        "ws_url": "ws://127.0.0.1:8000",
+        "table_id": "COLE_AQUI_O_table_id",
+        "game_id": "COLE_AQUI_O_id_DA_PARTIDA",
+        "seat": 0
+      },
+      "metaSortKey": 1782332831359
+    },
+    {
+      "_id": "fld_mesa",
+      "_type": "request_group",
+      "parentId": "wrk_poker_arena",
+      "name": "Mesa",
+      "description": "Criar uma partida e ler o estado da mesa.",
+      "metaSortKey": 1000
+    },
+    {
+      "_id": "req_criar",
+      "_type": "request",
+      "parentId": "fld_mesa",
+      "name": "Criar mesa (você joga)",
+      "description": "Cria a partida. COPIE o `table_id` da resposta para o ambiente (variavel table_id).",
+      "method": "POST",
+      "url": "{{ _.base_url }}/tables",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 2000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"human_name\": \"VOCE\",\n  \"bots\": [\n    {\n      \"name\": \"Luna\",\n      \"level\": \"random\"\n    },\n    {\n      \"name\": \"Caio\",\n      \"level\": \"heuristic\"\n    },\n    {\n      \"name\": \"Sofia\",\n      \"level\": \"montecarlo\"\n    }\n  ],\n  \"starting_stack\": 1000,\n  \"small_blind\": 10,\n  \"big_blind\": 20,\n  \"rebuy\": true,\n  \"mode\": \"play\",\n  \"hand_limit\": null,\n  \"seed\": null\n}"
+      }
+    },
+    {
+      "_id": "req_criar_watch",
+      "_type": "request",
+      "parentId": "fld_mesa",
+      "name": "Criar mesa (Modo Laboratorio)",
+      "description": "Cria uma partida so de bots (modo watch). Avance com 'Avancar bot (step)'.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/tables",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 3000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"bots\": [\n    {\n      \"name\": \"Luna\",\n      \"level\": \"random\"\n    },\n    {\n      \"name\": \"Caio\",\n      \"level\": \"heuristic\"\n    },\n    {\n      \"name\": \"Sofia\",\n      \"level\": \"montecarlo\"\n    },\n    {\n      \"name\": \"Rex\",\n      \"level\": \"adaptive\"\n    }\n  ],\n  \"starting_stack\": 1500,\n  \"small_blind\": 10,\n  \"big_blind\": 20,\n  \"rebuy\": false,\n  \"mode\": \"watch\",\n  \"hand_limit\": 50,\n  \"seed\": 42\n}"
+      }
+    },
+    {
+      "_id": "req_estado",
+      "_type": "request",
+      "parentId": "fld_mesa",
+      "name": "Ler estado da mesa",
+      "description": "Estado completo e atual da mesa (sem alterar nada). Olhe o campo `phase`.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}",
+      "headers": [],
+      "metaSortKey": 4000
+    },
+    {
+      "_id": "fld_jogada",
+      "_type": "request_group",
+      "parentId": "wrk_poker_arena",
+      "name": "Jogada",
+      "description": "Avancar o jogo: sua jogada, jogada dos bots e proxima mao.",
+      "metaSortKey": 5000
+    },
+    {
+      "_id": "req_pagar",
+      "_type": "request",
+      "parentId": "fld_jogada",
+      "name": "Pagar (call)",
+      "description": "Sua jogada no turno do humano. So vale o que estiver em legal.actions.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/actions",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 6000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"type\": \"call\",\n  \"amount\": 0\n}"
+      }
+    },
+    {
+      "_id": "req_passar",
+      "_type": "request",
+      "parentId": "fld_jogada",
+      "name": "Passar (check)",
+      "description": "Passar quando nao ha aposta a pagar.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/actions",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 7000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"type\": \"check\",\n  \"amount\": 0\n}"
+      }
+    },
+    {
+      "_id": "req_aumentar",
+      "_type": "request",
+      "parentId": "fld_jogada",
+      "name": "Aumentar (raise para 80)",
+      "description": "amount = valor TOTAL da aposta (entre legal.min_raise_to e legal.max_raise_to).",
+      "method": "POST",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/actions",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 8000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"type\": \"raise\",\n  \"amount\": 80\n}"
+      }
+    },
+    {
+      "_id": "req_allin",
+      "_type": "request",
+      "parentId": "fld_jogada",
+      "name": "All-in",
+      "description": "Ir com todas as fichas.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/actions",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 9000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"type\": \"all_in\",\n  \"amount\": 0\n}"
+      }
+    },
+    {
+      "_id": "req_desistir",
+      "_type": "request",
+      "parentId": "fld_jogada",
+      "name": "Desistir (fold)",
+      "description": "Abrir mao da mao atual.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/actions",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 10000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"type\": \"fold\",\n  \"amount\": 0\n}"
+      }
+    },
+    {
+      "_id": "req_step",
+      "_type": "request",
+      "parentId": "fld_jogada",
+      "name": "Avancar bot (step)",
+      "description": "Modo watch: avanca UMA jogada de bot. Valido so em phase == bot_turn.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/step",
+      "headers": [],
+      "metaSortKey": 11000
+    },
+    {
+      "_id": "req_next",
+      "_type": "request",
+      "parentId": "fld_jogada",
+      "name": "Proxima mao",
+      "description": "Distribui a proxima mao. Valido so em phase == hand_over.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/next-hand",
+      "headers": [],
+      "metaSortKey": 12000
+    },
+    {
+      "_id": "fld_jogadores",
+      "_type": "request_group",
+      "parentId": "wrk_poker_arena",
+      "name": "Jogadores",
+      "description": "Entrar/sair de jogadores na mesa ao vivo.",
+      "metaSortKey": 13000
+    },
+    {
+      "_id": "req_addbot",
+      "_type": "request",
+      "parentId": "fld_jogadores",
+      "name": "Adicionar bot",
+      "description": "Senta um novo bot do nivel escolhido (vale a partir da proxima mao). Mesa 6-max.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/players",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 14000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"level\": \"montecarlo\",\n  \"name\": \"Ana\",\n  \"buy_in\": null\n}"
+      }
+    },
+    {
+      "_id": "req_rmplayer",
+      "_type": "request",
+      "parentId": "fld_jogadores",
+      "name": "Remover jogador (cadeira {{ _.seat }})",
+      "description": "Remove o jogador da cadeira (indice em roster). Nao remove o humano; minimo 2 jogadores.",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/players/{{ _.seat }}",
+      "headers": [],
+      "metaSortKey": 15000
+    },
+    {
+      "_id": "fld_catalogo",
+      "_type": "request_group",
+      "parentId": "wrk_poker_arena",
+      "name": "Catalogo",
+      "description": "Dados de apoio.",
+      "metaSortKey": 16000
+    },
+    {
+      "_id": "req_levels",
+      "_type": "request",
+      "parentId": "fld_catalogo",
+      "name": "Niveis de IA",
+      "description": "Lista os niveis de bot disponiveis.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/levels",
+      "headers": [],
+      "metaSortKey": 17000
+    },
+    {
+      "_id": "fld_auditoria",
+      "_type": "request_group",
+      "parentId": "wrk_poker_arena",
+      "name": "Auditoria",
+      "description": "Historico das partidas e replay.",
+      "metaSortKey": 18000
+    },
+    {
+      "_id": "req_games",
+      "_type": "request",
+      "parentId": "fld_auditoria",
+      "name": "Listar partidas",
+      "description": "Resumo de todas as partidas gravadas.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/games",
+      "headers": [],
+      "metaSortKey": 19000
+    },
+    {
+      "_id": "req_game",
+      "_type": "request",
+      "parentId": "fld_auditoria",
+      "name": "Replay de partida",
+      "description": "Log completo de uma partida (cole um id de /games no ambiente game_id).",
+      "method": "GET",
+      "url": "{{ _.base_url }}/games/{{ _.game_id }}",
+      "headers": [],
+      "metaSortKey": 20000
+    },
+    {
+      "_id": "fld_sistema",
+      "_type": "request_group",
+      "parentId": "wrk_poker_arena",
+      "name": "Sistema",
+      "description": "Saude do servico.",
+      "metaSortKey": 21000
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_sistema",
+      "name": "Health",
+      "description": "Retorna {status: ok} se a API esta no ar.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/health",
+      "headers": [],
+      "metaSortKey": 22000
+    },
+    {
+      "_id": "fld_ws",
+      "_type": "request_group",
+      "parentId": "wrk_poker_arena",
+      "name": "Tempo real",
+      "description": "Canal WebSocket para jogar com push de estado.",
+      "metaSortKey": 23000
+    },
+    {
+      "_id": "req_ws",
+      "_type": "websocket_request",
+      "parentId": "fld_ws",
+      "name": "WebSocket da mesa",
+      "url": "{{ _.ws_url }}/tables/{{ _.table_id }}/ws",
+      "description": "Conecte e receba o estado inicial; envie {\"type\":\"call\"} (ou raise com amount) para jogar e receber o novo estado por push.",
+      "headers": [],
+      "metaSortKey": 24000
+    }
+  ]
+}

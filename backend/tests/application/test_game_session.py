@@ -161,6 +161,34 @@ def test_step_outside_bot_turn_raises():
         s.step()
 
 
+# ---------- painéis do modo laboratório (estatísticas ao vivo) ----------
+def test_watch_mode_accumulates_live_stats():
+    s = _watch(stack=500)
+    for _ in range(400):
+        v = s.view()
+        if v.phase == "game_over":
+            break
+        if v.phase == "bot_turn":
+            s.step()
+        elif v.phase == "hand_over":
+            s.next_hand()
+    ws = s.view().watch_stats
+    assert ws is not None
+    assert ws.hands >= 1
+    assert len(ws.bots) == 6
+    for b in ws.bots:  # contadores coerentes; VPIP/agressão normalizados
+        assert b.hands_dealt >= 1
+        assert 0.0 <= b.vpip <= 1.0
+        assert 0.0 <= b.aggression <= 1.0
+    assert ws.bots == sorted(ws.bots, key=lambda b: b.stack, reverse=True)
+    assert all(len(x.points) == ws.hands for x in ws.series)  # 1 ponto por mão
+
+
+def test_play_mode_has_no_watch_stats():
+    s = _session()  # modo jogar usa os painéis de análise, não os do laboratório
+    assert s.view().watch_stats is None
+
+
 # ---------- bot adaptativo (aprende o humano) ----------
 def test_adaptive_session_learns_from_the_human():
     cfg = SessionConfig(

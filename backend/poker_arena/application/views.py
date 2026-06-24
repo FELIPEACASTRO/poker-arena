@@ -100,6 +100,43 @@ class HumanAnalysisView:
 
 
 @dataclass(frozen=True)
+class BotStatView:
+    """Estatística ao vivo de um bot no modo laboratório."""
+
+    seat: int
+    name: str
+    level: str
+    stack: int
+    delta: int  # lucro/prejuízo desde o início
+    hands_won: int
+    hands_dealt: int
+    vpip: float  # % de mãos que entrou voluntariamente (solto x apertado)
+    aggression: float  # % de ações agressivas (agressivo x passivo)
+
+
+@dataclass(frozen=True)
+class ChipSeriesView:
+    """Série do stack de um bot ao fim de cada mão (corrida das fichas)."""
+
+    seat: int
+    name: str
+    level: str
+    points: list[int]
+
+
+@dataclass(frozen=True)
+class WatchStatsView:
+    """Painéis do modo laboratório — comparação dos paradigmas de IA ao vivo."""
+
+    bots: list[BotStatView]  # ordenado por fichas (desc)
+    series: list[ChipSeriesView]
+    hands: int
+    showdowns: int
+    biggest_pot: int
+    biggest_pot_winner: str | None
+
+
+@dataclass(frozen=True)
 class TableStateView:
     table_id: str
     hand_number: int
@@ -112,3 +149,4 @@ class TableStateView:
     winners: list[int] | None
     opponent_read: OpponentReadView | None = None
     analysis: HumanAnalysisView | None = None
+    watch_stats: WatchStatsView | None = None

@@ -749,6 +749,46 @@ body {
 .audit-cards { display: inline-flex; gap: 4px; }
 .audit-card { font-size: 12px; font-weight: 600; background: var(--surface-3); border-radius: 4px; padding: 1px 5px; }
 .audit-nocard { color: var(--text-faint); font-size: 12px; }
+
+/* ============================================================
+   Painéis do Modo Laboratório (jogo automático)
+   ============================================================ */
+/* placar */
+.lb-list { display: flex; flex-direction: column; gap: 7px; }
+.lb-row { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.lb-rank { width: 14px; text-align: center; color: var(--text-faint); font-size: 11px; font-weight: 600; }
+.lb-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.lb-name { display: flex; flex-direction: column; line-height: 1.15; min-width: 52px; color: var(--text); font-weight: 500; }
+.lb-name small { font-size: 9px; color: var(--text-faint); font-weight: 400; }
+.lb-bar { flex: 1; height: 6px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; min-width: 24px; }
+.lb-bar span { display: block; height: 100%; border-radius: var(--r-pill); }
+.lb-stack { font-family: var(--mono); color: var(--text); width: 44px; text-align: right; }
+.lb-delta { font-family: var(--mono); font-size: 11px; width: 46px; text-align: right; }
+.lb-delta.pos { color: var(--pos); }
+.lb-delta.neg { color: var(--neg); }
+
+/* estilo / HUD */
+.style-list { display: flex; flex-direction: column; gap: 11px; }
+.style-row { display: flex; flex-direction: column; gap: 4px; }
+.style-top { display: flex; align-items: center; justify-content: space-between; }
+.style-name { font-size: 12.5px; font-weight: 600; }
+.style-tag { font-size: 10px; color: var(--text-dim); background: var(--surface-3); padding: 2px 7px; border-radius: var(--r-pill); }
+.style-metric { display: flex; align-items: center; gap: 8px; }
+.sm-k { font-size: 11px; color: var(--text-dim); width: 122px; flex: none; }
+.sm-k b { color: var(--text); }
+.sm-bar { flex: 1; height: 5px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; }
+.sm-bar span { display: block; height: 100%; border-radius: var(--r-pill); }
+
+/* estatísticas da sessão */
+.sess-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.sess-grid > div { display: flex; flex-direction: column; }
+
+/* corrida das fichas */
+.race { width: 100%; height: 92px; display: block; background: var(--surface-2); border-radius: var(--r-md); }
+.race-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; }
+.rl { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-dim); }
+.rl i { width: 9px; height: 3px; border-radius: 2px; display: inline-block; }
+
 @media (max-width: 640px) {
   .speed-ctrl { margin-left: 0; padding: 5px 10px; }
   .speed-ctrl input[type="range"] { width: 88px; }

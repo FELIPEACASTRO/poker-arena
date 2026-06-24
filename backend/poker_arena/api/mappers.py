@@ -18,6 +18,7 @@ from .schemas import (
     OpponentReadSchema,
     SeatSchema,
     TableStateResponse,
+    WatchStatsSchema,
 )
 
 
@@ -51,4 +52,7 @@ def to_response(view: TableStateView) -> TableStateResponse:
             else None
         ),
         analysis=(HumanAnalysisSchema(**asdict(view.analysis)) if view.analysis else None),
+        watch_stats=(
+            WatchStatsSchema(**asdict(view.watch_stats)) if view.watch_stats else None
+        ),
     )

@@ -28,12 +28,16 @@ from .bot_factory import create_bot
 from .match_log import MatchLogger
 from .views import (
     ActionView,
+    BotStatView,
+    ChipSeriesView,
     InsightView,
     LegalView,
     OpponentReadView,
     SeatView,
     TableStateView,
+    WatchStatsView,
 )
+from .watch_stats import WatchStats
 
 _MAX_LOG = 12
 _ACTIVE = ("human_turn", "bot_turn")
@@ -108,6 +112,8 @@ class GameSession:
         self._opp_model = opponent_model
         self._logger = match_logger
         self._hand_starts: dict[int, int] = {}
+        # estatísticas ao vivo só no modo laboratório (sem humano)
+        self._stats = WatchStats() if human_seat is None else None
         self._last: list[ActionView] = []
         self._winners: list[int] | None = None
         self._insight_by_seat: dict[int, BotInsight] = {}
@@ -124,12 +130,15 @@ class GameSession:
         self._last = []
         self._winners = None
         self._insight_by_seat = {}
-        if self._logger is not None:
+        if self._logger is not None or self._stats is not None:
             seats = [
                 {"seat": i, "name": p.name, "level": self._level_of(p), "start": self._hand_starts[id(p)]}
                 for i, p in enumerate(self._hand.players)
             ]
-            self._logger.begin_hand(self._table.hand_count + 1, self._hand.button, seats)
+            if self._logger is not None:
+                self._logger.begin_hand(self._table.hand_count + 1, self._hand.button, seats)
+            if self._stats is not None:
+                self._stats.begin_hand(seats)
         self._advance()
 
     def _level_of(self, p: Player) -> str:
@@ -179,6 +188,45 @@ class GameSession:
             winners=self._winners,
             opponent_read=self._opp_read(),
             analysis=self._analysis(),
+            watch_stats=self._watch_stats_view(),
+        )
+
+    def _watch_stats_view(self) -> WatchStatsView | None:
+        """Painéis do modo laboratório — só quando há estatísticas (sem humano)."""
+        st = self._stats
+        if st is None or st.hands == 0:
+            return None
+        bots = [
+            BotStatView(
+                seat=info["seat"],
+                name=info["name"],
+                level=info["level"],
+                stack=p["stack"],
+                delta=p["stack"] - p["start"],
+                hands_won=p["hands_won"],
+                hands_dealt=p["hands_dealt"],
+                vpip=(p["vpip"] / p["hands_dealt"]) if p["hands_dealt"] else 0.0,
+                aggression=(p["aggressive"] / p["actions"]) if p["actions"] else 0.0,
+            )
+            for info, p in ((st.info[s], st.per[s]) for s in st.per)
+        ]
+        bots.sort(key=lambda b: b.stack, reverse=True)
+        series = [
+            ChipSeriesView(
+                seat=info["seat"],
+                name=info["name"],
+                level=info["level"],
+                points=[t["stacks"].get(info["seat"], 0) for t in st.timeline],
+            )
+            for info in (st.info[s] for s in st.per)
+        ]
+        return WatchStatsView(
+            bots=bots,
+            series=series,
+            hands=st.hands,
+            showdowns=st.showdowns,
+            biggest_pot=st.biggest_pot,
+            biggest_pot_winner=st.biggest_pot_winner,
         )
 
     def _analysis(self):
@@ -241,6 +289,9 @@ class GameSession:
         hand.apply(action)
 
     def _log_action(self, seat: int, action: Action, ins: BotInsight | None) -> None:
+        street = _STREET.get(len(self._hand.board), str(len(self._hand.board)))
+        if self._stats is not None:
+            self._stats.action(seat, action.type.value, street)
         if self._logger is None:
             return
         p = self._hand.players[seat]
@@ -250,7 +301,7 @@ class GameSession:
             self._level_of(p),
             action.type.value,
             action.amount,
-            _STREET.get(len(self._hand.board), str(len(self._hand.board))),
+            street,
             _cards(self._hand.board),
             _insight_dict(ins),
         )
@@ -259,21 +310,25 @@ class GameSession:
         pot = self._hand.pot  # antes de distribuir
         winners = self._hand.resolve()
         self._winners = [self._hand.players.index(w) for w in winners]
-        if self._logger is not None:
-            self._logger.finish_hand(
-                _cards(self._hand.board),
-                pot,
-                [{"seat": self._hand.players.index(w), "name": w.name} for w in winners],
-                [
-                    {
-                        "seat": i,
-                        "name": p.name,
-                        "end": p.stack,
-                        "delta": p.stack - self._hand_starts.get(id(p), p.stack),
-                    }
-                    for i, p in enumerate(self._hand.players)
-                ],
-            )
+        if self._logger is not None or self._stats is not None:
+            contesting = [p for p in self._hand.players if p.status != PlayerStatus.FOLDED]
+            showdown = len(self._hand.board) >= 5 and len(contesting) >= 2
+            winners_info = [
+                {"seat": self._hand.players.index(w), "name": w.name} for w in winners
+            ]
+            result = [
+                {
+                    "seat": i,
+                    "name": p.name,
+                    "end": p.stack,
+                    "delta": p.stack - self._hand_starts.get(id(p), p.stack),
+                }
+                for i, p in enumerate(self._hand.players)
+            ]
+            if self._logger is not None:
+                self._logger.finish_hand(_cards(self._hand.board), pot, winners_info, result)
+            if self._stats is not None:
+                self._stats.finish_hand(winners_info, pot, result, showdown)
         self._table.end_hand()
         human_broke = self._human is not None and self._human.stack <= 0
         tournament_over = not self._rebuy and (self._table.is_over() or human_broke)

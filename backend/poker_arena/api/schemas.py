@@ -103,6 +103,34 @@ class HumanAnalysisSchema(BaseModel):
     your_profile_samples: int
 
 
+class BotStatSchema(BaseModel):
+    seat: int
+    name: str
+    level: str
+    stack: int
+    delta: int
+    hands_won: int
+    hands_dealt: int
+    vpip: float
+    aggression: float
+
+
+class ChipSeriesSchema(BaseModel):
+    seat: int
+    name: str
+    level: str
+    points: list[int]
+
+
+class WatchStatsSchema(BaseModel):
+    bots: list[BotStatSchema]
+    series: list[ChipSeriesSchema]
+    hands: int
+    showdowns: int
+    biggest_pot: int
+    biggest_pot_winner: str | None
+
+
 class TableStateResponse(BaseModel):
     table_id: str
     hand_number: int
@@ -115,3 +143,4 @@ class TableStateResponse(BaseModel):
     winners: list[int] | None
     opponent_read: OpponentReadSchema | None = None
     analysis: HumanAnalysisSchema | None = None
+    watch_stats: WatchStatsSchema | None = None

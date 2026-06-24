@@ -9,6 +9,12 @@ import GuideScreen from './components/GuideScreen'
 import LabHint from './components/LabHint'
 import PokerTable from './components/PokerTable'
 import SetupScreen from './components/SetupScreen'
+import {
+  ChipRacePanel,
+  LeaderboardPanel,
+  SessionStatsPanel,
+  StylePanel,
+} from './components/WatchPanels'
 import WinStats from './components/WinStats'
 import { useGame } from './store'
 
@@ -93,18 +99,37 @@ export default function App() {
               <LabHint />
               <div className="lab-grid">
                 <aside className="lab-col">
-                  <EquityPanel />
-                  <HandPanel />
-                  <WinStats />
+                  {watch ? (
+                    <>
+                      <LeaderboardPanel />
+                      <StylePanel />
+                    </>
+                  ) : (
+                    <>
+                      <EquityPanel />
+                      <HandPanel />
+                      <WinStats />
+                    </>
+                  )}
                 </aside>
                 <section className="lab-stage">
                   <PokerTable state={state} />
                 </section>
                 <aside className="lab-col">
-                  <CouncilPanel />
-                  <EVPanel />
-                  <AIMind />
-                  <ProfilePanel />
+                  {watch ? (
+                    <>
+                      <SessionStatsPanel />
+                      <ChipRacePanel />
+                      <AIMind />
+                    </>
+                  ) : (
+                    <>
+                      <CouncilPanel />
+                      <EVPanel />
+                      <AIMind />
+                      <ProfilePanel />
+                    </>
+                  )}
                   <AnimatePresence>
                     {read && read.samples >= 8 && (
                       <motion.div

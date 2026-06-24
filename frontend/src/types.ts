@@ -74,6 +74,33 @@ export interface Analysis {
   your_profile_samples: number
 }
 
+// ---- painéis do modo laboratório (jogo automático) ----
+export interface BotStat {
+  seat: number
+  name: string
+  level: string
+  stack: number
+  delta: number
+  hands_won: number
+  hands_dealt: number
+  vpip: number // 0..1 — % de mãos que entra (solto x apertado)
+  aggression: number // 0..1 — % de ações agressivas (agressivo x passivo)
+}
+export interface ChipSeries {
+  seat: number
+  name: string
+  level: string
+  points: number[]
+}
+export interface WatchStats {
+  bots: BotStat[]
+  series: ChipSeries[]
+  hands: number
+  showdowns: number
+  biggest_pot: number
+  biggest_pot_winner: string | null
+}
+
 export interface TableState {
   table_id: string
   hand_number: number
@@ -86,6 +113,7 @@ export interface TableState {
   winners: number[] | null
   opponent_read?: OpponentRead | null
   analysis?: Analysis | null
+  watch_stats?: WatchStats | null
 }
 
 export interface BotSpec {

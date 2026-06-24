@@ -11,6 +11,7 @@ interface GameState {
   wins: Record<number, number> // vitórias por assento (cumulativo na sessão)
   handsDone: number
   lastHand: number
+  colors: Record<string, string> // cor estável por competidor (nome -> hex)
   stepDelay: number // ms por jogada no modo automático (controlado pelo usuário)
   setStepDelay: (ms: number) => void
   create: (cfg: CreateConfig) => Promise<void>
@@ -23,7 +24,49 @@ interface GameState {
   leave: () => void
 }
 
-const FRESH = { wins: {} as Record<number, number>, handsDone: 0, lastHand: -1 }
+// paleta de cores por COMPETIDOR (não por nível) — distinguir cada um no gráfico
+const PALETTE = [
+  '#34d399', // verde
+  '#60a5fa', // azul
+  '#fbbf24', // dourado
+  '#f472b6', // rosa
+  '#c084fc', // roxo
+  '#fb923c', // laranja
+  '#2dd4bf', // turquesa
+  '#f87171', // vermelho
+  '#a3e635', // lima
+  '#38bdf8', // céu
+  '#e879f9', // magenta
+  '#fde047', // amarelo
+]
+
+/** Cor estável por NOME: mantém a já atribuída e dá uma cor livre a cada novo
+ *  jogador, garantindo que os que estão na mesa AGORA tenham cores distintas. */
+function assignColors(prev: Record<string, string>, names: string[]): Record<string, string> {
+  const active = [...new Set(names)]
+  const next: Record<string, string> = {}
+  const used = new Set<string>()
+  for (const n of active) {
+    if (prev[n]) {
+      next[n] = prev[n]
+      used.add(prev[n])
+    }
+  }
+  for (const n of active) {
+    if (next[n]) continue
+    const free = PALETTE.find((c) => !used.has(c)) ?? PALETTE[active.indexOf(n) % PALETTE.length]
+    next[n] = free
+    used.add(free)
+  }
+  return next
+}
+
+const FRESH = {
+  wins: {} as Record<number, number>,
+  handsDone: 0,
+  lastHand: -1,
+  colors: {} as Record<string, string>,
+}
 
 export const useGame = create<GameState>((set, get) => {
   const run = async (fn: () => Promise<TableState>) => {
@@ -31,14 +74,20 @@ export const useGame = create<GameState>((set, get) => {
     try {
       const next = await fn()
       set((s) => {
+        // cor estável por competidor (cobre elenco da mesa + assentos da mão)
+        const names = [
+          ...(next.roster ?? []).map((r) => r.name),
+          ...next.seats.map((se) => se.name),
+        ]
+        const colors = assignColors(s.colors, names)
         // conta a mão UMA vez, quando ela termina (evita contagem dupla)
         const ended = next.phase === 'hand_over' || next.phase === 'game_over'
         if (ended && next.winners?.length && next.hand_number !== s.lastHand) {
           const wins = { ...s.wins }
           for (const seat of next.winners) wins[seat] = (wins[seat] ?? 0) + 1
-          return { state: next, wins, handsDone: s.handsDone + 1, lastHand: next.hand_number }
+          return { state: next, colors, wins, handsDone: s.handsDone + 1, lastHand: next.hand_number }
         }
-        return { state: next }
+        return { state: next, colors }
       })
     } catch (e) {
       set({ error: (e as Error).message })

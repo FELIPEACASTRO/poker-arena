@@ -13,7 +13,15 @@ const LABEL: Record<string, string> = {
 }
 const levelOf = (kind: string) => (kind.startsWith('bot:') ? kind.slice(4) : 'human')
 
-export default function SeatView({ seat, isWinner = false }: { seat: Seat; isWinner?: boolean }) {
+export default function SeatView({
+  seat,
+  color,
+  isWinner = false,
+}: {
+  seat: Seat
+  color?: string
+  isWinner?: boolean
+}) {
   const level = levelOf(seat.kind)
   const isHuman = level === 'human'
   const folded = seat.status === 'folded'
@@ -55,7 +63,11 @@ export default function SeatView({ seat, isWinner = false }: { seat: Seat; isWin
 
       <div className="seat-plate">
         <div className="seat-top">
-          <CircleUserRound size={15} className="seat-ava" />
+          <span
+            className="seat-cdot"
+            style={color ? { background: color, boxShadow: `0 0 6px ${color}` } : undefined}
+          />
+          <CircleUserRound size={15} className="seat-ava" style={color ? { color } : undefined} />
           <span className="seat-name">{seat.name}</span>
           {seat.is_button && <span className="dealer-chip">D</span>}
         </div>

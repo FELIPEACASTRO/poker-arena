@@ -536,6 +536,7 @@ body {
   box-shadow: var(--shadow-1);
 }
 .seat-top { display: flex; align-items: center; gap: 6px; }
+.seat-cdot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--lvl, var(--text-dim)); }
 .seat-ava { color: var(--lvl, var(--text-dim)); flex: none; }
 .seat-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 78px; }
 .dealer-chip {

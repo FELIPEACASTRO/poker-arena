@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useGame } from '../store'
 import type { TableState } from '../types'
 import { CardFace } from './Card'
 import FeltGraphic from './FeltGraphic'
@@ -15,6 +16,7 @@ const SLOTS = [
 ]
 
 export default function PokerTable({ state }: { state: TableState }) {
+  const colors = useGame((s) => s.colors)
   const showWinners = state.phase === 'hand_over' || state.phase === 'game_over'
   const winners = new Set(state.winners ?? [])
   return (
@@ -65,7 +67,11 @@ export default function PokerTable({ state }: { state: TableState }) {
 
         {state.seats.map((s, i) => (
           <div key={s.seat} className={`seat-slot ${SLOTS[i] ?? ''}`}>
-            <SeatView seat={s} isWinner={showWinners && winners.has(s.seat)} />
+            <SeatView
+              seat={s}
+              color={colors[s.name]}
+              isWinner={showWinners && winners.has(s.seat)}
+            />
           </div>
         ))}
       </div>

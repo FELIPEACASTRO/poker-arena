@@ -14,7 +14,7 @@ const LVL: Record<string, { n: string; c: string }> = {
 }
 
 export default function ManageTable({ onClose }: { onClose: () => void }) {
-  const { state, addPlayer, removePlayer, busy, error } = useGame()
+  const { state, addPlayer, removePlayer, busy, error, colors } = useGame()
   const roster = state?.roster ?? []
   const [levels, setLevels] = useState<string[]>([])
   const [level, setLevel] = useState('montecarlo')
@@ -67,7 +67,10 @@ export default function ManageTable({ onClose }: { onClose: () => void }) {
         <div className="manage-list">
           {roster.map((r) => (
             <div key={r.seat} className="manage-row">
-              <span className="manage-dot" style={{ background: LVL[r.level]?.c ?? 'var(--text-dim)' }} />
+              <span
+                className="manage-dot"
+                style={{ background: colors[r.name] ?? LVL[r.level]?.c ?? 'var(--text-dim)' }}
+              />
               <span className="manage-name">
                 {r.name}
                 {r.is_human && <span className="manage-youtag">você</span>}

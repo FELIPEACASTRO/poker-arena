@@ -16,6 +16,10 @@ function useWatch(): WatchStats | null {
   const { state } = useGame()
   return state?.watch_stats ?? null
 }
+function useColors(): Record<string, string> {
+  return useGame((s) => s.colors)
+}
+const DIM = 'var(--text-dim)'
 
 function styleTag(b: BotStat): string {
   const loose = b.vpip >= 0.55
@@ -31,6 +35,7 @@ function styleTag(b: BotStat): string {
 /** Placar — fichas, lucro e mãos ganhas de cada IA (ranqueado). */
 export function LeaderboardPanel() {
   const ws = useWatch()
+  const colors = useColors()
   if (!ws) return null
   const max = Math.max(...ws.bots.map((b) => b.stack), 1)
   return (
@@ -42,13 +47,15 @@ export function LeaderboardPanel() {
         {ws.bots.map((b, i) => (
           <div key={b.seat} className="lb-row">
             <span className="lb-rank">{i + 1}</span>
-            <span className="lb-dot" style={{ background: LVL[b.level]?.c ?? 'var(--text-dim)' }} />
+            <span className="lb-dot" style={{ background: colors[b.name] ?? DIM }} />
             <span className="lb-name">
               {b.name}
-              <small>{b.hands_won} vit.</small>
+              <small>
+                {LVL[b.level]?.n ?? b.level} · {b.hands_won} vit.
+              </small>
             </span>
             <div className="lb-bar">
-              <span style={{ width: pct(b.stack / max), background: LVL[b.level]?.c ?? 'var(--text-dim)' }} />
+              <span style={{ width: pct(b.stack / max), background: colors[b.name] ?? DIM }} />
             </div>
             <span className="lb-stack">{num(b.stack)}</span>
             <span className={'lb-delta ' + (b.delta >= 0 ? 'pos' : 'neg')}>
@@ -65,6 +72,7 @@ export function LeaderboardPanel() {
 /** Estilo de cada IA — VPIP e agressão revelam a personalidade do paradigma. */
 export function StylePanel() {
   const ws = useWatch()
+  const colors = useColors()
   if (!ws) return null
   return (
     <div className="apanel">
@@ -76,7 +84,8 @@ export function StylePanel() {
         {ws.bots.map((b) => (
           <div key={b.seat} className="style-row">
             <div className="style-top">
-              <span className="style-name" style={{ color: LVL[b.level]?.c ?? 'var(--text)' }}>
+              <span className="style-name" style={{ color: colors[b.name] ?? 'var(--text)' }}>
+                <span className="lb-dot" style={{ background: colors[b.name] ?? DIM }} />
                 {b.name}
               </span>
               <span className="style-tag">{styleTag(b)}</span>
@@ -138,6 +147,7 @@ export function SessionStatsPanel() {
 /** Corrida das fichas — stack de cada IA mão a mão (gráfico de linhas). */
 export function ChipRacePanel() {
   const ws = useWatch()
+  const colors = useColors()
   if (!ws || ws.hands < 2) return null
   const W = 240
   const H = 92
@@ -173,8 +183,8 @@ export function ChipRacePanel() {
               key={s.seat}
               d={d}
               fill="none"
-              stroke={LVL[s.level]?.c ?? 'var(--text-dim)'}
-              strokeWidth={1.8}
+              stroke={colors[s.name] ?? DIM}
+              strokeWidth={2}
               strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
             />
@@ -184,7 +194,7 @@ export function ChipRacePanel() {
       <div className="race-legend">
         {ws.series.map((s) => (
           <span key={s.seat} className="rl">
-            <i style={{ background: LVL[s.level]?.c ?? 'var(--text-dim)' }} />
+            <i style={{ background: colors[s.name] ?? DIM }} />
             {s.name}
           </span>
         ))}

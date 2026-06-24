@@ -1,4 +1,6 @@
-from poker_arena.bots.observation import observation_for
+from poker_arena.bots.observation import Observation, PublicPlayer, observation_for
+from poker_arena.engine.actions import ActionType
+from poker_arena.engine.cards import Card, Rank, Suit
 from poker_arena.engine.game import Hand
 from poker_arena.engine.player import Player
 from poker_arena.ml.encoder import (
@@ -8,6 +10,8 @@ from poker_arena.ml.encoder import (
     to_action,
 )
 
+_STRENGTH_IDX = 110  # último escalar: 52 (hole) + 52 (board) + 6 escalares anteriores
+
 
 def _obs():
     players = [Player(f"P{i}", 1000) for i in range(6)]
@@ -16,11 +20,30 @@ def _obs():
     return h, observation_for(h)
 
 
+def _obs_with_hole(hole: tuple[Card, ...]) -> Observation:
+    players = (
+        PublicPlayer(0, "me", 1000, 0, 0, "active", True),
+        PublicPlayer(1, "x", 1000, 0, 0, "active", False),
+    )
+    return Observation(
+        seat=0, hole=hole, board=(), pot=0, to_call=0, current_bet=0, min_raise_to=20,
+        legal_actions=frozenset({ActionType.CHECK, ActionType.RAISE}),
+        players=players, num_active=2,
+    )
+
+
 def test_feature_vector_has_fixed_size():
     _, obs = _obs()
     v = encode(obs)
-    assert len(v) == FEATURE_SIZE == 120
+    assert len(v) == FEATURE_SIZE == 121
     assert all(isinstance(x, float) for x in v)
+
+
+def test_hand_strength_feature_ranks_hands():
+    aa = encode(_obs_with_hole((Card(Rank.ACE, Suit.SPADES), Card(Rank.ACE, Suit.HEARTS))))
+    weak = encode(_obs_with_hole((Card(Rank.SEVEN, Suit.SPADES), Card(Rank.TWO, Suit.HEARTS))))
+    assert 0.0 <= aa[_STRENGTH_IDX] <= 1.0
+    assert aa[_STRENGTH_IDX] > weak[_STRENGTH_IDX]  # AA mais forte que 72o
 
 
 def test_hole_cards_are_encoded():

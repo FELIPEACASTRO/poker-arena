@@ -7,6 +7,7 @@ treino (Colab) quanto na inferência (MLBot no backend).
 
 from __future__ import annotations
 
+from ..bots.heuristic_bot import postflop_strength, preflop_strength
 from ..bots.observation import Observation, PublicPlayer
 from ..engine.actions import Action, ActionType
 
@@ -18,10 +19,10 @@ _RANKS = "23456789TJQKA"
 _SUITS = "shdc"
 _HOLE = 52
 _BOARD = 52
-_SCALARS = 6
+_SCALARS = 7  # pote, to_call, stack, current_bet, min_raise_to, num_active, força
 _STREET = 4
 _POSITION = 1
-FEATURE_SIZE = _HOLE + _BOARD + _SCALARS + _STREET + _POSITION + N_ACTIONS  # 120
+FEATURE_SIZE = _HOLE + _BOARD + _SCALARS + _STREET + _POSITION + N_ACTIONS  # 121
 
 
 def _card_idx(card: str) -> int:
@@ -30,6 +31,19 @@ def _card_idx(card: str) -> int:
 
 def _own(obs: Observation) -> PublicPlayer:
     return next(p for p in obs.players if p.seat == obs.seat)
+
+
+def _hand_strength(obs: Observation) -> float:
+    """Força da mão em [0,1] via treys: pré-flop por regra, pós-flop por percentil.
+
+    Dá à rede o sinal de força explícito (em vez de aprender do zero pelas cartas)
+    — acelera o warm-start e o self-play. Robusto a board incompleto/malformado.
+    """
+    if len(obs.hole) < 2:
+        return 0.0
+    if len(obs.board) >= 3:
+        return postflop_strength(obs.hole, obs.board)
+    return preflop_strength(obs.hole)
 
 
 def legal_mask(obs: Observation) -> list[bool]:
@@ -64,6 +78,7 @@ def encode(obs: Observation) -> list[float]:
         obs.current_bet / total,
         obs.min_raise_to / total,
         obs.num_active / float(len(obs.players)),
+        _hand_strength(obs),
     ]
 
     street = [0.0] * _STREET

@@ -10,6 +10,10 @@ CHAVE.txt
 .huggingface/
 .kaggle/
 
+# ===== Logs de partida (auditoria, gerados em runtime) =====
+backend/logs/
+logs/
+
 # ===== Python =====
 __pycache__/
 *.py[cod]

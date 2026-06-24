@@ -60,6 +60,21 @@ def create_app() -> FastAPI:
         # Expert só aparece quando o modelo treinado existe (ready-to-plug)
         return {"levels": list(available_levels())}
 
+    @app.get("/games")
+    def games() -> dict[str, list[dict]]:
+        from ..application.match_log import list_games
+
+        return {"games": list_games()}
+
+    @app.get("/games/{game_id}")
+    def game(game_id: str) -> dict:
+        from ..application.match_log import read_game
+
+        g = read_game(game_id)
+        if g is None:
+            raise HTTPException(404, "jogo não encontrado")
+        return g
+
     @app.post("/tables", response_model=TableStateResponse, status_code=201)
     def create_table(req: CreateTableRequest, repo: RepoDep) -> TableStateResponse:
         try:

@@ -25,6 +25,7 @@ from ..engine.game import Hand
 from ..engine.player import Player, PlayerStatus
 from ..engine.table import Table
 from .bot_factory import create_bot
+from .match_log import MatchLogger
 from .views import (
     ActionView,
     InsightView,
@@ -71,6 +72,15 @@ def _cards(cards: list[Card]) -> list[str]:
     return [str(c) for c in cards]
 
 
+_STREET = {0: "preflop", 3: "flop", 4: "turn", 5: "river"}
+
+
+def _insight_dict(ins: BotInsight | None) -> dict | None:
+    if ins is None:
+        return None
+    return {"kind": ins.kind, "label": ins.label, "confidence": round(ins.confidence, 3)}
+
+
 class GameSession:
     def __init__(
         self,
@@ -84,6 +94,7 @@ class GameSession:
         rebuy: bool = True,
         opponent_model: OpponentModel | None = None,
         hand_limit: int | None = None,
+        match_logger: MatchLogger | None = None,
     ) -> None:
         self.id = session_id
         self._table = table
@@ -95,6 +106,8 @@ class GameSession:
         self._rebuy = rebuy
         self._hand_limit = hand_limit
         self._opp_model = opponent_model
+        self._logger = match_logger
+        self._hand_starts: dict[int, int] = {}
         self._last: list[ActionView] = []
         self._winners: list[int] | None = None
         self._insight_by_seat: dict[int, BotInsight] = {}
@@ -106,11 +119,23 @@ class GameSession:
             for p in self._table.players:
                 if p.stack <= 0:
                     p.stack = self._starting_stack
+        self._hand_starts = {id(p): p.stack for p in self._table.players}  # antes das blinds
         self._hand: Hand = self._table.start_hand()
         self._last = []
         self._winners = None
         self._insight_by_seat = {}
+        if self._logger is not None:
+            seats = [
+                {"seat": i, "name": p.name, "level": self._level_of(p), "start": self._hand_starts[id(p)]}
+                for i, p in enumerate(self._hand.players)
+            ]
+            self._logger.begin_hand(self._table.hand_count + 1, self._hand.button, seats)
         self._advance()
+
+    def _level_of(self, p: Player) -> str:
+        if self._human is not None and p is self._human:
+            return "human"
+        return self._level_by_player[id(p)]
 
     # ---------- comandos (CQRS: escrita) ----------
     def apply_human_action(self, action_type: str, amount: int = 0) -> None:
@@ -122,6 +147,7 @@ class GameSession:
         action = Action(at, amount=amount)
         if self._opp_model is not None:  # auto-learning: aprende o estilo do humano
             self._opp_model.observe(action_type, to_call=self._hand.amount_to_call())
+        self._log_action(self._hand.to_act, action, None)
         self._record(self._hand.to_act, action)
         self._hand.apply(action)  # o motor valida a legalidade
         self._advance()
@@ -205,16 +231,49 @@ class GameSession:
         hand = self._hand
         bot = self._bot_by_player[id(hand.players[seat])]
         action = bot.act(observation_for(hand))
+        ins: BotInsight | None = None
         if isinstance(bot, Explainable):  # glass-box: guarda o porquê da jogada
             ins = bot.insight()
             if ins is not None:
                 self._insight_by_seat[seat] = ins
+        self._log_action(seat, action, ins)
         self._record(seat, action)
         hand.apply(action)
 
+    def _log_action(self, seat: int, action: Action, ins: BotInsight | None) -> None:
+        if self._logger is None:
+            return
+        p = self._hand.players[seat]
+        self._logger.action(
+            seat,
+            p.name,
+            self._level_of(p),
+            action.type.value,
+            action.amount,
+            _STREET.get(len(self._hand.board), str(len(self._hand.board))),
+            _cards(self._hand.board),
+            _insight_dict(ins),
+        )
+
     def _finish_hand(self) -> None:
+        pot = self._hand.pot  # antes de distribuir
         winners = self._hand.resolve()
         self._winners = [self._hand.players.index(w) for w in winners]
+        if self._logger is not None:
+            self._logger.finish_hand(
+                _cards(self._hand.board),
+                pot,
+                [{"seat": self._hand.players.index(w), "name": w.name} for w in winners],
+                [
+                    {
+                        "seat": i,
+                        "name": p.name,
+                        "end": p.stack,
+                        "delta": p.stack - self._hand_starts.get(id(p), p.stack),
+                    }
+                    for i, p in enumerate(self._hand.players)
+                ],
+            )
         self._table.end_hand()
         human_broke = self._human is not None and self._human.stack <= 0
         tournament_over = not self._rebuy and (self._table.is_over() or human_broke)
@@ -315,6 +374,17 @@ def build_session(
         level_by_player[id(p)] = spec.level
 
     table = Table(players, config.small_blind, config.big_blind, seed=seed)
+    logger = MatchLogger(
+        sid,
+        {
+            "mode": config.mode,
+            "levels": [spec.level for spec in config.bots],
+            "starting_stack": config.starting_stack,
+            "sb": config.small_blind,
+            "bb": config.big_blind,
+            "human": config.human_name if config.mode == "play" else None,
+        },
+    )
     return GameSession(
         sid,
         table,
@@ -326,4 +396,5 @@ def build_session(
         rebuy=config.rebuy,
         opponent_model=opp_model,
         hand_limit=config.hand_limit,
+        match_logger=logger,
     )

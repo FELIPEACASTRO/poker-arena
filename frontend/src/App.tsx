@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Cpu, FlaskConical, Gamepad2, GraduationCap, LogOut } from 'lucide-react'
+import { ClipboardList, Cpu, FlaskConical, Gamepad2, GraduationCap, LogOut } from 'lucide-react'
 import ActionBar from './components/ActionBar'
 import AIMind from './components/AIMind'
 import { CouncilPanel, EquityPanel, EVPanel, HandPanel, ProfilePanel } from './components/Analysis'
+import AuditPage from './components/AuditPage'
 import GuideScreen from './components/GuideScreen'
 import LabHint from './components/LabHint'
 import PokerTable from './components/PokerTable'
@@ -15,6 +16,7 @@ export default function App() {
   const { state, watch, paused, busy, error, stepDelay, create, act, next, step, togglePause, leave } =
     useGame()
   const [guideOpen, setGuideOpen] = useState(false)
+  const [auditOpen, setAuditOpen] = useState(false)
 
   // modo laboratório: avança sozinho no ritmo escolhido (dá pra acompanhar e pensar)
   useEffect(() => {
@@ -65,6 +67,14 @@ export default function App() {
                     {watch ? 'Modo laboratório' : 'Você joga'}
                   </span>
                 </span>
+                <button
+                  className="btn btn-ghost guide-open"
+                  onClick={() => setAuditOpen(true)}
+                  title="Auditoria de partidas"
+                >
+                  <ClipboardList size={16} />
+                  <span className="guide-open-label">Auditoria</span>
+                </button>
                 <button
                   className="btn btn-ghost guide-open"
                   onClick={() => setGuideOpen(true)}
@@ -131,6 +141,7 @@ export default function App() {
 
           <AnimatePresence>
             {guideOpen && <GuideScreen onClose={() => setGuideOpen(false)} />}
+            {auditOpen && <AuditPage onClose={() => setAuditOpen(false)} />}
           </AnimatePresence>
         </motion.div>
       )}

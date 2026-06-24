@@ -93,6 +93,58 @@ export interface BotSpec {
   level: string
 }
 
+// ---- auditoria (logs de partida) ----
+export interface GameSummary {
+  id: string
+  created: string
+  mode: string
+  levels: string[]
+  hands: number
+  last: string
+}
+export interface LogInsight {
+  kind: string
+  label: string
+  confidence: number
+}
+export interface LogAction {
+  seat: number
+  name: string
+  level: string
+  street: string
+  action: string
+  amount: number
+  board: string[]
+  insight: LogInsight | null
+}
+export interface LogSeat {
+  seat: number
+  name: string
+  level: string
+  start: number
+}
+export interface LogResult {
+  seat: number
+  name: string
+  end: number
+  delta: number
+}
+export interface LogHand {
+  hand: number
+  ts: string
+  button: number
+  seats: LogSeat[]
+  actions: LogAction[]
+  board: string[]
+  pot: number
+  winners: { seat: number; name: string }[]
+  result: LogResult[]
+}
+export interface GameLog {
+  meta: Record<string, unknown>
+  hands: LogHand[]
+}
+
 export interface CreateConfig {
   human_name: string
   bots: BotSpec[]

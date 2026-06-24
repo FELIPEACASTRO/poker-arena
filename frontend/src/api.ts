@@ -1,4 +1,4 @@
-import type { CreateConfig, TableState } from './types'
+import type { CreateConfig, GameLog, GameSummary, TableState } from './types'
 
 const BASE = import.meta.env.VITE_API ?? 'http://127.0.0.1:8000'
 
@@ -35,4 +35,8 @@ export const api = {
 
   getLevels: () =>
     fetch(`${BASE}/levels`).then((r) => asJson<{ levels: string[] }>(r)),
+
+  listGames: () => fetch(`${BASE}/games`).then((r) => asJson<{ games: GameSummary[] }>(r)),
+
+  getGame: (id: string) => fetch(`${BASE}/games/${id}`).then((r) => asJson<GameLog>(r)),
 }

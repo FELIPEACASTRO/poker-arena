@@ -13,6 +13,7 @@ OpenSpiel/PyTorch. O backend só baixa o checkpoint pronto.
 | `notebooks/02_nfsp_leduc_single_cell.ipynb` 🧠 | **NFSP** — a primeira IA que *aprende* por rede neural (self-play). A brecha cai conforme ela aprende. Fiel ao exemplo oficial do OpenSpiel. | Colab (CPU/GPU, minutos) |
 | `notebooks/03_train_ppo_selfplay.ipynb` 🏋️ | **Treina o nível Expert** — PPO self-play sobre o NOSSO motor (6-max No-Limit). Aprende padrões e blefe; cada checkpoint = um nível. Exporta ONNX + publica no HF. | **Colab Pro+** (GPU, horas) |
 | `notebooks/04_qa_testes.ipynb` 🧪 | **QA completo** — contextualiza a solução pro time de QA e roda todos os tipos de teste da literatura (regressão+cobertura, teste de mesa, propriedade, valor-limite, negativo, segurança, determinismo, integração, desempenho). | Colab (CPU, minutos) |
+| `notebooks/05_pokerbench_warmstart.ipynb` 🧠🎯 | **Warm-start + benchmark GTO** — clona as decisões do solver (PokerBench, 6-max NLHE) na política, faz self-play pra refinar, e mede a **concordância com o solver** antes/depois. Reusa o `encode()` (parser testado em `ml/pokerbench.py`). | **Colab Pro+** (GPU, horas) |
 
 ### Como rodar (Colab)
 1. Abrir o `.ipynb` no Google Colab.

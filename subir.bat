@@ -26,7 +26,7 @@ if errorlevel 1 (
 
 REM --- 1) Backend (FastAPI) numa nova janela ---
 echo  [1/2] BACKEND  (FastAPI)   ^>  http://127.0.0.1:8000/docs
-start "Poker Arena - BACKEND" /d "%~dp0backend" cmd /k "uv run uvicorn poker_arena.api.app:app --port 8000 --reload"
+start "Poker Arena - BACKEND" /d "%~dp0backend" cmd /k "uv run uvicorn poker_arena.api.app:app --port 8000"
 
 REM --- 2) Frontend (React/Vite) noutra janela; abre o navegador sozinho ---
 echo  [2/2] FRONTEND (React)     ^>  http://localhost:5173

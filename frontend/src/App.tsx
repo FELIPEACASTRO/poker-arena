@@ -68,27 +68,35 @@ export default function App() {
 
             <main className="lab-main">
               <LabHint />
-              <AnimatePresence>
-                {read && read.samples >= 8 && (
-                  <motion.div
-                    className="brain-banner"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                  >
-                    🧠 <b>Aprendi seu estilo</b> ({read.samples} jogadas): você desiste{' '}
-                    <b>{Math.round(read.fold_to_bet * 100)}%</b> das vezes diante de apostas
-                    {read.fold_to_bet > 0.55
-                      ? ' → vou te pressionar e blefar mais.'
-                      : read.fold_to_bet < 0.45
-                        ? ' → você paga muito, então aposto só com mão forte.'
-                        : ' → jogo equilibrado, por enquanto.'}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <WinStats />
-              <PokerTable state={state} />
-              <AIMind />
+              <div className="lab-grid">
+                <aside className="lab-col">
+                  <WinStats />
+                </aside>
+                <section className="lab-stage">
+                  <PokerTable state={state} />
+                </section>
+                <aside className="lab-col">
+                  <AIMind />
+                  <AnimatePresence>
+                    {read && read.samples >= 8 && (
+                      <motion.div
+                        className="brain-banner"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                      >
+                        🧠 <b>Aprendi seu estilo</b> ({read.samples} jogadas): você desiste{' '}
+                        <b>{Math.round(read.fold_to_bet * 100)}%</b> das vezes diante de apostas
+                        {read.fold_to_bet > 0.55
+                          ? ' → vou te pressionar e blefar mais.'
+                          : read.fold_to_bet < 0.45
+                            ? ' → você paga muito, então aposto só com mão forte.'
+                            : ' → jogo equilibrado, por enquanto.'}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </aside>
+              </div>
               <ActionBar
                 state={state}
                 busy={busy}

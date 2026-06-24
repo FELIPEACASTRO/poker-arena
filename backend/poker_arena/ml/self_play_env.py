@@ -11,13 +11,15 @@ from __future__ import annotations
 import random
 from collections.abc import Callable
 
-from ..bots.observation import Observation, observation_for
+from ..bots.observation import observation_for
 from ..engine.game import Hand
 from ..engine.player import Player, PlayerStatus
 from .encoder import FEATURE_SIZE, N_ACTIONS, encode, legal_mask, to_action
 
-# (observação, máscara de ações legais) -> índice da ação discreta
-OpponentPolicy = Callable[[Observation, list[bool]], int]
+# (features já codificadas, máscara de ações legais) -> índice da ação discreta.
+# O env entrega as FEATURES prontas (não o Observation cru): assim a política
+# neural pode ir direto pro predict, sem ninguém esquecer de chamar encode().
+OpponentPolicy = Callable[[list[float], list[bool]], int]
 
 StepResult = tuple[list[float], list[bool], float, bool]
 
@@ -25,7 +27,7 @@ StepResult = tuple[list[float], list[bool], float, bool]
 def random_opponent(rng: random.Random) -> OpponentPolicy:
     """Oponente que escolhe uniformemente entre as ações legais."""
 
-    def policy(_obs: Observation, mask: list[bool]) -> int:
+    def policy(_feats: list[float], mask: list[bool]) -> int:
         return rng.choice([i for i, ok in enumerate(mask) if ok])
 
     return policy
@@ -95,7 +97,8 @@ class SelfPlayEnv:
                 if hand.to_act == self._agent_seat:
                     return False
                 obs = observation_for(hand)
-                hand.apply(to_action(obs, self.opponent(obs, legal_mask(obs))))
+                idx = self.opponent(encode(obs), legal_mask(obs))
+                hand.apply(to_action(obs, idx))
             contesting = [p for p in hand.players if p.status != PlayerStatus.FOLDED]
             if len(contesting) <= 1 or len(hand.board) >= 5:
                 hand.resolve()

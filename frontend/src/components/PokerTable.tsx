@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import type { TableState } from '../types'
 import { CardFace } from './Card'
+import FeltGraphic from './FeltGraphic'
 import SeatView from './Seat'
 
 // posições ao redor da mesa oval (até 6 cadeiras; o humano sempre embaixo)
@@ -20,6 +21,7 @@ export default function PokerTable({ state }: { state: TableState }) {
     <div className="table-wrap">
       <div className="felt">
         <div className="felt-glow" />
+        <FeltGraphic />
         <div className="board">
           {[0, 1, 2, 3, 4].map((i) => {
             const c = state.board[i]

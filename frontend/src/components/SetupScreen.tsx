@@ -29,6 +29,8 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
     'heuristic',
   ])
   const [stack, setStack] = useState(1000)
+  const [rebuy, setRebuy] = useState(true) // true = cash game (infinito) | false = torneio
+  const [handLimit, setHandLimit] = useState(0) // 0 = sem limite
   const [available, setAvailable] = useState<string[]>(['random', 'heuristic', 'montecarlo'])
 
   // o Expert só aparece quando o modelo treinado existe no backend
@@ -57,6 +59,8 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
       small_blind: 10,
       big_blind: 20,
       mode,
+      rebuy,
+      hand_limit: handLimit || null,
     })
   }
 
@@ -124,6 +128,24 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
             step={100}
             onChange={(e) => setStack(Number(e.target.value))}
           />
+        </label>
+
+        <label className="field">
+          <span>Formato</span>
+          <select value={rebuy ? 'cash' : 'tourney'} onChange={(e) => setRebuy(e.target.value === 'cash')}>
+            <option value="cash">Cash game — nunca acaba (recompra ao zerar)</option>
+            <option value="tourney">Torneio — até sobrar 1 (eliminação)</option>
+          </select>
+        </label>
+
+        <label className="field">
+          <span>Limite de mãos</span>
+          <select value={handLimit} onChange={(e) => setHandLimit(Number(e.target.value))}>
+            <option value={0}>Sem limite</option>
+            <option value={30}>Parar em 30 mãos</option>
+            <option value={50}>Parar em 50 mãos</option>
+            <option value={100}>Parar em 100 mãos</option>
+          </select>
         </label>
 
         {error && <div className="error">⚠ {error}</div>}

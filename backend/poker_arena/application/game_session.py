@@ -64,6 +64,7 @@ class SessionConfig:
     big_blind: int = 20
     rebuy: bool = True  # cash game: quem zera recompra -> a mesa segue cheia
     mode: str = "play"  # "play" (humano joga) | "watch" (só bots, você assiste)
+    hand_limit: int | None = None  # para após N mãos (None = sem limite)
 
 
 def _cards(cards: list[Card]) -> list[str]:
@@ -82,6 +83,7 @@ class GameSession:
         starting_stack: int,
         rebuy: bool = True,
         opponent_model: OpponentModel | None = None,
+        hand_limit: int | None = None,
     ) -> None:
         self.id = session_id
         self._table = table
@@ -91,6 +93,7 @@ class GameSession:
         self._level_by_player = level_by_player
         self._starting_stack = starting_stack
         self._rebuy = rebuy
+        self._hand_limit = hand_limit
         self._opp_model = opponent_model
         self._last: list[ActionView] = []
         self._winners: list[int] | None = None
@@ -197,8 +200,17 @@ class GameSession:
         self._winners = [self._hand.players.index(w) for w in winners]
         self._table.end_hand()
         human_broke = self._human is not None and self._human.stack <= 0
-        over = not self._rebuy and (self._table.is_over() or human_broke)
-        self._phase = "game_over" if over else "hand_over"
+        tournament_over = not self._rebuy and (self._table.is_over() or human_broke)
+        limit_reached = (
+            self._hand_limit is not None and self._table.hand_count >= self._hand_limit
+        )
+        if tournament_over or limit_reached:
+            # fim de jogo: campeão = quem tem mais fichas
+            top = max(p.stack for p in self._hand.players)
+            self._winners = [i for i, p in enumerate(self._hand.players) if p.stack == top]
+            self._phase = "game_over"
+        else:
+            self._phase = "hand_over"
 
     def _record(self, seat: int, action: Action) -> None:
         self._last.append(
@@ -296,4 +308,5 @@ def build_session(
         starting_stack=config.starting_stack,
         rebuy=config.rebuy,
         opponent_model=opp_model,
+        hand_limit=config.hand_limit,
     )

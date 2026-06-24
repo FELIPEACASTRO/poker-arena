@@ -73,6 +73,31 @@ def test_cash_game_keeps_table_full_after_busts():
             s.next_hand()
 
 
+def test_hand_limit_ends_game_with_chip_leader_as_champion():
+    # cash game COM limite de mãos: termina após N mãos; campeão = quem tem mais fichas
+    cfg = SessionConfig(
+        mode="watch",
+        bots=[BotSpec(f"B{i}", "heuristic") for i in range(6)],
+        starting_stack=500,
+        rebuy=True,
+        hand_limit=5,
+    )
+    s = build_session(cfg, seed=7)
+    for _ in range(500):
+        v = s.view()
+        if v.phase == "game_over":
+            break
+        if v.phase == "bot_turn":
+            s.step()
+        elif v.phase == "hand_over":
+            s.next_hand()
+    v = s.view()
+    assert v.phase == "game_over"  # parou no limite (não ficou em loop)
+    assert v.hand_number >= 5
+    top = max(st.stack for st in v.seats)
+    assert set(v.winners or []) == {st.seat for st in v.seats if st.stack == top}
+
+
 def test_illegal_action_is_rejected_by_engine():
     s = _session()
     v = s.view()

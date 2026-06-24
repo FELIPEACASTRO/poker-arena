@@ -66,5 +66,7 @@ export interface CreateConfig {
   small_blind: number
   big_blind: number
   mode?: 'play' | 'watch'
+  rebuy?: boolean // true = cash game (infinito) | false = torneio (eliminação)
+  hand_limit?: number | null // para após N mãos (null = sem limite)
   seed?: number | null
 }

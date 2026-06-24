@@ -8,11 +8,8 @@ dependencies = [
     "fastapi>=0.110",
     "uvicorn>=0.29",
     "onnxruntime>=1.27.0",
-    "numpy>=2.4.6",
+    "numpy>=2",
 ]
-
-[project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-cov", "ruff>=0.6", "mypy>=1.10", "httpx>=0.27"]
 
 [build-system]
 requires = ["hatchling"]
@@ -43,5 +40,10 @@ files = ["poker_arena"]
 
 [dependency-groups]
 dev = [
+    "pytest>=8.0",
+    "pytest-cov",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "httpx>=0.27",
     "onnx>=1.22.0",
 ]

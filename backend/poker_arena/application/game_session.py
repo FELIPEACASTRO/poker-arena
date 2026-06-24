@@ -14,15 +14,23 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 
+from ..bots.adaptive_bot import AdaptiveBot
 from ..bots.base import Bot
 from ..bots.observation import observation_for
+from ..bots.opponent_model import OpponentModel
 from ..engine.actions import Action, ActionType
 from ..engine.cards import Card
 from ..engine.game import Hand
 from ..engine.player import Player, PlayerStatus
 from ..engine.table import Table
 from .bot_factory import create_bot
-from .views import ActionView, LegalView, SeatView, TableStateView
+from .views import (
+    ActionView,
+    LegalView,
+    OpponentReadView,
+    SeatView,
+    TableStateView,
+)
 
 _MAX_LOG = 12
 _ACTIVE = ("human_turn", "bot_turn")
@@ -71,6 +79,7 @@ class GameSession:
         level_by_player: dict[int, str],
         starting_stack: int,
         rebuy: bool = True,
+        opponent_model: OpponentModel | None = None,
     ) -> None:
         self.id = session_id
         self._table = table
@@ -80,6 +89,7 @@ class GameSession:
         self._level_by_player = level_by_player
         self._starting_stack = starting_stack
         self._rebuy = rebuy
+        self._opp_model = opponent_model
         self._last: list[ActionView] = []
         self._winners: list[int] | None = None
         self._phase = "human_turn"
@@ -103,6 +113,8 @@ class GameSession:
         if at is None:
             raise InvalidActionError(f"ação desconhecida: {action_type!r}")
         action = Action(at, amount=amount)
+        if self._opp_model is not None:  # auto-learning: aprende o estilo do humano
+            self._opp_model.observe(action_type, to_call=self._hand.amount_to_call())
         self._record(self._hand.to_act, action)
         self._hand.apply(action)  # o motor valida a legalidade
         self._advance()
@@ -132,7 +144,14 @@ class GameSession:
             legal=self._legal() if self._phase == "human_turn" else None,
             last_actions=list(self._last),
             winners=self._winners,
+            opponent_read=self._opp_read(),
         )
+
+    def _opp_read(self) -> OpponentReadView | None:
+        if self._opp_model is None:
+            return None
+        r = self._opp_model.read()
+        return OpponentReadView(r.fold_to_bet, r.aggression, r.samples)
 
     def total_chips(self) -> int:
         """Invariante de conservação (todas as fichas, inclusive no pote)."""
@@ -232,11 +251,15 @@ def build_session(
         players.append(human)
         human_seat = 0
 
+    opp_model = OpponentModel()  # memória compartilhada: aprende o estilo do humano
     for i, spec in enumerate(config.bots):
         p = Player(spec.name, config.starting_stack)
         players.append(p)
         bot_seed = None if seed is None else seed + i + 1
-        bot_by_player[id(p)] = create_bot(spec.level, seed=bot_seed)
+        if spec.level == "adaptive":  # precisa da memória -> não passa pela factory
+            bot_by_player[id(p)] = AdaptiveBot(opp_model, name=spec.name, seed=bot_seed)
+        else:
+            bot_by_player[id(p)] = create_bot(spec.level, seed=bot_seed)
         level_by_player[id(p)] = spec.level
 
     table = Table(players, config.small_blind, config.big_blind, seed=seed)
@@ -249,4 +272,5 @@ def build_session(
         level_by_player,
         starting_stack=config.starting_stack,
         rebuy=config.rebuy,
+        opponent_model=opp_model,
     )

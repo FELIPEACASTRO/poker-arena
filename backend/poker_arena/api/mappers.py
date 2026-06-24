@@ -14,6 +14,7 @@ from .schemas import (
     ActionSchema,
     CreateTableRequest,
     LegalSchema,
+    OpponentReadSchema,
     SeatSchema,
     TableStateResponse,
 )
@@ -42,4 +43,9 @@ def to_response(view: TableStateView) -> TableStateResponse:
         legal=LegalSchema(**asdict(view.legal)) if view.legal else None,
         last_actions=[ActionSchema(**asdict(a)) for a in view.last_actions],
         winners=view.winners,
+        opponent_read=(
+            OpponentReadSchema(**asdict(view.opponent_read))
+            if view.opponent_read
+            else None
+        ),
     )

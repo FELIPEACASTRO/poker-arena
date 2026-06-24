@@ -23,7 +23,13 @@ from .session_repository import (
     SessionNotFound,
     SessionRepository,
 )
-from .views import ActionView, LegalView, SeatView, TableStateView
+from .views import (
+    ActionView,
+    LegalView,
+    OpponentReadView,
+    SeatView,
+    TableStateView,
+)
 
 __all__ = [
     "LEVELS",
@@ -36,6 +42,7 @@ __all__ = [
     "InMemorySessionRepository",
     "InvalidActionError",
     "LegalView",
+    "OpponentReadView",
     "SeatView",
     "SessionConfig",
     "SessionNotFound",

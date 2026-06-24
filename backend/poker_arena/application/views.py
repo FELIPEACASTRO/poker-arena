@@ -38,13 +38,23 @@ class LegalView:
 
 
 @dataclass(frozen=True)
+class OpponentReadView:
+    """O que o bot adaptativo já aprendeu sobre o humano (auto-learning visível)."""
+
+    fold_to_bet: float
+    aggression: float
+    samples: int
+
+
+@dataclass(frozen=True)
 class TableStateView:
     table_id: str
     hand_number: int
-    phase: str  # "human_turn" | "hand_over" | "game_over"
+    phase: str  # "human_turn" | "bot_turn" | "hand_over" | "game_over"
     board: list[str]
     pot: int
     seats: list[SeatView]
     legal: LegalView | None
     last_actions: list[ActionView]
     winners: list[int] | None
+    opponent_read: OpponentReadView | None = None

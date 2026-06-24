@@ -249,3 +249,18 @@ body {
   color: var(--gold-soft);
   box-shadow: 0 0 16px rgba(214, 179, 94, 0.25);
 }
+
+/* ---------------- Bot adaptativo: o que ele aprendeu ---------------- */
+.brain-banner {
+  max-width: min(680px, 94vw);
+  margin: 0 auto 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--gold-dim);
+  background: linear-gradient(165deg, rgba(20, 84, 58, 0.5), rgba(6, 22, 15, 0.8));
+  color: var(--text);
+  font-size: 0.92rem;
+  text-align: center;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+.brain-banner b { color: var(--gold-soft); }

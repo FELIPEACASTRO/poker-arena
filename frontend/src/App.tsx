@@ -50,8 +50,20 @@ export default function App() {
     )
   }
 
+  const read = state.opponent_read
   return (
     <div className="app">
+      {read && read.samples >= 8 && (
+        <div className="brain-banner">
+          🧠 <b>Aprendi seu estilo</b> ({read.samples} jogadas): você desiste{' '}
+          <b>{Math.round(read.fold_to_bet * 100)}%</b> das vezes diante de apostas
+          {read.fold_to_bet > 0.55
+            ? ' → vou te pressionar e blefar mais.'
+            : read.fold_to_bet < 0.45
+              ? ' → você paga muito, então aposto só com mão forte.'
+              : ' → jogo equilibrado, por enquanto.'}
+        </div>
+      )}
       <PokerTable state={state} />
       <ActionBar
         state={state}

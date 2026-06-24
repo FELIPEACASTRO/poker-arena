@@ -53,6 +53,12 @@ class LegalSchema(BaseModel):
     max_raise_to: int
 
 
+class OpponentReadSchema(BaseModel):
+    fold_to_bet: float
+    aggression: float
+    samples: int
+
+
 class TableStateResponse(BaseModel):
     table_id: str
     hand_number: int
@@ -63,3 +69,4 @@ class TableStateResponse(BaseModel):
     legal: LegalSchema | None
     last_actions: list[ActionSchema]
     winners: list[int] | None
+    opponent_read: OpponentReadSchema | None = None

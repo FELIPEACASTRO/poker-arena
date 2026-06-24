@@ -25,6 +25,12 @@ export interface Legal {
   max_raise_to: number
 }
 
+export interface OpponentRead {
+  fold_to_bet: number
+  aggression: number
+  samples: number
+}
+
 export interface TableState {
   table_id: string
   hand_number: number
@@ -35,6 +41,7 @@ export interface TableState {
   legal: Legal | null
   last_actions: ActionLog[]
   winners: number[] | null
+  opponent_read?: OpponentRead | null
 }
 
 export interface BotSpec {

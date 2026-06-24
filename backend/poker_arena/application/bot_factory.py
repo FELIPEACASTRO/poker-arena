@@ -62,7 +62,12 @@ def create_bot(level: str, seed: int | None = None) -> Bot:
 
 
 def available_levels() -> tuple[str, ...]:
-    """Níveis utilizáveis agora — o Expert só aparece se o modelo treinado existir."""
-    return tuple(
-        lvl for lvl in LEVELS if lvl != "expert" or expert_model_path().exists()
-    )
+    """Níveis utilizáveis agora.
+
+    `adaptive` (aprende o humano) é montado no build_session, não pela factory.
+    `expert` só aparece se o modelo treinado existir.
+    """
+    levels = ["random", "heuristic", "montecarlo", "adaptive"]
+    if expert_model_path().exists():
+        levels.append("expert")
+    return tuple(levels)

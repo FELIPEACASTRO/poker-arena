@@ -134,3 +134,27 @@ def test_step_outside_bot_turn_raises():
     s = _session()  # modo jogar nunca fica em bot_turn (bots jogam sozinhos)
     with pytest.raises(InvalidActionError):
         s.step()
+
+
+# ---------- bot adaptativo (aprende o humano) ----------
+def test_adaptive_session_learns_from_the_human():
+    cfg = SessionConfig(
+        bots=[BotSpec(f"B{i}", "adaptive") for i in range(3)],
+        starting_stack=300, mode="play",
+    )
+    s = build_session(cfg, seed=5)
+    assert s.view().opponent_read is not None  # auto-learning ativo desde o inicio
+    for _ in range(80):
+        v = s.view()
+        if v.phase == "human_turn" and v.legal is not None:
+            legal = v.legal.actions
+            if "fold" in legal and v.legal.to_call > 0:
+                s.apply_human_action("fold")  # sempre desiste diante de aposta
+            else:
+                s.apply_human_action("check" if "check" in legal else "call")
+        elif v.phase == "hand_over":
+            s.next_hand()
+        else:
+            break
+    read = s.view().opponent_read
+    assert read is not None and read.samples > 0  # observou as jogadas do humano

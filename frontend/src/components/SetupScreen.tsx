@@ -6,6 +6,7 @@ const LEVELS = [
   { id: 'random', label: '🟢 Iniciante — joga no chute' },
   { id: 'heuristic', label: '🟡 Amador — joga por regras' },
   { id: 'montecarlo', label: '🟠 Intermediário — calcula chances' },
+  { id: 'adaptive', label: '🧠 Adaptativo — aprende e explora você' },
   { id: 'expert', label: '🔴 Expert — IA treinada (solver + self-play)' },
 ]
 const NAMES = ['Luna', 'Caio', 'Sofia', 'Alex', 'Maya', 'Rex']

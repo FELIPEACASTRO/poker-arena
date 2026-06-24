@@ -186,7 +186,7 @@ body {
   height: 100%;
   width: auto;
   max-width: 100%;
-  aspect-ratio: 2.2 / 1; /* mesa larga: aproveita o espaço e separa os assentos */
+  aspect-ratio: 2.4 / 1; /* mesa larga: aproveita o espaço e separa os assentos */
   margin: 0;
 }
 
@@ -215,7 +215,7 @@ body {
 .lab-stage .seat-slot { z-index: 3; }
 
 /* respiro vertical no palco pra os assentos de topo/base caberem fora do feltro */
-.lab-stage { padding: 44px 8px; }
+.lab-stage { padding: 40px 8px; }
 
 /* barra de ação compacta no rodapé */
 .lab-main .actionbar {

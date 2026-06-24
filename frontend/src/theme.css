@@ -189,26 +189,32 @@ body {
   margin: 0;
 }
 
-/* assentos compactos e reposicionados ao redor da mesa (centro livre) */
-.lab-stage .seat-plate { min-width: 88px; padding: 6px 9px; }
-.lab-stage .seat-name { max-width: 62px; font-size: 12px; }
-.lab-stage .seat-kind { font-size: 9px; }
-.lab-stage .seat-stack { font-size: 13px; }
-.lab-stage .card { width: 32px; height: 45px; }
-.lab-stage .card-rank { font-size: 13px; }
-.lab-stage .card-suit { font-size: 11px; }
+/* assentos compactos e ao redor da mesa (centro 100% livre pro board/pote) */
+.lab-stage .seat-plate { min-width: 80px; padding: 5px 8px; }
+.lab-stage .seat-name { max-width: 56px; font-size: 11px; }
+.lab-stage .seat-kind { font-size: 8px; }
+.lab-stage .seat-stack { font-size: 12px; }
+.lab-stage .seat-bet { font-size: 10px; padding: 1px 7px; }
+.lab-stage .card { width: 28px; height: 39px; }
+.lab-stage .card-rank { font-size: 12px; }
+.lab-stage .card-suit { font-size: 10px; }
 
-.lab-stage .slot-bottom { left: 50%; bottom: 2%; transform: translateX(-50%); }
-.lab-stage .slot-top { left: 50%; top: 2%; transform: translateX(-50%); }
-.lab-stage .slot-left-high { left: 1%; top: 10%; }
-.lab-stage .slot-left-low { left: 1%; bottom: 10%; }
-.lab-stage .slot-right-high { right: 1%; top: 10%; }
-.lab-stage .slot-right-low { right: 1%; bottom: 10%; }
+/* topo/base ficam FORA da mesa (acima/abaixo do feltro) -> não tampam o centro */
+.lab-stage .slot-bottom { left: 50%; bottom: -5%; transform: translateX(-50%); }
+.lab-stage .slot-top { left: 50%; top: -5%; transform: translateX(-50%); }
+.lab-stage .slot-left-high { left: -1%; top: 12%; }
+.lab-stage .slot-left-low { left: -1%; bottom: 12%; }
+.lab-stage .slot-right-high { right: -1%; top: 12%; }
+.lab-stage .slot-right-low { right: -1%; bottom: 12%; }
 
-/* board e pote sempre visíveis acima dos assentos */
-.lab-stage .board { top: 40%; z-index: 4; }
-.lab-stage .pot-badge { top: 56%; z-index: 4; }
+/* board e pote no centro, sempre por cima */
+.lab-stage .board { top: 42%; z-index: 4; }
+.lab-stage .pot-badge { top: 58%; z-index: 4; }
+.lab-stage .board-empty { z-index: 4; }
 .lab-stage .seat-slot { z-index: 3; }
+
+/* mais respiro vertical no palco pra os assentos de topo/base caberem fora do feltro */
+.lab-stage { padding: 62px 8px; }
 
 /* barra de ação compacta no rodapé */
 .lab-main .actionbar {

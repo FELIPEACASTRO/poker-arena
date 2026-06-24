@@ -1,0 +1,194 @@
+/* ============================================================
+   Poker Arena — Design tokens (direção "Lab científico")
+   Dashboard analítico escuro + acentos de dado. Fase 0 da refatoração.
+   ============================================================ */
+:root {
+  /* superfícies */
+  --bg: #0a0d13;
+  --surface: #0f141d;
+  --surface-2: #151c28;
+  --surface-3: #1c2533;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-2: rgba(255, 255, 255, 0.13);
+
+  /* texto */
+  --text: #e8eef6;
+  --text-dim: #94a3b8;
+  --text-faint: #5a6b80;
+
+  /* acento (lab/data) */
+  --accent: #2dd4bf;
+  --accent-2: #22b8a6;
+  --accent-soft: rgba(45, 212, 191, 0.12);
+
+  /* feltro discreto (não cassino) */
+  --felt: #0c1f1a;
+  --felt-2: #10271f;
+  --felt-edge: rgba(45, 212, 191, 0.18);
+
+  /* os 5 cérebros (cor = nível) */
+  --lvl-random: #84cc4f;
+  --lvl-heuristic: #f1b53a;
+  --lvl-montecarlo: #f08a5d;
+  --lvl-adaptive: #8b7ff0;
+  --lvl-expert: #ff5b6e;
+
+  /* semântico */
+  --pos: #4ade80;
+  --neg: #fb7185;
+  --warn: #fbbf24;
+  --pos-soft: rgba(74, 222, 128, 0.13);
+  --neg-soft: rgba(251, 113, 133, 0.13);
+
+  /* raios */
+  --r-sm: 7px; --r-md: 11px; --r-lg: 16px; --r-xl: 22px; --r-pill: 999px;
+
+  /* escala de espaço */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+
+  /* tipografia */
+  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* movimento */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 130ms; --t: 240ms; --t-slow: 440ms;
+
+  /* elevação (sutil) */
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 10px 40px rgba(0, 0, 0, 0.45);
+  --ring: 0 0 0 3px var(--accent-soft);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background:
+    radial-gradient(120% 80% at 50% -20%, #11202b 0%, var(--bg) 55%),
+    var(--bg);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04';
+}
+
+::selection { background: var(--accent-soft); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--r-pill); border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-2); background-clip: padding-box; }
+
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------------- shell de dashboard ---------------- */
+.lab-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.lab-header {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: 0 var(--s5);
+  border-bottom: 1px solid var(--border);
+  background: rgba(10, 13, 19, 0.7);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.lab-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.lab-brand .ico { color: var(--accent); display: grid; place-items: center; }
+.lab-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  border: 1px solid var(--accent-soft);
+  background: var(--accent-soft);
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+}
+
+.lab-header-spacer { flex: 1; }
+.lab-header-right { display: flex; align-items: center; gap: var(--s3); }
+
+.lab-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ---------------- primitivos reutilizáveis (próximas fases) ---------------- */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: var(--surface-2);
+}
+
+.btn {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-md);
+  padding: 9px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background var(--t-fast) var(--ease), border-color var(--t-fast), transform var(--t-fast);
+}
+.btn:hover { background: var(--surface-3); border-color: var(--border-2); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-accent { background: var(--accent); color: #04201c; border-color: transparent; }
+.btn-accent:hover { background: var(--accent-2); }
+.btn-ghost { background: transparent; border-color: var(--border); }
+.btn-ghost:hover { background: var(--surface-2); }
+
+.ico-btn {
+  width: 34px; height: 34px;
+  display: grid; place-items: center;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+}
+.ico-btn:hover { color: var(--text); background: var(--surface-3); }
+
+:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--r-sm); }

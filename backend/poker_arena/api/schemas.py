@@ -70,6 +70,39 @@ class OpponentReadSchema(BaseModel):
     samples: int
 
 
+class WinProbSchema(BaseModel):
+    seat: int
+    prob: float
+
+
+class CouncilEntrySchema(BaseModel):
+    level: str
+    action: str
+    amount: int
+    confidence: float | None = None
+
+
+class HumanAnalysisSchema(BaseModel):
+    equity: float
+    win_probs: list[WinProbSchema]
+    hand_name: str | None
+    outs: int
+    draws: list[str]
+    pot_odds: float
+    ev_call: float
+    nut: str | None
+    texture: str | None
+    spr: float | None
+    position: str
+    council: list[CouncilEntrySchema]
+    best_action: str | None
+    best_amount: int | None
+    confidence: float | None
+    your_profile_fold: float
+    your_profile_aggr: float
+    your_profile_samples: int
+
+
 class TableStateResponse(BaseModel):
     table_id: str
     hand_number: int
@@ -81,3 +114,4 @@ class TableStateResponse(BaseModel):
     last_actions: list[ActionSchema]
     winners: list[int] | None
     opponent_read: OpponentReadSchema | None = None
+    analysis: HumanAnalysisSchema | None = None

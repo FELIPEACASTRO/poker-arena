@@ -60,6 +60,46 @@ class OpponentReadView:
 
 
 @dataclass(frozen=True)
+class WinProbView:
+    seat: int
+    prob: float  # % de vitória real (showdown sim) em [0,1]
+
+
+@dataclass(frozen=True)
+class CouncilEntryView:
+    """O que um cérebro recomendaria pra jogada atual do humano."""
+
+    level: str
+    action: str
+    amount: int
+    confidence: float | None = None
+
+
+@dataclass(frozen=True)
+class HumanAnalysisView:
+    """Análise completa da jogada do humano (todos os painéis), calculada de verdade."""
+
+    equity: float
+    win_probs: list[WinProbView]
+    hand_name: str | None
+    outs: int
+    draws: list[str]
+    pot_odds: float
+    ev_call: float
+    nut: str | None
+    texture: str | None
+    spr: float | None
+    position: str
+    council: list[CouncilEntryView]
+    best_action: str | None
+    best_amount: int | None
+    confidence: float | None
+    your_profile_fold: float
+    your_profile_aggr: float
+    your_profile_samples: int
+
+
+@dataclass(frozen=True)
 class TableStateView:
     table_id: str
     hand_number: int
@@ -71,3 +111,4 @@ class TableStateView:
     last_actions: list[ActionView]
     winners: list[int] | None
     opponent_read: OpponentReadView | None = None
+    analysis: HumanAnalysisView | None = None

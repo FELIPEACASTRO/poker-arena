@@ -41,6 +41,39 @@ export interface OpponentRead {
   samples: number
 }
 
+export interface WinProb {
+  seat: number
+  prob: number
+}
+
+export interface CouncilEntry {
+  level: string
+  action: string
+  amount: number
+  confidence: number | null
+}
+
+export interface Analysis {
+  equity: number
+  win_probs: WinProb[]
+  hand_name: string | null
+  outs: number
+  draws: string[]
+  pot_odds: number
+  ev_call: number
+  nut: string | null
+  texture: string | null
+  spr: number | null
+  position: string
+  council: CouncilEntry[]
+  best_action: string | null
+  best_amount: number | null
+  confidence: number | null
+  your_profile_fold: number
+  your_profile_aggr: number
+  your_profile_samples: number
+}
+
 export interface TableState {
   table_id: string
   hand_number: number
@@ -52,6 +85,7 @@ export interface TableState {
   last_actions: ActionLog[]
   winners: number[] | null
   opponent_read?: OpponentRead | null
+  analysis?: Analysis | null
 }
 
 export interface BotSpec {

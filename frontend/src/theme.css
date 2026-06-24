@@ -658,6 +658,54 @@ body {
   .actbtn { min-width: 100px; padding: 11px 12px; font-size: 13px; }
   .betsize-tabs button { font-size: 11px; padding: 5px 6px; }
 }
+
+/* ============================================================
+   Fase B — painéis de análise (dados reais)
+   ============================================================ */
+.apanel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s3) var(--s4); }
+.apanel-h { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: var(--s3); }
+.apanel-h svg { color: var(--accent); }
+
+.equity-row { display: flex; align-items: center; gap: var(--s4); }
+.donut { flex: none; }
+.winprobs { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.winprob { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.wp-name { width: 54px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wp-bar { flex: 1; height: 6px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; }
+.wp-bar span { display: block; height: 100%; border-radius: var(--r-pill); }
+.wp-pct { width: 34px; text-align: right; color: var(--text); }
+
+.hand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.hand-grid > div { display: flex; flex-direction: column; }
+.hk { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+.hv { font-size: 13px; color: var(--text); font-weight: 500; }
+.hand-draws { font-size: 12px; color: var(--accent); margin: var(--s3) 0 0; }
+.potodds { margin-top: var(--s3); font-size: 12px; line-height: 1.5; padding: 8px 10px; border-radius: var(--r-md); }
+.potodds.is-good { background: var(--pos-soft); color: var(--text-dim); }
+.potodds.is-bad { background: var(--neg-soft); color: var(--text-dim); }
+.potodds b { color: var(--text); }
+
+.apanel-ev { border-color: var(--accent-soft); }
+.ev-best { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.ev-k { font-size: 12px; color: var(--text-dim); }
+.ev-v { font-size: 15px; font-weight: 600; }
+.ev-v.pos { color: var(--pos); }
+.ev-v.neg { color: var(--neg); }
+.ev-conf { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-dim); }
+.ev-conf-bar { flex: 1; height: 6px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; }
+.ev-conf-bar span { display: block; height: 100%; }
+
+.council-sub { font-size: 11px; color: var(--text-faint); margin: -4px 0 8px; }
+.council-list { display: flex; flex-direction: column; gap: 6px; }
+.council-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.council-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.council-name { width: 96px; color: var(--text-dim); }
+.council-act { color: var(--c); font-weight: 500; }
+
+.profile-txt { font-size: 12.5px; color: var(--text-dim); line-height: 1.55; margin: 0; }
+.profile-txt b { color: var(--text); }
+.profile-empty { font-size: 12px; color: var(--text-faint); display: flex; align-items: center; gap: 6px; margin: 0; }
+.profile-empty svg { color: var(--accent); }
 @media (max-width: 640px) {
   .speed-ctrl { margin-left: 0; padding: 5px 10px; }
   .speed-ctrl input[type="range"] { width: 88px; }

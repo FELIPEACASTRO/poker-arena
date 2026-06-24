@@ -152,7 +152,24 @@ class GameSession:
             last_actions=list(self._last),
             winners=self._winners,
             opponent_read=self._opp_read(),
+            analysis=self._analysis(),
         )
+
+    def _analysis(self):
+        """Análise completa da jogada do humano (todos os painéis), só no turno dele."""
+        if (
+            self._phase != "human_turn"
+            or self._human_seat is None
+            or self._opp_model is None
+        ):
+            return None
+        from .analysis import analyze
+        from .bot_factory import available_levels
+
+        try:
+            return analyze(self._hand, self._human_seat, self._opp_model, available_levels())
+        except Exception:
+            return None
 
     def _opp_read(self) -> OpponentReadView | None:
         if self._opp_model is None:

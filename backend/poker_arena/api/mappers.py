@@ -13,6 +13,7 @@ from ..application import BotSpec, SessionConfig, TableStateView
 from .schemas import (
     ActionSchema,
     CreateTableRequest,
+    HumanAnalysisSchema,
     LegalSchema,
     OpponentReadSchema,
     SeatSchema,
@@ -49,4 +50,5 @@ def to_response(view: TableStateView) -> TableStateResponse:
             if view.opponent_read
             else None
         ),
+        analysis=(HumanAnalysisSchema(**asdict(view.analysis)) if view.analysis else None),
     )

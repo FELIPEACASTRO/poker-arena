@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Cpu, FlaskConical, Gamepad2, GraduationCap, LogOut } from 'lucide-react'
 import ActionBar from './components/ActionBar'
 import AIMind from './components/AIMind'
+import { CouncilPanel, EquityPanel, EVPanel, HandPanel, ProfilePanel } from './components/Analysis'
 import GuideScreen from './components/GuideScreen'
 import LabHint from './components/LabHint'
 import PokerTable from './components/PokerTable'
@@ -82,13 +83,18 @@ export default function App() {
               <LabHint />
               <div className="lab-grid">
                 <aside className="lab-col">
+                  <EquityPanel />
+                  <HandPanel />
                   <WinStats />
                 </aside>
                 <section className="lab-stage">
                   <PokerTable state={state} />
                 </section>
                 <aside className="lab-col">
+                  <CouncilPanel />
+                  <EVPanel />
                   <AIMind />
+                  <ProfilePanel />
                   <AnimatePresence>
                     {read && read.samples >= 8 && (
                       <motion.div

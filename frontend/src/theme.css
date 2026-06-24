@@ -217,6 +217,89 @@ body {
 /* respiro vertical no palco pra os assentos de topo/base caberem fora do feltro */
 .lab-stage { padding: 40px 8px; }
 
+/* ============================================================
+   Mesa espetacular — cassino premium (rail de couro + trim de latão +
+   linha de aposta + emblema + LED teal + spotlight). Pesquisado.
+   Rail feito com box-shadow (não encolhe a área de jogo).
+   ============================================================ */
+.lab-stage .felt {
+  border: none;
+  background:
+    radial-gradient(130% 95% at 50% 15%, rgba(255, 255, 255, 0.07), transparent 42%),
+    radial-gradient(120% 96% at 50% 42%, #1c6e4f 0%, #114f38 50%, #07301f 84%);
+  box-shadow:
+    inset 0 0 0 2px rgba(214, 179, 94, 0.4),
+    inset 0 8px 30px rgba(0, 0, 0, 0.4),
+    inset 0 0 80px rgba(0, 0, 0, 0.55),
+    0 0 0 12px #241712,
+    0 0 0 14px #3c2718,
+    0 0 0 19px #6f5230,
+    0 0 0 20.5px #c39a55,
+    0 0 38px 6px rgba(45, 212, 191, 0.22),
+    0 30px 70px rgba(0, 0, 0, 0.62);
+}
+/* linha de aposta (racetrack) */
+.lab-stage .felt::before {
+  content: '';
+  position: absolute;
+  inset: 22px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.13);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+/* emblema central (marca d'água de luxo) */
+.lab-stage .felt::after {
+  content: '♠';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 108px;
+  line-height: 1;
+  color: rgba(214, 179, 94, 0.05);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 0;
+}
+/* spotlight por cima */
+.lab-stage .felt-glow {
+  background: radial-gradient(58% 42% at 50% 24%, rgba(255, 255, 255, 0.11), transparent 72%);
+  opacity: 1;
+}
+
+/* pote com fio dourado */
+.lab-stage .pot-badge {
+  background: rgba(6, 18, 12, 0.85);
+  border: 1px solid rgba(214, 179, 94, 0.45);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+.lab-stage .pot-label { color: #d4af5e; }
+
+/* cartas premium */
+.lab-stage .card {
+  background: linear-gradient(160deg, #fcfdff 0%, #e8edf5 100%);
+  border: none;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* ficha de aposta como ficha de pôquer (latão) */
+.lab-stage .seat-bet {
+  background: radial-gradient(circle at 50% 36%, #d4af5e, #9c7a35);
+  color: #2a1c08;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.32),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.18),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* botão do dealer clássico (creme) */
+.lab-stage .dealer-chip {
+  background: radial-gradient(circle at 40% 32%, #ffffff, #d7d0c0);
+  color: #1a2230;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
 /* barra de ação compacta no rodapé */
 .lab-main .actionbar {
   margin: var(--s2) auto var(--s3);

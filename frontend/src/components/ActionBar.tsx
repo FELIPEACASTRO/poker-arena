@@ -38,9 +38,13 @@ export default function ActionBar({
   const maxR = legal?.max_raise_to ?? 0
   const [raiseTo, setRaiseTo] = useState(minR)
 
-  useEffect(() => {
+  // reseta o slider quando muda a mão ou o mínimo legal (padrão React, sem efeito)
+  const resetKey = `${state.hand_number}:${minR}`
+  const [seenKey, setSeenKey] = useState(resetKey)
+  if (seenKey !== resetKey) {
+    setSeenKey(resetKey)
     setRaiseTo(minR)
-  }, [minR, state.hand_number])
+  }
 
   // tamanhos de aposta relativos ao pote (poker de verdade)
   const me = state.seats.find((s) => s.is_turn)

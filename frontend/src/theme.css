@@ -183,11 +183,12 @@ body {
 }
 .lab-stage .felt {
   flex: none;
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-  aspect-ratio: 2.4 / 1; /* mesa larga: aproveita o espaço e separa os assentos */
-  margin: 0;
+  /* dimensiona pela LARGURA (com folga pros assentos laterais) -> nunca invade as colunas */
+  width: calc(100% - 60px);
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 2.2 / 1;
+  margin: 0 auto;
 }
 
 /* assentos compactos e ao redor da mesa (centro 100% livre pro board/pote) */

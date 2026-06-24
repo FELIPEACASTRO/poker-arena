@@ -8,32 +8,38 @@ beforeEach(() => {
   useGame.setState({ state: null, wins: {}, handsDone: 0 })
 })
 
-describe('WinStats (quem mais ganha)', () => {
-  it('destaca o líder com maior % de vitórias', () => {
+describe('WinStats (quem mais ganha — por fichas)', () => {
+  it('ranqueia por fichas e destaca o líder', () => {
     useGame.setState({
       state: tableState({
         seats: [
-          seat({ seat: 0, name: 'Alfa', kind: 'bot:expert' }),
-          seat({ seat: 1, name: 'Beta', kind: 'bot:random' }),
+          seat({ seat: 0, name: 'Alfa', kind: 'bot:expert', stack: 8000 }),
+          seat({ seat: 1, name: 'Beta', kind: 'bot:random', stack: 2000 }),
         ],
       }),
-      wins: { 0: 8, 1: 2 },
-      handsDone: 10,
+      wins: {},
+      handsDone: 5,
     })
     render(<WinStats />)
-    expect(screen.getByText('vence mais que todos')).toBeInTheDocument()
-    // "Alfa" aparece no bloco do líder E na lista
+    expect(screen.getByText('das fichas da mesa')).toBeInTheDocument()
+    // Alfa (8000 de 10000) lidera com 80%
     expect(screen.getAllByText('Alfa').length).toBeGreaterThan(0)
     expect(screen.getAllByText('80%').length).toBeGreaterThan(0)
   })
 
-  it('mostra placeholder antes de qualquer mão', () => {
+  it('o líder é por FICHAS, não por mãos vencidas (o ponto do glass-box)', () => {
     useGame.setState({
-      state: tableState({ seats: [seat()] }),
-      wins: {},
-      handsDone: 0,
+      state: tableState({
+        seats: [
+          seat({ seat: 0, name: 'Crusher', kind: 'bot:expert', stack: 9000 }),
+          seat({ seat: 1, name: 'Fish', kind: 'bot:random', stack: 1000 }),
+        ],
+      }),
+      wins: { 1: 8, 0: 2 }, // Fish vence MAIS mãos
+      handsDone: 10,
     })
     render(<WinStats />)
-    expect(screen.getByText(/jogue algumas mãos/)).toBeInTheDocument()
+    // mesmo o Fish vencendo mais mãos, quem lidera (mais fichas) é o Crusher
+    expect(document.querySelector('.winstats-leader-name')?.textContent).toBe('Crusher')
   })
 })

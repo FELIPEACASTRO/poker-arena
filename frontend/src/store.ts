@@ -11,6 +11,8 @@ interface GameState {
   wins: Record<number, number> // vitórias por assento (cumulativo na sessão)
   handsDone: number
   lastHand: number
+  stepDelay: number // ms por jogada no modo automático (controlado pelo usuário)
+  setStepDelay: (ms: number) => void
   create: (cfg: CreateConfig) => Promise<void>
   act: (type: string, amount?: number) => Promise<void>
   next: () => Promise<void>
@@ -50,6 +52,8 @@ export const useGame = create<GameState>((set, get) => {
     paused: false,
     busy: false,
     error: null,
+    stepDelay: 1800, // padrão mais calmo (dá pra acompanhar e pensar)
+    setStepDelay: (ms) => set({ stepDelay: ms }),
     ...FRESH,
     create: async (cfg) => {
       set({ watch: cfg.mode === 'watch', paused: false, ...FRESH })

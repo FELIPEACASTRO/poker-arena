@@ -10,17 +10,17 @@ import WinStats from './components/WinStats'
 import { useGame } from './store'
 
 export default function App() {
-  const { state, watch, paused, busy, error, create, act, next, step, togglePause, leave } =
+  const { state, watch, paused, busy, error, stepDelay, create, act, next, step, togglePause, leave } =
     useGame()
 
-  // modo laboratório: avança sozinho (jogada a jogada) com um respiro pra dar pra ver
+  // modo laboratório: avança sozinho no ritmo escolhido (dá pra acompanhar e pensar)
   useEffect(() => {
     if (!state || !watch || paused || error) return
     let t = 0
-    if (state.phase === 'bot_turn') t = window.setTimeout(() => step(), 850)
-    else if (state.phase === 'hand_over') t = window.setTimeout(() => next(), 2600)
+    if (state.phase === 'bot_turn') t = window.setTimeout(() => step(), stepDelay)
+    else if (state.phase === 'hand_over') t = window.setTimeout(() => next(), stepDelay + 1600)
     return () => clearTimeout(t)
-  }, [state, watch, paused, error, step, next])
+  }, [state, watch, paused, error, step, next, stepDelay])
 
   const read = state?.opponent_read
 
@@ -58,7 +58,9 @@ export default function App() {
                 <span className="chip mono">mão #{state.hand_number}</span>
                 <span className="chip">
                   {watch ? <FlaskConical size={14} /> : <Gamepad2 size={14} />}
-                  {watch ? 'Modo laboratório' : 'Você joga'}
+                  <span className="chip-mode-label">
+                    {watch ? 'Modo laboratório' : 'Você joga'}
+                  </span>
                 </span>
                 <button className="ico-btn" onClick={leave} aria-label="Sair da mesa">
                   <LogOut size={16} />

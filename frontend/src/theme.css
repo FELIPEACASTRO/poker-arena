@@ -216,16 +216,52 @@ body {
   flex: none;
 }
 
-/* telas estreitas: volta a empilhar e permite rolar (mobile/projetor pequeno) */
-@media (max-width: 1024px) {
+/* ============================================================
+   Responsivo — usável em qualquer dispositivo/tamanho
+   ============================================================ */
+
+/* <= 1100px (tablet/celular): empilha em 1 coluna e rola a página */
+@media (max-width: 1100px) {
   .lab-shell { height: auto; min-height: 100vh; overflow: visible; }
   .lab-main { overflow: visible; }
   .lab-grid {
     grid-template-columns: 1fr;
     overflow: visible;
+    gap: var(--s3);
+    padding: var(--s3) var(--s4) var(--s5);
+    max-width: 760px;
+    width: 100%;
+    margin: 0 auto;
   }
-  .lab-stage { padding: 24px 0; }
-  .lab-stage .felt { height: auto; width: min(1100px, 94vw); }
+  .lab-col { overflow: visible; }
+  .lab-stage { order: -1; padding: 18px 0; } /* mesa primeiro */
+  .lab-stage .felt { height: auto; width: min(680px, 92vw); }
+}
+
+/* <= 640px (celular): mesa em retrato, header e ações compactos */
+@media (max-width: 640px) {
+  .lab-header { height: 52px; padding: 0 var(--s3); gap: var(--s2); }
+  .lab-brand { font-size: 14px; }
+  .lab-header-right { gap: var(--s2); }
+  .lab-header-right .chip { font-size: 11px; padding: 4px 9px; }
+  .chip-mode-label { display: none; } /* mantém só o ícone do modo */
+
+  .lab-stage { padding: 10px 0; }
+  .lab-stage .felt { width: 96vw; aspect-ratio: 4 / 5; }
+  .lab-stage .slot-left-high { top: 19%; }
+  .lab-stage .slot-left-low { bottom: 19%; }
+  .lab-stage .slot-right-high { top: 19%; }
+  .lab-stage .slot-right-low { bottom: 19%; }
+  .lab-stage .seat-plate { min-width: 74px; padding: 4px 6px; }
+  .lab-stage .seat-name { max-width: 52px; font-size: 11px; }
+  .lab-stage .card { width: 26px; height: 37px; }
+  .lab-stage .card-rank { font-size: 12px; }
+
+  .actionbar { padding: var(--s3) var(--s4); }
+  .actions { gap: var(--s2); }
+  .actionbar .btn { padding: 8px 12px; font-size: 13px; }
+  .raise-group { min-width: 0; width: 100%; }
+  .setup-card { width: 94vw; }
 }
 
 /* ---------------- primitivos reutilizáveis (próximas fases) ---------------- */
@@ -433,6 +469,21 @@ body {
 .raise-group { display: flex; align-items: center; gap: var(--s3); flex: 1; min-width: 220px; }
 .raise-group input[type="range"] { flex: 1; accent-color: var(--accent); }
 .result-row { justify-content: space-between; }
+
+/* controle de velocidade do modo automático */
+.speed-ctrl {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--r-pill); padding: 5px 13px;
+}
+.speed-ctrl svg { color: var(--accent); flex: none; }
+.speed-ctrl input[type="range"] { width: 116px; accent-color: var(--accent); }
+.speed-val { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+@media (max-width: 640px) {
+  .speed-ctrl { margin-left: 0; padding: 5px 10px; }
+  .speed-ctrl input[type="range"] { width: 88px; }
+}
 .result { font-size: 15px; color: var(--text-dim); }
 .result b { color: var(--text); }
 .error { color: var(--neg); font-size: 13px; margin-bottom: var(--s2); display: flex; align-items: center; gap: 6px; }

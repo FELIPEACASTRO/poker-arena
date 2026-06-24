@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, Eye, LogOut, Pause, Play, Trophy } from 'lucide-react'
+import { AlertTriangle, Eye, Gauge, LogOut, Pause, Play, Trophy } from 'lucide-react'
+import { useGame } from '../store'
 import type { TableState } from '../types'
 
 interface Props {
@@ -33,6 +34,7 @@ export default function ActionBar({
   paused = false,
   onTogglePause,
 }: Props) {
+  const { stepDelay, setStepDelay } = useGame()
   const legal = state.legal
   const minR = legal?.min_raise_to ?? 0
   const maxR = legal?.max_raise_to ?? 0
@@ -102,6 +104,19 @@ export default function ActionBar({
             </>
           ) : (
             <>
+              <div className="speed-ctrl">
+                <Gauge size={15} />
+                <input
+                  type="range"
+                  min={300}
+                  max={5000}
+                  step={100}
+                  value={stepDelay}
+                  onChange={(e) => setStepDelay(Number(e.target.value))}
+                  aria-label="Tempo por jogada"
+                />
+                <span className="speed-val mono">{(stepDelay / 1000).toFixed(1)}s/jogada</span>
+              </div>
               <button className="btn btn-call" onClick={onTogglePause}>
                 {paused ? <Play size={15} /> : <Pause size={15} />}
                 {paused ? 'Continuar' : 'Pausar'}

@@ -228,15 +228,22 @@ body {
     radial-gradient(130% 95% at 50% 15%, rgba(255, 255, 255, 0.07), transparent 42%),
     radial-gradient(120% 96% at 50% 42%, #1c6e4f 0%, #114f38 50%, #07301f 84%);
   box-shadow:
-    inset 0 0 0 2px rgba(214, 179, 94, 0.4),
-    inset 0 8px 30px rgba(0, 0, 0, 0.4),
-    inset 0 0 80px rgba(0, 0, 0, 0.55),
-    0 0 0 12px #241712,
-    0 0 0 14px #3c2718,
-    0 0 0 19px #6f5230,
-    0 0 0 20.5px #c39a55,
-    0 0 38px 6px rgba(45, 212, 191, 0.22),
-    0 30px 70px rgba(0, 0, 0, 0.62);
+    inset 0 0 0 2px rgba(214, 179, 94, 0.3),      /* aro dourado interno */
+    inset 0 8px 28px rgba(0, 0, 0, 0.42),
+    inset 0 0 80px rgba(0, 0, 0, 0.5),
+    0 0 0 13px #16130f,                            /* rail de couro preto */
+    0 0 0 14.5px #c39a55,                          /* fio de latão */
+    0 0 0 18px #2f2113,                            /* madeira escura */
+    0 0 30px 5px rgba(45, 212, 191, 0.16),         /* LED teal sutil (Lab) */
+    0 30px 68px rgba(0, 0, 0, 0.6);
+}
+/* slots das 5 cartas comunitárias (clássico premium) */
+.lab-stage .board-slot {
+  width: 28px;
+  height: 39px;
+  border: 1.5px solid rgba(214, 179, 94, 0.38);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.1);
 }
 /* linha de aposta (racetrack) */
 .lab-stage .felt::before {

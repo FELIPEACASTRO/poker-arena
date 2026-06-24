@@ -21,10 +21,9 @@ export default function PokerTable({ state }: { state: TableState }) {
       <div className="felt">
         <div className="felt-glow" />
         <div className="board">
-          {state.board.length === 0 ? (
-            <span className="board-empty">— aguardando as cartas —</span>
-          ) : (
-            state.board.map((c, i) => (
+          {[0, 1, 2, 3, 4].map((i) => {
+            const c = state.board[i]
+            return c ? (
               <motion.div
                 key={c}
                 className="board-card"
@@ -34,8 +33,10 @@ export default function PokerTable({ state }: { state: TableState }) {
               >
                 <CardFace code={c} />
               </motion.div>
-            ))
-          )}
+            ) : (
+              <span key={`slot-${i}`} className="board-slot" />
+            )
+          })}
         </div>
 
         <div className="pot-badge">

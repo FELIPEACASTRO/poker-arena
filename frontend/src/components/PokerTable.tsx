@@ -15,13 +15,6 @@ const SLOTS = [
 export default function PokerTable({ state }: { state: TableState }) {
   return (
     <div className="table-wrap">
-      <header className="topbar">
-        <div className="brand-mark">♠ Poker Arena</div>
-        <div className="topbar-meta">
-          Mão <b>#{state.hand_number}</b>
-        </div>
-      </header>
-
       <div className="felt">
         <div className="felt-glow" />
         <div className="board">

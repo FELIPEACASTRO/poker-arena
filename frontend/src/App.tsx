@@ -36,6 +36,7 @@ export default function App() {
         </div>
         <div className="lab-header-spacer" />
         <div className="lab-header-right">
+          <span className="chip mono">mão #{state.hand_number}</span>
           <span className="chip">
             {watch ? <FlaskConical size={14} /> : <Gamepad2 size={14} />}
             {watch ? 'Modo laboratório' : 'Você joga'}

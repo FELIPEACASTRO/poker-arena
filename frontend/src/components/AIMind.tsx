@@ -27,7 +27,7 @@ const ACTION_PT: Record<string, string> = {
 const PROB_LABELS = ['desistir', 'pagar', 'aumentar ½', 'aumentar pote', 'all-in']
 
 export default function AIMind() {
-  const { state } = useGame()
+  const { state, colors } = useGame()
   if (!state || state.last_actions.length === 0) return null
 
   const last = state.last_actions[state.last_actions.length - 1]
@@ -35,7 +35,8 @@ export default function AIMind() {
   const ins = seat?.insight
   if (!seat || !ins) return null // jogada do humano ou bot sem raciocínio
 
-  const color = LVL_COLOR[ins.kind] ?? 'var(--accent)'
+  // cor do competidor (o ícone já indica o paradigma); fallback pra cor do nível
+  const color = colors[seat.name] ?? LVL_COLOR[ins.kind] ?? 'var(--accent)'
   const Icon = ICON[ins.kind] ?? Brain
   const topIdx = ins.probs ? ins.probs.indexOf(Math.max(...ins.probs)) : -1
 

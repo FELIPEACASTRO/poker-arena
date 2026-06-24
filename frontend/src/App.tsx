@@ -25,15 +25,17 @@ export default function App() {
   const [guideOpen, setGuideOpen] = useState(false)
   const [auditOpen, setAuditOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
+  const modalOpen = guideOpen || auditOpen || manageOpen
 
   // modo laboratório: avança sozinho no ritmo escolhido (dá pra acompanhar e pensar)
+  // pausa enquanto um modal está aberto (senão o re-render atrapalha digitar/interagir)
   useEffect(() => {
-    if (!state || !watch || paused || error) return
+    if (!state || !watch || paused || error || modalOpen) return
     let t = 0
     if (state.phase === 'bot_turn') t = window.setTimeout(() => step(), stepDelay)
     else if (state.phase === 'hand_over') t = window.setTimeout(() => next(), stepDelay + 1600)
     return () => clearTimeout(t)
-  }, [state, watch, paused, error, step, next, stepDelay])
+  }, [state, watch, paused, error, modalOpen, step, next, stepDelay])
 
   const read = state?.opponent_read
 

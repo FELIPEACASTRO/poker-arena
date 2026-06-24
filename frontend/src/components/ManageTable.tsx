@@ -102,13 +102,13 @@ export default function ManageTable({ onClose }: { onClose: () => void }) {
             value={name}
             maxLength={16}
             onChange={(e) => setName(e.target.value)}
-            disabled={full || busy}
+            disabled={full}
           />
           <select
             className="manage-select"
             value={level}
             onChange={(e) => setLevel(e.target.value)}
-            disabled={full || busy}
+            disabled={full}
           >
             {levels.map((l) => (
               <option key={l} value={l}>

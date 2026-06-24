@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronDown, ChevronLeft, ClipboardList, Trophy, X } from 'lucide-react'
 import { api } from '../api'
+import { colorMap } from '../colors'
 import type { GameLog, GameSummary, LogHand } from '../types'
 
 const LVL: Record<string, { c: string; n: string }> = {
@@ -41,7 +42,17 @@ function Cards({ codes }: { codes: string[] }) {
   )
 }
 
-function HandCard({ h, open, onToggle }: { h: LogHand; open: boolean; onToggle: () => void }) {
+function HandCard({
+  h,
+  colors,
+  open,
+  onToggle,
+}: {
+  h: LogHand
+  colors: Record<string, string>
+  open: boolean
+  onToggle: () => void
+}) {
   return (
     <div className="audit-hand">
       <button className="audit-hand-h" onClick={onToggle}>
@@ -65,7 +76,10 @@ function HandCard({ h, open, onToggle }: { h: LogHand; open: boolean; onToggle: 
                 </div>
                 {acts.map((a, i) => (
                   <div key={i} className="audit-act">
-                    <span className="audit-dot" style={{ background: LVL[a.level]?.c ?? 'var(--text-dim)' }} />
+                    <span
+                      className="audit-dot"
+                      style={{ background: colors[a.name] ?? LVL[a.level]?.c ?? 'var(--text-dim)' }}
+                    />
                     <span className="audit-who">{a.name}</span>
                     <span className="audit-what">
                       {ACT[a.action] ?? a.action}
@@ -97,6 +111,12 @@ export default function AuditPage({ onClose }: { onClose: () => void }) {
   const [games, setGames] = useState<GameSummary[] | null>(null)
   const [game, setGame] = useState<GameLog | null>(null)
   const [openHand, setOpenHand] = useState<number | null>(null)
+
+  // cor por competidor calculada a partir dos nomes do próprio jogo (histórico)
+  const colors = useMemo(
+    () => colorMap(game ? game.hands.flatMap((h) => h.seats.map((s) => s.name)) : []),
+    [game],
+  )
 
   useEffect(() => {
     api
@@ -173,6 +193,7 @@ export default function AuditPage({ onClose }: { onClose: () => void }) {
                 <HandCard
                   key={h.hand + '-' + h.ts}
                   h={h}
+                  colors={colors}
                   open={openHand === h.hand}
                   onToggle={() => setOpenHand(openHand === h.hand ? null : h.hand)}
                 />

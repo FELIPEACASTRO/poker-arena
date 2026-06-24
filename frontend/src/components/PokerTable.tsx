@@ -41,6 +41,15 @@ export default function PokerTable({ state }: { state: TableState }) {
           })}
         </div>
 
+        {state.pot > 0 && (
+          <div className="pot-chips" aria-hidden="true">
+            <span className="pchip" style={{ background: '#1a1a1a' }} />
+            <span className="pchip" style={{ background: '#1d9e75' }} />
+            <span className="pchip" style={{ background: '#185fa5' }} />
+            <span className="pchip" style={{ background: '#a32d2d' }} />
+          </div>
+        )}
+
         <div className="pot-badge">
           <span className="pot-label">POTE</span>
           <motion.span

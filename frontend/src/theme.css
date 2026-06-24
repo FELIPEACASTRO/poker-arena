@@ -288,6 +288,16 @@ body {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.5);
 }
 .lab-stage .pot-label { color: #d4af5e; }
+/* fichas no pote (decorativas, estilo mockup) */
+.pot-chips {
+  position: absolute; top: 49%; left: 50%; transform: translate(-50%, -50%);
+  display: flex; gap: 3px; z-index: 4;
+}
+.pchip {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.55);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.55);
+}
 
 /* cartas premium */
 .lab-stage .card {

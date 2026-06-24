@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AlertTriangle, Eye, LogOut, Pause, Play, Trophy } from 'lucide-react'
 import type { TableState } from '../types'
 
 interface Props {
@@ -12,6 +13,8 @@ interface Props {
   paused?: boolean
   onTogglePause?: () => void
 }
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
 function winnerNames(state: TableState): string {
   return (state.winners ?? [])
@@ -39,29 +42,69 @@ export default function ActionBar({
     setRaiseTo(minR)
   }, [minR, state.hand_number])
 
+  // tamanhos de aposta relativos ao pote (poker de verdade)
+  const me = state.seats.find((s) => s.is_turn)
+  const callTo = (me?.current_bet ?? 0) + (legal?.to_call ?? 0)
+  const potAfterCall = state.pot + (legal?.to_call ?? 0)
+  const sizeTo = (frac: number) => clamp(Math.round(callTo + frac * potAfterCall), minR, maxR)
+  const canRaise = !!legal?.actions.includes('raise')
+
+  // atalhos de teclado (só na vez do humano)
+  useEffect(() => {
+    if (watch || busy) return
+    const onKey = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase()
+      if (state.phase === 'hand_over' && (k === 'enter' || k === ' ')) return onNext()
+      if (state.phase !== 'human_turn' || !legal) return
+      if (k === 'f' && legal.actions.includes('fold')) onAction('fold')
+      else if (k === 'c') {
+        if (legal.actions.includes('check')) onAction('check')
+        else if (legal.actions.includes('call')) onAction('call')
+      } else if (k === 'r' && canRaise) onAction('raise', raiseTo)
+      else if (k === 'a' && legal.actions.includes('all_in')) onAction('all_in')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [watch, busy, state.phase, legal, canRaise, raiseTo, onAction, onNext])
+
   if (watch) {
     const actor = state.seats.find((s) => s.is_turn)?.name
     return (
       <div className="actionbar">
-        {error && <div className="error">⚠ {error}</div>}
+        {error && (
+          <div className="error">
+            <AlertTriangle size={14} /> {error}
+          </div>
+        )}
         <div className="actions result-row">
           {state.phase === 'bot_turn' && (
-            <span className="result">👀 Assistindo — <b>{actor}</b> vai jogar…</span>
+            <span className="result">
+              <Eye size={15} /> Assistindo — <b>{actor}</b> vai jogar…
+            </span>
           )}
           {state.phase === 'hand_over' && (
-            <span className="result">🏅 Venceu: <b>{winnerNames(state)}</b> — próxima mão…</span>
+            <span className="result">
+              <Trophy size={15} /> Venceu: <b>{winnerNames(state)}</b> — próxima mão…
+            </span>
           )}
           {state.phase === 'game_over' ? (
             <>
-              <span className="result">🏆 Campeão: <b>{winnerNames(state)}</b></span>
-              <button className="btn" onClick={onLeave}>Nova partida</button>
+              <span className="result">
+                <Trophy size={15} /> Campeão: <b>{winnerNames(state)}</b>
+              </span>
+              <button className="btn" onClick={onLeave}>
+                Nova partida
+              </button>
             </>
           ) : (
             <>
               <button className="btn btn-call" onClick={onTogglePause}>
-                {paused ? '▶ Continuar' : '⏸ Pausar'}
+                {paused ? <Play size={15} /> : <Pause size={15} />}
+                {paused ? 'Continuar' : 'Pausar'}
               </button>
-              <button className="btn" onClick={onLeave}>Sair</button>
+              <button className="btn" onClick={onLeave}>
+                <LogOut size={15} /> Sair
+              </button>
             </>
           )}
         </div>
@@ -71,46 +114,66 @@ export default function ActionBar({
 
   return (
     <div className="actionbar">
-      {error && <div className="error">⚠ {error}</div>}
+      {error && (
+        <div className="error">
+          <AlertTriangle size={14} /> {error}
+        </div>
+      )}
 
       {state.phase === 'human_turn' && legal && (
         <div className="actions">
           {legal.actions.includes('fold') && (
             <button className="btn btn-fold" disabled={busy} onClick={() => onAction('fold')}>
-              Desistir
+              Desistir <kbd>F</kbd>
             </button>
           )}
           {legal.actions.includes('check') && (
             <button className="btn" disabled={busy} onClick={() => onAction('check')}>
-              Passar
+              Passar <kbd>C</kbd>
             </button>
           )}
           {legal.actions.includes('call') && (
             <button className="btn btn-call" disabled={busy} onClick={() => onAction('call')}>
-              Pagar <b>{legal.to_call}</b>
+              Pagar <b className="mono">{legal.to_call}</b> <kbd>C</kbd>
             </button>
           )}
-          {legal.actions.includes('raise') && (
+          {canRaise && (
             <div className="raise-group">
-              <input
-                type="range"
-                min={minR}
-                max={maxR}
-                value={raiseTo}
-                onChange={(e) => setRaiseTo(Number(e.target.value))}
-              />
-              <button
-                className="btn btn-raise"
-                disabled={busy}
-                onClick={() => onAction('raise', raiseTo)}
-              >
-                Aumentar p/ <b>{raiseTo}</b>
-              </button>
+              <div className="raise-presets">
+                <button className="raise-chip" onClick={() => setRaiseTo(sizeTo(0.5))}>
+                  ½ pote
+                </button>
+                <button className="raise-chip" onClick={() => setRaiseTo(sizeTo(0.75))}>
+                  ¾ pote
+                </button>
+                <button className="raise-chip" onClick={() => setRaiseTo(sizeTo(1))}>
+                  pote
+                </button>
+                <button className="raise-chip" onClick={() => setRaiseTo(maxR)}>
+                  máx
+                </button>
+              </div>
+              <div className="raise-row">
+                <input
+                  type="range"
+                  min={minR}
+                  max={maxR}
+                  value={raiseTo}
+                  onChange={(e) => setRaiseTo(Number(e.target.value))}
+                />
+                <button
+                  className="btn btn-raise"
+                  disabled={busy}
+                  onClick={() => onAction('raise', raiseTo)}
+                >
+                  Aumentar p/ <b className="mono">{raiseTo}</b> <kbd>R</kbd>
+                </button>
+              </div>
             </div>
           )}
           {legal.actions.includes('all_in') && (
             <button className="btn btn-allin" disabled={busy} onClick={() => onAction('all_in')}>
-              All-in
+              All-in <kbd>A</kbd>
             </button>
           )}
         </div>
@@ -118,17 +181,23 @@ export default function ActionBar({
 
       {state.phase === 'hand_over' && (
         <div className="actions result-row">
-          <span className="result">🏅 Venceu: <b>{winnerNames(state)}</b></span>
+          <span className="result">
+            <Trophy size={15} /> Venceu: <b>{winnerNames(state)}</b>
+          </span>
           <button className="btn btn-next" disabled={busy} onClick={onNext}>
-            Próxima mão →
+            Próxima mão <kbd>↵</kbd>
           </button>
         </div>
       )}
 
       {state.phase === 'game_over' && (
         <div className="actions result-row">
-          <span className="result">🏆 Fim de jogo — campeão: <b>{winnerNames(state)}</b></span>
-          <button className="btn" onClick={onLeave}>Nova partida</button>
+          <span className="result">
+            <Trophy size={15} /> Fim de jogo — campeão: <b>{winnerNames(state)}</b>
+          </span>
+          <button className="btn" onClick={onLeave}>
+            Nova partida
+          </button>
         </div>
       )}
     </div>

@@ -14,6 +14,8 @@ const SLOTS = [
 ]
 
 export default function PokerTable({ state }: { state: TableState }) {
+  const showWinners = state.phase === 'hand_over' || state.phase === 'game_over'
+  const winners = new Set(state.winners ?? [])
   return (
     <div className="table-wrap">
       <div className="felt">
@@ -51,7 +53,7 @@ export default function PokerTable({ state }: { state: TableState }) {
 
         {state.seats.map((s, i) => (
           <div key={s.seat} className={`seat-slot ${SLOTS[i] ?? ''}`}>
-            <SeatView seat={s} />
+            <SeatView seat={s} isWinner={showWinners && winners.has(s.seat)} />
           </div>
         ))}
       </div>

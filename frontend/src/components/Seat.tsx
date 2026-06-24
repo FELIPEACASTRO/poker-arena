@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion'
-import { CircleUserRound } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { CircleUserRound, Trophy } from 'lucide-react'
 import type { Seat } from '../types'
 import { CardBack, CardFace } from './Card'
 
@@ -13,7 +13,7 @@ const LABEL: Record<string, string> = {
 }
 const levelOf = (kind: string) => (kind.startsWith('bot:') ? kind.slice(4) : 'human')
 
-export default function SeatView({ seat }: { seat: Seat }) {
+export default function SeatView({ seat, isWinner = false }: { seat: Seat; isWinner?: boolean }) {
   const level = levelOf(seat.kind)
   const isHuman = level === 'human'
   const folded = seat.status === 'folded'
@@ -26,8 +26,22 @@ export default function SeatView({ seat }: { seat: Seat }) {
         isHuman ? 'seat-human' : '',
         seat.is_turn ? 'is-turn' : '',
         folded ? 'is-folded' : '',
+        isWinner ? 'is-winner' : '',
       ].join(' ')}
     >
+      <AnimatePresence>
+        {isWinner && (
+          <motion.div
+            className="seat-win"
+            initial={{ opacity: 0, scale: 0.5, y: 6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 460, damping: 18 }}
+          >
+            <Trophy size={12} /> venceu
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="seat-cards">
         {seat.cards ? (
           seat.cards.map((c, i) => <CardFace key={i} code={c} />)

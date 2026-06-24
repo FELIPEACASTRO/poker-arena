@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Cpu, FlaskConical, Gamepad2, LogOut } from 'lucide-react'
 import ActionBar from './components/ActionBar'
 import AIMind from './components/AIMind'
+import LabHint from './components/LabHint'
 import PokerTable from './components/PokerTable'
 import SetupScreen from './components/SetupScreen'
 import WinStats from './components/WinStats'
@@ -66,6 +67,7 @@ export default function App() {
             </header>
 
             <main className="lab-main">
+              <LabHint />
               <AnimatePresence>
                 {read && read.samples >= 8 && (
                   <motion.div

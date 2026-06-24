@@ -442,3 +442,51 @@ body {
   border-top: 1px solid var(--border); padding-top: var(--s2);
 }
 .aimind-read b { color: var(--text); font-weight: 500; }
+
+/* ============================================================
+   Fase 4/5 — UX de aposta, atalhos, vencedor, onboarding
+   ============================================================ */
+.raise-group { display: flex; flex-direction: column; gap: var(--s2); flex: 1; min-width: 240px; }
+.raise-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.raise-chip {
+  font-family: var(--font); font-size: 12px; color: var(--text-dim);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 4px 11px; cursor: pointer;
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.raise-chip:hover { color: var(--accent); border-color: var(--accent); }
+.raise-row { display: flex; align-items: center; gap: var(--s3); }
+.raise-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+
+kbd {
+  font-family: var(--mono); font-size: 10px; line-height: 1;
+  padding: 2px 5px; margin-left: 5px; border-radius: 4px;
+  background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.14);
+  color: inherit; opacity: 0.66;
+}
+
+.seat { position: relative; }
+.seat-win {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  z-index: 5; display: inline-flex; align-items: center; gap: 4px;
+  background: var(--accent); color: #04201c; font-size: 10px; font-weight: 700;
+  padding: 3px 9px; border-radius: var(--r-pill); white-space: nowrap;
+  box-shadow: var(--shadow-2);
+}
+.seat-win svg { flex: none; }
+.seat.is-winner .seat-plate {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft), 0 0 22px var(--accent-soft);
+}
+
+.labhint {
+  max-width: min(700px, 94vw); margin: var(--s4) auto 0;
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--accent-soft); border: 1px solid var(--accent-soft);
+  border-radius: var(--r-md); padding: 10px 12px;
+}
+.labhint-ico { color: var(--accent); flex: none; margin-top: 1px; }
+.labhint-text { font-size: 12.5px; color: var(--text-dim); line-height: 1.55; }
+.labhint-text b { color: var(--text); font-weight: 500; }
+.labhint-x { flex: none; width: 26px; height: 26px; border: none; background: transparent; }
+.labhint-x:hover { background: rgba(255, 255, 255, 0.06); }

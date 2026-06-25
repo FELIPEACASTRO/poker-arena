@@ -38,7 +38,7 @@ _VERB = {
     ActionType.CHECK: "PASSAR",
     ActionType.CALL: "PAGAR",
     ActionType.RAISE: "AUMENTAR",
-    ActionType.ALL_IN: "ir de ALL-IN",
+    ActionType.ALL_IN: "de ALL-IN",
 }
 _PAST = {
     ActionType.FOLD: "desistiu",
@@ -46,6 +46,13 @@ _PAST = {
     ActionType.CALL: "pagou",
     ActionType.RAISE: "aumentou",
     ActionType.ALL_IN: "foi all-in",
+}
+_INF = {  # infinitivo (pra frases como "decidiu pagar", "escolheu desistir")
+    ActionType.FOLD: "desistir",
+    ActionType.CHECK: "passar",
+    ActionType.CALL: "pagar",
+    ActionType.RAISE: "aumentar",
+    ActionType.ALL_IN: "ir de all-in",
 }
 _ORDER = [ActionType.FOLD, ActionType.CHECK, ActionType.CALL, ActionType.RAISE, ActionType.ALL_IN]
 _SYM = {14: "A", 13: "K", 12: "Q", 11: "J", 10: "10"}
@@ -104,22 +111,22 @@ def _option(
     return OptionView(action=act.value, label=label, verdict=v, reason=r, chosen=chosen)
 
 
-def _why(level: str, name: str, past: str, sig: int | None, eq: int, po: int,
-         to_call: int, insight: BotInsight | None) -> str:
+def _why(level: str, name: str, past: str, inf: str, sig: int | None, eq: int,
+         po: int, to_call: int, insight: BotInsight | None) -> str:
     """Por que ESTE cérebro escolheu ESTA jogada — com o número real que ele usou."""
     if level == "random":
-        return f"{name} escolheu {past} no chute — o Iniciante não pondera nada."
+        return f"{name} foi de {inf} no chute — o Iniciante não pondera nada, é pura sorte."
     if level == "expert":
         s = f" ({sig}%)" if sig is not None else ""
-        return f"A rede neural deu a maior probabilidade pra essa ação{s}, então {name} {past}."
+        return f"A rede neural deu a maior probabilidade para {inf}{s}, e foi isso que {name} fez."
     if level == "adaptive" and insight is not None:
-        return f"{name} ajustou a força da mão pela leitura do oponente ({insight.label}) e {past}."
+        return f"{name} partiu da força da mão e ajustou pela leitura do oponente ({insight.label}); por isso {past}."
     # heuristic / montecarlo: sinal x preço/limiar
-    base = "simulou e viu" if level == "montecarlo" else "estimou força de"
+    base = "simulou várias vezes e viu" if level == "montecarlo" else "calculou a força da mão em"
     sigtxt = f"{sig}%" if sig is not None else "—"
     if to_call == 0:
-        return f"{name} {base} {sigtxt}: sem aposta a pagar e sem mão forte o bastante pra apostar por valor, {past}."
-    return f"{name} {base} {sigtxt}; comparado ao preço ({po}%), isso indicou {past}."
+        return f"{name} {base} {sigtxt}: como não há nada a pagar e a mão não é forte o bastante para apostar por valor, o melhor era {inf} — e foi o que {name.split()[0]} fez."
+    return f"{name} {base} {sigtxt} e comparou com o preço ({po}%); a conta apontou para {inf}, então {past}."
 
 
 def explain(
@@ -141,6 +148,7 @@ def explain(
         if act in obs.legal_actions
     ]
     past = _PAST.get(action.type, action.type.value)
+    inf = _INF.get(action.type, action.type.value)
 
     return ReasoningView(
         seat=obs.seat,
@@ -157,5 +165,5 @@ def explain(
         to_call=obs.to_call,
         pot_odds_pct=po,
         options=options,
-        why_chosen=_why(level, name, past, sig, eq, po, obs.to_call, insight),
+        why_chosen=_why(level, name, past, inf, sig, eq, po, obs.to_call, insight),
     )

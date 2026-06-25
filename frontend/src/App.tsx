@@ -9,6 +9,7 @@ import GuideScreen from './components/GuideScreen'
 import ManageTable from './components/ManageTable'
 import LabHint from './components/LabHint'
 import PokerTable from './components/PokerTable'
+import ReasoningCard from './components/ReasoningCard'
 import SetupScreen from './components/SetupScreen'
 import {
   ChipRacePanel,
@@ -130,9 +131,9 @@ export default function App() {
                 <aside className="lab-col">
                   {watch ? (
                     <>
+                      <ReasoningCard />
                       <SessionStatsPanel />
                       <ChipRacePanel />
-                      <AIMind />
                     </>
                   ) : (
                     <>

@@ -122,6 +122,7 @@ class GameSession:
         self._hand_starts: dict[int, int] = {}
         # estatísticas ao vivo só no modo laboratório (sem humano)
         self._stats = WatchStats() if human_seat is None else None
+        self._last_reasoning = None  # raciocínio didático da última jogada (laboratório)
         self._last: list[ActionView] = []
         self._winners: list[int] | None = None
         self._insight_by_seat: dict[int, BotInsight] = {}
@@ -138,6 +139,7 @@ class GameSession:
         self._last = []
         self._winners = None
         self._insight_by_seat = {}
+        self._last_reasoning = None
         if self._logger is not None or self._stats is not None:
             seats = [
                 {"seat": i, "name": p.name, "level": self._level_of(p), "start": self._hand_starts[id(p)]}
@@ -254,6 +256,7 @@ class GameSession:
             opponent_read=self._opp_read(),
             analysis=self._analysis(),
             watch_stats=self._watch_stats_view(),
+            reasoning=self._last_reasoning,
         )
 
     def _roster(self) -> list[RosterSeatView]:
@@ -363,15 +366,27 @@ class GameSession:
     def _play_bot(self, seat: int) -> None:
         hand = self._hand
         bot = self._bot_by_player[id(hand.players[seat])]
-        action = bot.act(observation_for(hand))
+        obs = observation_for(hand)
+        action = bot.act(obs)
         ins: BotInsight | None = None
         if isinstance(bot, Explainable):  # glass-box: guarda o porquê da jogada
             ins = bot.insight()
             if ins is not None:
                 self._insight_by_seat[seat] = ins
+        if self._human_seat is None:  # laboratório: raciocínio didático desta jogada
+            self._last_reasoning = self._build_reasoning(seat, obs, action, ins)
         self._log_action(seat, action, ins)
         self._record(seat, action)
         hand.apply(action)
+
+    def _build_reasoning(self, seat: int, obs, action: Action, ins: BotInsight | None):
+        p = self._hand.players[seat]
+        try:
+            from .reasoning import explain
+
+            return explain(p.name, self._level_of(p), obs, action, ins)
+        except Exception:
+            return None
 
     def _log_action(self, seat: int, action: Action, ins: BotInsight | None) -> None:
         p = self._hand.players[seat]

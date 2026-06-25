@@ -791,6 +791,41 @@ body {
 .rl i { width: 9px; height: 3px; border-radius: 2px; display: inline-block; }
 
 /* ============================================================
+   Raciocínio didático (como o competidor está pensando)
+   ============================================================ */
+.reason-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 9px; }
+.reason-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.reason-name { font-size: 14px; font-weight: 700; }
+.reason-lvl { font-size: 10px; color: var(--text-dim); background: var(--surface-3); padding: 1px 7px; border-radius: var(--r-pill); }
+.reason-headline { font-size: 12px; color: var(--text); font-weight: 600; letter-spacing: 0.02em; }
+
+.reason-how { display: flex; gap: 6px; font-size: 11.5px; line-height: 1.45; color: var(--text-dim); background: var(--surface-2); border-radius: var(--r-md); padding: 8px 10px; margin: 0 0 10px; }
+.reason-how svg { color: var(--lvl-heuristic); flex: none; margin-top: 1px; }
+
+.reason-saw { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 11px; }
+.reason-saw > span { display: flex; flex-direction: column; align-items: center; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 5px 9px; min-width: 54px; }
+.reason-saw b { font-size: 13px; color: var(--text); font-family: var(--mono); }
+.reason-saw small { font-size: 9px; color: var(--text-faint); margin-top: 1px; text-align: center; }
+
+.reason-signal { margin-bottom: 12px; }
+.reason-signal-k { font-size: 11px; color: var(--text-dim); }
+.reason-signal-k b { color: var(--text); }
+.reason-bar { height: 5px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; margin-top: 5px; }
+.reason-bar span { display: block; height: 100%; border-radius: var(--r-pill); }
+
+.reason-opts-h { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin-bottom: 6px; }
+.reason-opts { display: flex; flex-direction: column; gap: 6px; }
+.reason-opt { display: flex; gap: 8px; padding: 7px 9px; background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--text-dim); border-radius: var(--r-sm); }
+.reason-opt.is-chosen { background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--accent-soft); }
+.reason-opt-badge { width: 18px; height: 18px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; color: #08110d; font-size: 12px; font-weight: 800; }
+.reason-opt-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.reason-opt-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.reason-opt-label em { font-style: normal; color: var(--accent); font-weight: 600; font-size: 11px; }
+.reason-opt-reason { font-size: 11px; line-height: 1.4; color: var(--text-dim); }
+
+.reason-why { font-size: 12px; line-height: 1.45; color: var(--text); background: var(--accent-soft); border-radius: var(--r-md); padding: 8px 10px; margin: 11px 0 0; }
+
+/* ============================================================
    Gerenciar mesa (entrar/sair de jogadores)
    ============================================================ */
 .manage-modal { max-width: 560px; }

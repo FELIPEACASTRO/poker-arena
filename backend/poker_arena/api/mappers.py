@@ -16,6 +16,7 @@ from .schemas import (
     HumanAnalysisSchema,
     LegalSchema,
     OpponentReadSchema,
+    ReasoningSchema,
     RosterSeatSchema,
     SeatSchema,
     TableStateResponse,
@@ -57,4 +58,5 @@ def to_response(view: TableStateView) -> TableStateResponse:
         watch_stats=(
             WatchStatsSchema(**asdict(view.watch_stats)) if view.watch_stats else None
         ),
+        reasoning=(ReasoningSchema(**asdict(view.reasoning)) if view.reasoning else None),
     )

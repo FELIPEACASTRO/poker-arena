@@ -101,6 +101,32 @@ export interface WatchStats {
   biggest_pot_winner: string | null
 }
 
+// ---- raciocínio didático (como o bot está pensando, modo automático) ----
+export interface ReasoningOption {
+  action: string
+  label: string
+  verdict: 'good' | 'ok' | 'bad'
+  reason: string
+  chosen: boolean
+}
+export interface Reasoning {
+  seat: number
+  name: string
+  level: string
+  action: string
+  headline: string
+  how_it_thinks: string
+  signal_label: string | null
+  signal_value: number | null
+  hand_label: string | null
+  equity_pct: number
+  pot: number
+  to_call: number
+  pot_odds_pct: number
+  options: ReasoningOption[]
+  why_chosen: string
+}
+
 export interface TableState {
   table_id: string
   hand_number: number
@@ -115,6 +141,7 @@ export interface TableState {
   opponent_read?: OpponentRead | null
   analysis?: Analysis | null
   watch_stats?: WatchStats | null
+  reasoning?: Reasoning | null
 }
 
 export interface RosterSeat {

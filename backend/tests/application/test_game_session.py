@@ -189,6 +189,33 @@ def test_play_mode_has_no_watch_stats():
     assert s.view().watch_stats is None
 
 
+# ---------- raciocínio didático (como cada bot está pensando) ----------
+def test_watch_mode_produces_reasoning():
+    s = _watch(n=3, stack=1000)
+    for _ in range(60):
+        v = s.view()
+        if v.phase == "bot_turn":
+            s.step()
+            r = s.view().reasoning
+            assert r is not None
+            assert r.name and r.level
+            assert 0 <= r.equity_pct <= 100
+            assert 0 <= r.pot_odds_pct <= 100
+            assert len(r.options) >= 1
+            assert any(o.chosen for o in r.options)  # a jogada escolhida marcada
+            assert all(o.verdict in ("good", "ok", "bad") for o in r.options)
+            assert r.why_chosen and r.how_it_thinks
+            return
+        if v.phase == "hand_over":
+            s.next_hand()
+    raise AssertionError("não houve jogada de bot")
+
+
+def test_play_mode_has_no_reasoning():
+    s = _session()  # raciocínio é só do modo laboratório
+    assert s.view().reasoning is None
+
+
 # ---------- entrar/sair de jogadores (gestão da mesa) ----------
 def test_roster_reflects_table():
     s = _watch(n=3)

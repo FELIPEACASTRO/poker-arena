@@ -111,6 +111,38 @@ class RosterSeatView:
 
 
 @dataclass(frozen=True)
+class OptionView:
+    """Uma jogada possível avaliada de forma didática (boa/arriscada/ruim e por quê)."""
+
+    action: str  # fold | check | call | raise | all_in
+    label: str  # ex.: "Pagar 40", "Aumentar", "Desistir"
+    verdict: str  # "good" | "ok" | "bad"
+    reason: str  # explicação em português simples
+    chosen: bool  # foi a jogada que o bot realmente escolheu
+
+
+@dataclass(frozen=True)
+class ReasoningView:
+    """Como o bot que acabou de jogar está 'pensando' — o card didático do laboratório."""
+
+    seat: int
+    name: str
+    level: str
+    action: str  # tipo da jogada escolhida
+    headline: str  # ex.: "Sofia vai PAGAR"
+    how_it_thinks: str  # 1 frase ensinando o paradigma daquele cérebro
+    signal_label: str | None  # o número que o próprio bot usou (ex.: "Equity 37%")
+    signal_value: float | None  # [0,1] para a barra
+    hand_label: str | None  # melhor mão atual / cartas (ex.: "Par de Reis", "A-K")
+    equity_pct: int  # chance real de ganhar (simulação), 0..100
+    pot: int
+    to_call: int  # quanto custa pagar
+    pot_odds_pct: int  # preço relativo (pot odds), 0..100
+    options: list[OptionView]  # as jogadas possíveis avaliadas
+    why_chosen: str  # por que ESTE cérebro escolheu ESTA jogada
+
+
+@dataclass(frozen=True)
 class BotStatView:
     """Estatística ao vivo de um bot no modo laboratório."""
 
@@ -162,3 +194,4 @@ class TableStateView:
     opponent_read: OpponentReadView | None = None
     analysis: HumanAnalysisView | None = None
     watch_stats: WatchStatsView | None = None
+    reasoning: ReasoningView | None = None

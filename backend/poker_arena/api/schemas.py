@@ -318,6 +318,36 @@ class WatchStatsSchema(BaseModel):
     biggest_pot_winner: str | None = Field(description="Quem levou o maior pote.")
 
 
+class OptionSchema(BaseModel):
+    """Uma jogada possível avaliada de forma didática (boa/arriscada/ruim e por quê)."""
+
+    action: str = Field(description="fold | check | call | raise | all_in.")
+    label: str = Field(description="Rótulo da jogada (ex.: 'Pagar 40').")
+    verdict: str = Field(description="`good` (boa), `ok` (arriscada) ou `bad` (ruim).")
+    reason: str = Field(description="Explicação em português simples do porquê.")
+    chosen: bool = Field(description="Se foi a jogada que o bot realmente escolheu.")
+
+
+class ReasoningSchema(BaseModel):
+    """Como o bot que acabou de jogar está pensando — o card didático (modo `watch`)."""
+
+    seat: int = Field(description="Cadeira do bot que jogou.")
+    name: str = Field(description="Nome do bot.")
+    level: str = Field(description="Nível de IA.")
+    action: str = Field(description="Jogada escolhida.")
+    headline: str = Field(description="Resumo (ex.: 'Sofia vai PAGAR').")
+    how_it_thinks: str = Field(description="Como aquele paradigma raciocina.")
+    signal_label: str | None = Field(description="O número que o próprio bot usou (ex.: 'Equity 37%').")
+    signal_value: float | None = Field(description="Esse sinal em [0,1] (para a barra).")
+    hand_label: str | None = Field(description="Melhor mão atual ou as cartas (ex.: 'Par de Reis').")
+    equity_pct: int = Field(description="Chance real de ganhar (simulação), 0..100.")
+    pot: int = Field(description="Fichas no pote.")
+    to_call: int = Field(description="Quanto custa pagar.")
+    pot_odds_pct: int = Field(description="Preço relativo (pot odds), 0..100.")
+    options: list[OptionSchema] = Field(description="As jogadas possíveis avaliadas.")
+    why_chosen: str = Field(description="Por que ESTE cérebro escolheu ESTA jogada.")
+
+
 class TableStateResponse(BaseModel):
     """O estado COMPLETO da mesa — a resposta de quase todos os endpoints de mesa.
 
@@ -344,3 +374,4 @@ class TableStateResponse(BaseModel):
     opponent_read: OpponentReadSchema | None = Field(default=None, description="O que o bot adaptativo aprendeu sobre você.")
     analysis: HumanAnalysisSchema | None = Field(default=None, description="Análise da sua jogada — presente só no seu turno.")
     watch_stats: WatchStatsSchema | None = Field(default=None, description="Estatísticas do Laboratório — presente só no modo `watch`.")
+    reasoning: ReasoningSchema | None = Field(default=None, description="Como o bot que jogou está pensando — card didático (modo `watch`).")

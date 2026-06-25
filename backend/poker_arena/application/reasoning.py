@@ -26,12 +26,33 @@ _RNG = random.Random()
 _EQUITY_SAMPLES = 160
 _VALUE = 0.66  # acima disso, mão "forte o bastante" para apostar por valor
 
+# Vários jeitos de explicar cada paradigma — sorteia um por jogada (não repete tanto).
 _HOW = {
-    "random": "O Iniciante não calcula nada — escolhe uma jogada válida no chute. É a linha de base pra comparar com quem pensa.",
-    "heuristic": "O Amador mede a FORÇA da mão por regras (pares, cartas altas, naipe) e segue pot odds — mas não simula o futuro.",
-    "montecarlo": "O Intermediário SIMULA centenas de finais de mão pra estimar a chance real de ganhar (equity) e compara com o preço.",
-    "adaptive": "O Adaptativo parte da força da mão e AJUSTA pela leitura do oponente: contra quem desiste muito, blefa mais; contra quem paga tudo, só aposta valor.",
-    "expert": "O Expert é uma rede neural treinada (solver + self-play): aprendeu a melhor jogada e dá a probabilidade de cada ação.",
+    "random": [
+        "O Iniciante não calcula nada — escolhe uma jogada válida no chute. É a linha de base pra comparar com quem pensa.",
+        "O Iniciante joga no sorteio: pega qualquer ação permitida, sem olhar a força da mão. Serve pra você ver a diferença pra quem raciocina.",
+        "Aqui não há estratégia: o Iniciante decide no cara ou coroa entre o que é legal jogar.",
+    ],
+    "heuristic": [
+        "O Amador mede a FORÇA da mão por regras (pares, cartas altas, naipe) e segue pot odds — mas não simula o futuro.",
+        "O Amador segue um 'manual' de regras pra dar uma nota à mão e compara essa nota com o preço de pagar. Rápido, mas sem imaginar como a mão termina.",
+        "O Amador olha as cartas e aplica regras fixas (par? cartas altas? mesmo naipe?) pra estimar a força e decidir.",
+    ],
+    "montecarlo": [
+        "O Intermediário SIMULA centenas de finais de mão pra estimar a chance real de ganhar (equity) e compara com o preço.",
+        "O Intermediário 'joga o futuro' na cabeça muitas vezes: distribui cartas aleatórias pros adversários, vê quem ganharia e mede a sua chance — depois compara com o preço.",
+        "Aqui entra a matemática: o Intermediário roda centenas de simulações da mão até o fim pra saber, na média, quanto você ganha.",
+    ],
+    "adaptive": [
+        "O Adaptativo parte da força da mão e AJUSTA pela leitura do oponente: contra quem desiste muito, blefa mais; contra quem paga tudo, só aposta valor.",
+        "O Adaptativo é o mais 'humano': além da força da mão, ele observa o seu jeito de jogar e explora — pressiona quem foge e respeita quem paga tudo.",
+        "Ele combina força da mão com psicologia: aprende o seu estilo e usa isso a favor dele (blefa contra medroso, aposta valor contra teimoso).",
+    ],
+    "expert": [
+        "O Expert é uma rede neural treinada (solver + self-play): aprendeu a melhor jogada e dá a probabilidade de cada ação.",
+        "O Expert é IA de verdade: uma rede neural que treinou jogando milhões de mãos e devolve a chance de cada jogada ser a melhor.",
+        "Aqui é aprendizado de máquina: a rede já 'viu' incontáveis situações e aponta a probabilidade ideal de cada ação.",
+    ],
 }
 _VERB = {
     ActionType.FOLD: "DESISTIR",
@@ -68,65 +89,144 @@ def _preflop_label(hole) -> str:
     return f"{hi}-{lo}{suited}"
 
 
+def _pick(*variants: str) -> str:
+    """Sorteia uma das formas de dizer a mesma coisa (variedade sem perder o sentido)."""
+    return _RNG.choice(variants)
+
+
 def _option(
     act: ActionType, obs: Observation, eq: int, po: int, chosen: bool, amount: int
 ) -> OptionView:
     """Avalia uma jogada possível com poker de verdade (equity x pot odds)."""
+    val = round(_VALUE * 100)
     if act == ActionType.FOLD:
         label = "Desistir"
         if obs.to_call == 0:
-            v, r = "bad", "Dá pra passar de graça — desistir aqui joga a mão fora à toa."
+            v = "bad"
+            r = _pick(
+                "Dá pra passar de graça — desistir aqui joga a mão fora à toa.",
+                "Não há nada a pagar: largar a mão agora seria desperdício.",
+                "Sem aposta na mesa, desistir é só jogar fora uma chance grátis.",
+            )
         elif eq < po:
-            v, r = "good", f"Sua chance ({eq}%) é menor que o preço ({po}%): pagar perderia fichas no longo prazo, então largar é o certo."
+            v = "good"
+            r = _pick(
+                f"Sua chance ({eq}%) é menor que o preço ({po}%): pagar perderia fichas no longo prazo, então largar é o certo.",
+                f"Você ganha menos ({eq}%) do que custa pagar ({po}%) — abrir mão da mão evita prejuízo.",
+                f"A conta não fecha: {eq}% de chance contra {po}% de preço. Desistir aqui é a jogada disciplinada.",
+            )
         else:
-            v, r = "bad", f"Você ainda ganha mais ({eq}%) do que o preço pede ({po}%) — desistir joga fora uma mão lucrativa."
+            v = "bad"
+            r = _pick(
+                f"Você ainda ganha mais ({eq}%) do que o preço pede ({po}%) — desistir joga fora uma mão lucrativa.",
+                f"Largar seria um erro: {eq}% de chance supera o preço de {po}%, então a mão ainda dá lucro.",
+            )
     elif act == ActionType.CHECK:
         label = "Passar"
         if eq >= _VALUE * 100:
-            v, r = "ok", f"Vê a próxima carta de graça — mas com mão forte ({eq}%) dava pra apostar por valor."
+            v = "ok"
+            r = _pick(
+                f"Vê a próxima carta de graça — mas com mão forte ({eq}%) dava pra apostar por valor.",
+                f"Passar é seguro, mas desperdiça uma mão forte ({eq}%): dava pra construir o pote.",
+            )
         else:
-            v, r = "good", "Não custa nada ver a próxima carta — seguro com mão média ou fraca."
+            v = "good"
+            r = _pick(
+                "Não custa nada ver a próxima carta — seguro com mão média ou fraca.",
+                "Como não há aposta, passar deixa você ver mais uma carta sem gastar fichas.",
+                "Jogada econômica: espia o próximo lance de graça e evita se comprometer com mão mediana.",
+            )
     elif act == ActionType.CALL:
         label = f"Pagar {obs.to_call}"
         if eq >= po:
-            v, r = "good", f"Sua chance ({eq}%) é maior que o preço ({po}%): pagar dá lucro no longo prazo."
+            v = "good"
+            r = _pick(
+                f"Sua chance ({eq}%) é maior que o preço ({po}%): pagar dá lucro no longo prazo.",
+                f"Vale o preço: você ganha {eq}% das vezes e paga só {po}% — no longo prazo, rende fichas.",
+                f"As contas fecham — {eq}% de chance contra {po}% de custo. Pagar é matematicamente positivo.",
+            )
         else:
-            v, r = "bad", f"Você paga por {po}% mas só ganha {eq}%: no longo prazo, pagar perde fichas."
+            v = "bad"
+            r = _pick(
+                f"Você paga por {po}% mas só ganha {eq}%: no longo prazo, pagar perde fichas.",
+                f"O preço ({po}%) é maior que a sua chance ({eq}%) — pagar aqui sangra fichas com o tempo.",
+            )
     elif act == ActionType.RAISE:
         label = f"Aumentar p/ {amount}" if (chosen and amount) else "Aumentar"
         if eq >= _VALUE * 100:
-            v, r = "good", f"Mão forte ({eq}%): aumentar cresce o pote enquanto você está na frente (aposta de valor)."
+            v = "good"
+            r = _pick(
+                f"Mão forte ({eq}%): aumentar cresce o pote enquanto você está na frente (aposta de valor).",
+                f"Com {eq}% de chance você está na liderança — aumentar extrai fichas dos adversários.",
+            )
         elif eq >= po:
-            v, r = "ok", f"Arriscado: a mão ({eq}%) não é forte o bastante pra apostar por valor (ideal ~{round(_VALUE * 100)}%+). Só compensa como blefe contra quem desiste fácil."
+            v = "ok"
+            r = _pick(
+                f"Arriscado: a mão ({eq}%) não é forte o bastante pra apostar por valor (ideal ~{val}%+). Só compensa como blefe contra quem desiste fácil.",
+                f"Meio-termo perigoso: {eq}% não é mão de valor (precisaria ~{val}%+). Só vale como blefe contra adversário medroso.",
+            )
         else:
-            v, r = "bad", f"Blefe puro: mão fraca ({eq}%) — coloca fichas em risco sem estar na frente."
+            v = "bad"
+            r = _pick(
+                f"Blefe puro: mão fraca ({eq}%) — coloca fichas em risco sem estar na frente.",
+                f"Aumentar com {eq}% é apostar no escuro: você raramente está na frente, é fichas no risco.",
+            )
     else:  # ALL_IN
         label = "All-in"
         if eq >= 75:
-            v, r = "good", f"Mão muito forte ({eq}%): vale colocar tudo no meio."
+            v = "good"
+            r = _pick(
+                f"Mão muito forte ({eq}%): vale colocar tudo no meio.",
+                f"Com {eq}% de chance, ir com tudo maximiza o ganho — poucas mãos batem a sua.",
+            )
         elif eq >= po:
-            v, r = "ok", f"Agressivo demais: só compensa com mão muito forte ou como blefe pesado ({eq}%)."
+            v = "ok"
+            r = _pick(
+                f"Agressivo demais: só compensa com mão muito forte ou como blefe pesado ({eq}%).",
+                f"All-in com {eq}% é ousado — funciona como blefe forte, mas o risco é alto.",
+            )
         else:
-            v, r = "bad", f"Tudo no risco com mão fraca ({eq}%) — joga muito no escuro."
+            v = "bad"
+            r = _pick(
+                f"Tudo no risco com mão fraca ({eq}%) — joga muito no escuro.",
+                f"Apostar todas as fichas com {eq}% é quase um tiro no escuro.",
+            )
     return OptionView(action=act.value, label=label, verdict=v, reason=r, chosen=chosen)
 
 
 def _why(level: str, name: str, past: str, inf: str, sig: int | None, eq: int,
          po: int, to_call: int, insight: BotInsight | None) -> str:
     """Por que ESTE cérebro escolheu ESTA jogada — com o número real que ele usou."""
+    first = name.split()[0]
     if level == "random":
-        return f"{name} foi de {inf} no chute — o Iniciante não pondera nada, é pura sorte."
+        return _pick(
+            f"{name} foi de {inf} no chute — o Iniciante não pondera nada, é pura sorte.",
+            f"Sem cálculo nenhum: {name} sorteou {inf} entre as jogadas possíveis.",
+            f"{name} jogou {inf} na loteria — o Iniciante decide no acaso.",
+        )
     if level == "expert":
         s = f" ({sig}%)" if sig is not None else ""
-        return f"A rede neural deu a maior probabilidade para {inf}{s}, e foi isso que {name} fez."
+        return _pick(
+            f"A rede neural deu a maior probabilidade para {inf}{s}, e foi isso que {name} fez.",
+            f"O modelo treinado apontou {inf}{s} como a melhor ação, então {name} {past}.",
+        )
     if level == "adaptive" and insight is not None:
-        return f"{name} partiu da força da mão e ajustou pela leitura do oponente ({insight.label}); por isso {past}."
+        return _pick(
+            f"{name} partiu da força da mão e ajustou pela leitura do oponente ({insight.label}); por isso {past}.",
+            f"Misturando a mão com a leitura do adversário ({insight.label}), {name} {past}.",
+        )
     # heuristic / montecarlo: sinal x preço/limiar
     base = "simulou várias vezes e viu" if level == "montecarlo" else "calculou a força da mão em"
     sigtxt = f"{sig}%" if sig is not None else "—"
     if to_call == 0:
-        return f"{name} {base} {sigtxt}: como não há nada a pagar e a mão não é forte o bastante para apostar por valor, o melhor era {inf} — e foi o que {name.split()[0]} fez."
-    return f"{name} {base} {sigtxt} e comparou com o preço ({po}%); a conta apontou para {inf}, então {past}."
+        return _pick(
+            f"{name} {base} {sigtxt}: como não há nada a pagar e a mão não é forte o bastante para apostar por valor, o melhor era {inf} — e foi o que {first} fez.",
+            f"Com {sigtxt} e nada a pagar, não dava pra apostar por valor: {name} preferiu {inf}.",
+        )
+    return _pick(
+        f"{name} {base} {sigtxt} e comparou com o preço ({po}%); a conta apontou para {inf}, então {past}.",
+        f"Botando {sigtxt} contra o preço de {po}%, a matemática levou {name} a {inf}.",
+    )
 
 
 def explain(
@@ -156,7 +256,7 @@ def explain(
         level=level,
         action=action.type.value,
         headline=f"{name} vai {_VERB.get(action.type, action.type.value)}",
-        how_it_thinks=_HOW.get(level, ""),
+        how_it_thinks=_pick(*_HOW.get(level, [""])),
         signal_label=(insight.label if insight else None),
         signal_value=(round(insight.confidence, 3) if insight else None),
         hand_label=hand_label,

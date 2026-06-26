@@ -76,7 +76,7 @@ export default function ActionBar({
   if (watch) {
     const actor = state.seats.find((s) => s.is_turn)?.name
     return (
-      <div className="actionbar">
+      <div className="actionbar actionbar-watch">
         {error && (
           <div className="error">
             <AlertTriangle size={14} /> {error}

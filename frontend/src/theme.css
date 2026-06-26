@@ -329,6 +329,16 @@ body {
   flex: none;
 }
 
+/* modo assistir: barra enxuta numa linha só (otimiza o espaço vertical) */
+.lab-main .actionbar-watch { margin: 2px auto 6px; }
+.actionbar-watch { padding: 7px 14px; max-width: min(820px, 96vw); }
+.actionbar-watch .result-row { flex-wrap: nowrap; gap: 12px; }
+.actionbar-watch .result { font-size: 12.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.actionbar-watch .btn { padding: 6px 12px; font-size: 13px; }
+.actionbar-watch .speed-ctrl { padding: 4px 9px; margin: 0; }
+.actionbar-watch .speed-ctrl input[type="range"] { width: 88px; }
+.actionbar-watch .speed-val { font-size: 11px; }
+
 /* ============================================================
    Responsivo — usável em qualquer dispositivo/tamanho
    ============================================================ */

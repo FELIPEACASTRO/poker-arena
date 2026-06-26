@@ -86,7 +86,7 @@ def _insight_dict(ins: BotInsight | None) -> dict | None:
     return {"kind": ins.kind, "label": ins.label, "confidence": round(ins.confidence, 3)}
 
 
-MAX_SEATS = 6  # mesa 6-max
+MAX_SEATS = 9  # mesa até 9 jogadores (9-max)
 _NAME_POOL = (
     "Ana", "Beto", "Cleo", "Duda", "Edu", "Fil", "Gabi", "Hugo",
     "Ivo", "Jana", "Kiko", "Lia", "Mia", "Nina", "Theo", "Vera",
@@ -459,9 +459,12 @@ class GameSession:
         )
 
     def _seats(self) -> list[SeatView]:
+        from .positions import position
+
         hand = self._hand
         watch = self._human_seat is None
         showdown = self._phase in ("hand_over", "game_over")
+        n = len(hand.players)
         seats: list[SeatView] = []
         for i, p in enumerate(hand.players):
             is_human = self._human is not None and p is self._human
@@ -478,6 +481,7 @@ class GameSession:
                     is_button=(i == hand.button),
                     is_turn=(self._phase in _ACTIVE and i == hand.to_act),
                     cards=_cards(p.hole) if (show and p.hole) else None,
+                    position=position(i, hand.button, n),
                     insight=self._insight_view(self._insight_by_seat.get(i)),
                 )
             )

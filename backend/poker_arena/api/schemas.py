@@ -207,6 +207,7 @@ class SeatSchema(BaseModel):
     cards: list[str] | None = Field(
         description="Cartas (ex.: `['Ah','Kd']`). Só as suas; as dos bots vêm `null`, exceto no showdown ou no modo `watch`."
     )
+    position: str = Field(default="", description="Sigla da posição na mesa (BTN, SB, BB, UTG, UTG+1, MP1, MP2, DJ, HJ).")
     insight: InsightSchema | None = Field(default=None, description="Raciocínio do bot na última jogada (se houver).")
 
 

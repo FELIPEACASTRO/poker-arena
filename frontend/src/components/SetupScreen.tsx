@@ -9,7 +9,7 @@ const LEVELS = [
   { id: 'adaptive', label: '🧠 Adaptativo — aprende e explora você' },
   { id: 'expert', label: '🔴 Expert — IA treinada (solver + self-play)' },
 ]
-const NAMES = ['Luna', 'Caio', 'Sofia', 'Alex', 'Maya', 'Rex']
+const NAMES = ['Luna', 'Caio', 'Sofia', 'Alex', 'Maya', 'Rex', 'Theo', 'Nina', 'Vera']
 
 interface Props {
   onCreate: (cfg: CreateConfig) => void
@@ -27,6 +27,9 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
     'heuristic',
     'montecarlo',
     'heuristic',
+    'montecarlo',
+    'heuristic',
+    'montecarlo',
   ])
   const [stack, setStack] = useState(1000)
   const [rebuy, setRebuy] = useState(true) // true = cash game (infinito) | false = torneio
@@ -42,10 +45,11 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
   function pickMode(m: 'play' | 'watch') {
     setMode(m)
     if (m === 'watch' && count < 2) setCount(2)
-    if (m === 'play' && count > 5) setCount(5)
+    if (m === 'play' && count > 8) setCount(8) // você + 8 bots = mesa de 9
   }
 
-  const counts = mode === 'watch' ? [2, 3, 4, 5, 6] : [1, 2, 3, 4, 5]
+  // até 9 jogadores: assistir = até 9 bots; jogar = você + até 8 bots
+  const counts = mode === 'watch' ? [2, 3, 4, 5, 6, 7, 8, 9] : [1, 2, 3, 4, 5, 6, 7, 8]
 
   function start() {
     const bots: BotSpec[] = Array.from({ length: count }, (_, i) => ({

@@ -106,14 +106,10 @@ def _texture(board) -> str | None:
 
 
 def _position(seat: int, button: int, n: int) -> str:
-    rel = (seat - button) % n
-    if rel == 0:
-        return "Botão (D)"
-    if rel == 1:
-        return "Small blind"
-    if rel == 2:
-        return "Big blind"
-    return "Posição cedo" if rel <= n // 2 else "Posição tarde"
+    from .positions import position, position_full
+
+    lbl = position(seat, button, n)
+    return f"{lbl} — {position_full(lbl)}" if lbl else "—"
 
 
 def _council_bot(level: str, opp_model: OpponentModel):

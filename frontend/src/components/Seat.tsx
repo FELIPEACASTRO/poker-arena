@@ -69,6 +69,11 @@ export default function SeatView({
           />
           <CircleUserRound size={15} className="seat-ava" style={color ? { color } : undefined} />
           <span className="seat-name">{seat.name}</span>
+          {seat.position && (
+            <span className={'seat-pos' + (seat.position === 'BTN' ? ' is-btn' : '')}>
+              {seat.position}
+            </span>
+          )}
           {seat.is_button && <span className="dealer-chip">D</span>}
         </div>
         <div className="seat-kind">{LABEL[level] ?? level}</div>

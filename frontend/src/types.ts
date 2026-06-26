@@ -19,6 +19,7 @@ export interface Seat {
   is_button: boolean
   is_turn: boolean
   cards: string[] | null
+  position?: string // sigla da posição (BTN, SB, BB, UTG, ...)
   insight?: Insight | null
 }
 

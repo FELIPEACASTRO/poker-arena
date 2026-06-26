@@ -216,6 +216,20 @@ def test_play_mode_has_no_reasoning():
     assert s.view().reasoning is None
 
 
+# ---------- posições da mesa (até 9 jogadores) ----------
+def test_table_supports_nine_players():
+    s = _watch(n=9)
+    assert len(s.view().seats) == 9
+
+
+def test_positions_relative_to_button():
+    s = _watch(n=9)
+    seats = s.view().seats
+    btn = next(i for i, x in enumerate(seats) if x.is_button)
+    labels = [seats[(btn + off) % 9].position for off in range(9)]
+    assert labels == ["BTN", "SB", "BB", "UTG", "UTG+1", "MP1", "MP2", "DJ", "HJ"]
+
+
 # ---------- entrar/sair de jogadores (gestão da mesa) ----------
 def test_roster_reflects_table():
     s = _watch(n=3)
@@ -235,7 +249,7 @@ def test_add_and_remove_players():
 
 
 def test_add_bot_rejects_full_table_and_invalid_level():
-    cheia = _watch(n=6)  # mesa 6-max lotada
+    cheia = _watch(n=9)  # mesa 9-max lotada
     with pytest.raises(InvalidActionError):
         cheia.add_bot("montecarlo")
     s = _watch(n=3)

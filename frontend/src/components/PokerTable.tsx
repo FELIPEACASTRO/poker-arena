@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { motion } from 'framer-motion'
 import { useGame } from '../store'
 import type { TableState } from '../types'
@@ -5,15 +6,20 @@ import { CardFace } from './Card'
 import FeltGraphic from './FeltGraphic'
 import SeatView from './Seat'
 
-// posições ao redor da mesa oval (até 6 cadeiras; o humano sempre embaixo)
-const SLOTS = [
-  'slot-bottom',
-  'slot-left-low',
-  'slot-left-high',
-  'slot-top',
-  'slot-right-high',
-  'slot-right-low',
-]
+// posição de cada cadeira (2 a 9): você (cadeira 0) no centro de baixo; os demais
+// num arco horizontal sobre o topo (estádio) — espalha bem numa mesa larga, sem
+// empilhar nas laterais nem tampar o board/pote do centro.
+function seatStyle(i: number, n: number): CSSProperties {
+  if (i === 0) {
+    return { left: '50%', top: '104%', transform: 'translate(-50%, -50%)' }
+  }
+  const others = n - 1
+  const fx = others === 1 ? 0.5 : (i - 1) / (others - 1) // 0 (esq) .. 1 (dir)
+  const left = 7 + 86 * fx
+  const edge = Math.abs(fx - 0.5) * 2 // 0 no centro, 1 nas pontas
+  const top = -5 + 66 * edge // centro lá em cima (-5%), pontas mais baixas (61%)
+  return { left: `${left.toFixed(1)}%`, top: `${top.toFixed(1)}%`, transform: 'translate(-50%, -50%)' }
+}
 
 export default function PokerTable({ state }: { state: TableState }) {
   const colors = useGame((s) => s.colors)
@@ -66,7 +72,7 @@ export default function PokerTable({ state }: { state: TableState }) {
         </div>
 
         {state.seats.map((s, i) => (
-          <div key={s.seat} className={`seat-slot ${SLOTS[i] ?? ''}`}>
+          <div key={s.seat} className="seat-slot" style={seatStyle(i, state.seats.length)}>
             <SeatView
               seat={s}
               color={colors[s.name]}

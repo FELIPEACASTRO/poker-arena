@@ -32,6 +32,7 @@ class SeatView:
     is_button: bool
     is_turn: bool
     cards: list[str] | None  # só as do humano, ou reveladas no showdown
+    position: str = ""  # sigla da posição (BTN, SB, BB, UTG, ...) relativa ao botão
     insight: InsightView | None = None  # raciocínio do bot (glass-box), se houver
 
 

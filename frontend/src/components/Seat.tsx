@@ -17,10 +17,12 @@ export default function SeatView({
   seat,
   color,
   isWinner = false,
+  onPositionClick,
 }: {
   seat: Seat
   color?: string
   isWinner?: boolean
+  onPositionClick?: (pos: string) => void
 }) {
   const level = levelOf(seat.kind)
   const isHuman = level === 'human'
@@ -69,11 +71,21 @@ export default function SeatView({
           />
           <CircleUserRound size={15} className="seat-ava" style={color ? { color } : undefined} />
           <span className="seat-name">{seat.name}</span>
-          {seat.position && (
-            <span className={'seat-pos' + (seat.position === 'BTN' ? ' is-btn' : '')}>
-              {seat.position}
-            </span>
-          )}
+          {seat.position &&
+            (onPositionClick ? (
+              <button
+                type="button"
+                className={'seat-pos is-link' + (seat.position === 'BTN' ? ' is-btn' : '')}
+                onClick={() => onPositionClick(seat.position!)}
+                title={`Ver as regras da posição ${seat.position}`}
+              >
+                {seat.position}
+              </button>
+            ) : (
+              <span className={'seat-pos' + (seat.position === 'BTN' ? ' is-btn' : '')}>
+                {seat.position}
+              </span>
+            ))}
           {seat.is_button && <span className="dealer-chip">D</span>}
         </div>
         <div className="seat-kind">{LABEL[level] ?? level}</div>

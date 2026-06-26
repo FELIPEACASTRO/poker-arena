@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ClipboardList, Cpu, FlaskConical, Gamepad2, GraduationCap, LogOut, Users } from 'lucide-react'
+import { ClipboardList, Compass, Cpu, FlaskConical, Gamepad2, GraduationCap, LogOut, Users } from 'lucide-react'
 import ActionBar from './components/ActionBar'
 import AIMind from './components/AIMind'
 import { CouncilPanel, EquityPanel, EVPanel, HandPanel, ProfilePanel } from './components/Analysis'
 import AuditPage from './components/AuditPage'
 import GuideScreen from './components/GuideScreen'
 import ManageTable from './components/ManageTable'
+import PositionsGuide from './components/PositionsGuide'
 import LabHint from './components/LabHint'
 import PokerTable from './components/PokerTable'
 import ReasoningCard from './components/ReasoningCard'
@@ -26,7 +27,8 @@ export default function App() {
   const [guideOpen, setGuideOpen] = useState(false)
   const [auditOpen, setAuditOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
-  const modalOpen = guideOpen || auditOpen || manageOpen
+  const [positions, setPositions] = useState<false | string>(false)
+  const modalOpen = guideOpen || auditOpen || manageOpen || positions !== false
 
   // modo laboratório: avança sozinho no ritmo escolhido (dá pra acompanhar e pensar)
   // pausa enquanto um modal está aberto (senão o re-render atrapalha digitar/interagir)
@@ -96,6 +98,14 @@ export default function App() {
                 </button>
                 <button
                   className="btn btn-ghost guide-open"
+                  onClick={() => setPositions('')}
+                  title="Regras de cada posição da mesa"
+                >
+                  <Compass size={16} />
+                  <span className="guide-open-label">Posições</span>
+                </button>
+                <button
+                  className="btn btn-ghost guide-open"
                   onClick={() => setGuideOpen(true)}
                   title="Guia dos cérebros"
                 >
@@ -126,7 +136,7 @@ export default function App() {
                   )}
                 </aside>
                 <section className="lab-stage">
-                  <PokerTable state={state} />
+                  <PokerTable state={state} onPositionClick={(p) => setPositions(p)} />
                 </section>
                 <aside className="lab-col">
                   {watch ? (
@@ -181,6 +191,9 @@ export default function App() {
             {guideOpen && <GuideScreen onClose={() => setGuideOpen(false)} />}
             {auditOpen && <AuditPage onClose={() => setAuditOpen(false)} />}
             {manageOpen && <ManageTable onClose={() => setManageOpen(false)} />}
+            {positions !== false && (
+              <PositionsGuide focus={positions || undefined} onClose={() => setPositions(false)} />
+            )}
           </AnimatePresence>
         </motion.div>
       )}

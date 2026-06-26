@@ -21,7 +21,13 @@ function seatStyle(i: number, n: number): CSSProperties {
   return { left: `${left.toFixed(1)}%`, top: `${top.toFixed(1)}%`, transform: 'translate(-50%, -50%)' }
 }
 
-export default function PokerTable({ state }: { state: TableState }) {
+export default function PokerTable({
+  state,
+  onPositionClick,
+}: {
+  state: TableState
+  onPositionClick?: (pos: string) => void
+}) {
   const colors = useGame((s) => s.colors)
   const showWinners = state.phase === 'hand_over' || state.phase === 'game_over'
   const winners = new Set(state.winners ?? [])
@@ -77,6 +83,7 @@ export default function PokerTable({ state }: { state: TableState }) {
               seat={s}
               color={colors[s.name]}
               isWinner={showWinners && winners.has(s.seat)}
+              onPositionClick={onPositionClick}
             />
           </div>
         ))}

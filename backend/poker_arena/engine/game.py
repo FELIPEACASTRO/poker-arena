@@ -77,8 +77,11 @@ class Hand:
         self._post(bb_seat, self.bb)
         self.current_bet = self.bb
         self.min_raise = self.bb
+        # distribui uma a uma, começando pelo SB (esquerda do botão) — ordem oficial
+        n = len(self.players)
+        order = [self.players[(sb_seat + k) % n] for k in range(n)]
         for _ in range(2):  # duas hole cards por jogador
-            for p in self.players:
+            for p in order:
                 p.hole.extend(self.deck.deal(1))
         # preflop: HU -> botão/SB age primeiro; senão -> esquerda do BB (UTG)
         first = sb_seat if heads_up else self._next_seat(bb_seat)
@@ -103,12 +106,23 @@ class Hand:
             actions.add(ActionType.CHECK)
         if to_call > 0 and p.stack > 0:
             actions.add(ActionType.CALL)
-        # raise voluntário só se o stack alcança o min-raise
-        if p.stack > to_call and (p.current_bet + p.stack) >= self.min_raise_to():
+        # a ação só está ABERTA pra aumentar se o jogador ainda não agiu nesta
+        # "rodada de aumentos". Um all-in curto (< aumento cheio) NÃO reabre a aposta
+        # pra quem já agiu — regra TDA 47 / WSOP 96 (ele só pode pagar ou desistir).
+        reopened = not p.acted
+        if reopened and p.stack > to_call and (p.current_bet + p.stack) >= self.min_raise_to():
             actions.add(ActionType.RAISE)
-        if p.stack > 0:
+        # all-in: vale sempre como PAGAMENTO; como AUMENTO, só se a ação está aberta
+        if p.stack > 0 and (reopened or p.stack <= to_call):
             actions.add(ActionType.ALL_IN)
         return actions
+
+    def _reopen_betting(self) -> None:
+        """Um aumento CHEIO reabre a aposta: os demais ativos voltam a poder agir
+        (inclusive reaumentar). Curtos all-ins incompletos NÃO chamam isto."""
+        for i, p in enumerate(self.players):
+            if i != self.to_act and p.status == PlayerStatus.ACTIVE:
+                p.acted = False
 
     # ---- aplicar ação ----
     def apply(self, action: Action) -> None:
@@ -142,6 +156,7 @@ class Hand:
         self.min_raise = raise_to - self.current_bet
         self.pot += p.bet(raise_to - p.current_bet)
         self.current_bet = p.current_bet
+        self._reopen_betting()  # aumento voluntário é sempre cheio -> reabre a aposta
 
     def _apply_all_in(self) -> None:
         p = self.players[self.to_act]
@@ -149,9 +164,11 @@ class Hand:
         self.pot += p.bet(p.stack)  # aposta todo o stack
         if p.current_bet > prev:  # all-in que age como raise
             increment = p.current_bet - prev
-            if increment >= self.min_raise:  # raise "cheio" reabre por inteiro
+            if increment >= self.min_raise:  # raise CHEIO -> reabre a aposta
                 self.min_raise = increment
+                self._reopen_betting()
             self.current_bet = p.current_bet
+            # all-in curto (< aumento cheio) NÃO reabre: quem já agiu só paga/desiste
 
     def _advance(self) -> None:
         self.to_act = self._first_active_from(self._next_seat(self.to_act))
@@ -176,6 +193,7 @@ class Hand:
 
     def _deal_board(self) -> None:
         n = 3 if len(self.board) == 0 else 1  # flop=3, turn/river=1
+        self.deck.deal(1)  # burn card (descartada antes de cada street) — regra oficial
         self.board.extend(self.deck.deal(n))
 
     def _runout_board(self) -> None:
@@ -232,12 +250,16 @@ class Hand:
         if len(self.board) < 5 and any(len(pot.eligible) > 1 for pot in pots):
             self._runout_board()
         all_winners: list[Player] = []
+        n = len(self.players)
         for pot in pots:
             pot_winners = self._winners_of(pot.eligible)
+            # ficha(s) ímpar(es): uma a uma, começando pelo 1º vencedor à ESQUERDA do
+            # botão (regra oficial de distribuição da odd chip).
+            pot_winners.sort(key=lambda w: (self.players.index(w) - self.button - 1) % n)
             share = pot.amount // len(pot_winners)
             remainder = pot.amount - share * len(pot_winners)
             for idx, w in enumerate(pot_winners):
-                w.stack += share + (remainder if idx == 0 else 0)
+                w.stack += share + (1 if idx < remainder else 0)
                 all_winners.append(w)
         # dedup preservando ordem (por identidade)
         seen: set[int] = set()

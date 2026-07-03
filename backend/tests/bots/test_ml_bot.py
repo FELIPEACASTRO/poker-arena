@@ -57,7 +57,9 @@ def test_masked_probs_skip_illegal_and_pick_best_legal(tmp_path):
 def test_argmax_mode_respects_fold(tmp_path):
     path = tmp_path / "expert.onnx"
     _make_onnx(path, [9.0, 0.0, 0.0, 0.0, 0.0])
-    bot = MLBot(path, temperature=0.0, sizing_jitter=0.0)
+    # equity_guard=False: aqui testamos a POLÍTICA (a guarda tem testes próprios —
+    # e ela de fato vetaria: AKs tem equity 67% > limiar 65% pra esse preço)
+    bot = MLBot(path, temperature=0.0, sizing_jitter=0.0, equity_guard=False)
     obs = _obs({ActionType.FOLD, ActionType.CALL, ActionType.RAISE})
     assert bot.act(obs).type == ActionType.FOLD
 
@@ -66,7 +68,7 @@ def test_confident_model_is_deterministic_even_in_mixed_mode(tmp_path):
     # logits com certeza esmagadora: o piso da estratégia mista descarta o resto
     path = tmp_path / "expert.onnx"
     _make_onnx(path, [9.0, 0.0, 0.0, 0.0, 0.0])
-    bot = MLBot(path, seed=1)  # defaults MISTOS
+    bot = MLBot(path, seed=1, equity_guard=False)  # defaults MISTOS; política pura
     obs = _obs({ActionType.FOLD, ActionType.CALL, ActionType.RAISE})
     assert all(bot.act(obs).type == ActionType.FOLD for _ in range(30))
 

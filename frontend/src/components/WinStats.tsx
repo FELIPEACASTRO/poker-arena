@@ -1,15 +1,8 @@
 import { motion } from 'framer-motion'
 import { Crown, Trophy } from 'lucide-react'
+import { levelColor } from '../levels'
 import { useGame } from '../store'
 
-const LVL_COLOR: Record<string, string> = {
-  random: 'var(--lvl-random)',
-  heuristic: 'var(--lvl-heuristic)',
-  montecarlo: 'var(--lvl-montecarlo)',
-  adaptive: 'var(--lvl-adaptive)',
-  expert: 'var(--lvl-expert)',
-  human: 'var(--accent)',
-}
 const levelOf = (kind: string) => (kind.startsWith('bot:') ? kind.slice(4) : kind)
 
 export default function WinStats() {
@@ -22,7 +15,7 @@ export default function WinStats() {
     .map((s) => ({
       seat: s.seat,
       name: s.name,
-      color: LVL_COLOR[levelOf(s.kind)] ?? 'var(--text-dim)',
+      color: levelColor(levelOf(s.kind)),
       chips: s.stack,
       pct: Math.round((s.stack / total) * 100), // % das fichas da mesa
       handPct: handsDone ? Math.round(((wins[s.seat] ?? 0) / handsDone) * 100) : 0,

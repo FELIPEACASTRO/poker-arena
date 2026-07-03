@@ -3,16 +3,9 @@ import { motion } from 'framer-motion'
 import { ChevronDown, ChevronLeft, ClipboardList, Trophy, X } from 'lucide-react'
 import { api } from '../api'
 import { colorMap } from '../colors'
+import { levelColor } from '../levels'
 import type { GameLog, GameSummary, LogHand } from '../types'
 
-const LVL: Record<string, { c: string; n: string }> = {
-  random: { c: 'var(--lvl-random)', n: 'Iniciante' },
-  heuristic: { c: 'var(--lvl-heuristic)', n: 'Amador' },
-  montecarlo: { c: 'var(--lvl-montecarlo)', n: 'Intermediário' },
-  adaptive: { c: 'var(--lvl-adaptive)', n: 'Adaptativo' },
-  expert: { c: 'var(--lvl-expert)', n: 'Expert' },
-  human: { c: 'var(--accent)', n: 'Você' },
-}
 const ACT: Record<string, string> = {
   fold: 'desistiu',
   check: 'passou',
@@ -78,7 +71,7 @@ function HandCard({
                   <div key={i} className="audit-act">
                     <span
                       className="audit-dot"
-                      style={{ background: colors[a.name] ?? LVL[a.level]?.c ?? 'var(--text-dim)' }}
+                      style={{ background: colors[a.name] ?? levelColor(a.level) }}
                     />
                     <span className="audit-who">{a.name}</span>
                     <span className="audit-what">

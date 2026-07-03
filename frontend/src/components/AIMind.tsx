@@ -1,15 +1,9 @@
 import { motion } from 'framer-motion'
 import { Brain, Cpu, Dices, Sigma, Target } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { levelColor } from '../levels'
 import { useGame } from '../store'
 
-const LVL_COLOR: Record<string, string> = {
-  expert: 'var(--lvl-expert)',
-  adaptive: 'var(--lvl-adaptive)',
-  montecarlo: 'var(--lvl-montecarlo)',
-  heuristic: 'var(--lvl-heuristic)',
-  random: 'var(--lvl-random)',
-}
 const ICON: Record<string, LucideIcon> = {
   expert: Cpu,
   adaptive: Brain,
@@ -36,7 +30,7 @@ export default function AIMind() {
   if (!seat || !ins) return null // jogada do humano ou bot sem raciocínio
 
   // cor do competidor (o ícone já indica o paradigma); fallback pra cor do nível
-  const color = colors[seat.name] ?? LVL_COLOR[ins.kind] ?? 'var(--accent)'
+  const color = colors[seat.name] ?? levelColor(ins.kind)
   const Icon = ICON[ins.kind] ?? Brain
   const topIdx = ins.probs ? ins.probs.indexOf(Math.max(...ins.probs)) : -1
 

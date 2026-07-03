@@ -34,7 +34,14 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
   const [stack, setStack] = useState(1000)
   const [rebuy, setRebuy] = useState(true) // true = cash game (infinito) | false = torneio
   const [handLimit, setHandLimit] = useState(0) // 0 = sem limite
-  const [available, setAvailable] = useState<string[]>(['random', 'heuristic', 'montecarlo'])
+  // padrão enquanto /levels não responde (adaptive está SEMPRE disponível; expert só
+  // aparece se o modelo treinado existir, então vem do backend)
+  const [available, setAvailable] = useState<string[]>([
+    'random',
+    'heuristic',
+    'montecarlo',
+    'adaptive',
+  ])
 
   // o Expert só aparece quando o modelo treinado existe no backend
   useEffect(() => {

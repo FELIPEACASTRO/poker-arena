@@ -1,15 +1,9 @@
 import type { CSSProperties } from 'react'
 import { Brain, Coins, Eye, Sigma, Target, Users } from 'lucide-react'
+import { levelColor, levelName } from '../levels'
 import { useGame } from '../store'
 import type { Analysis } from '../types'
 
-const LVL: Record<string, { c: string; n: string }> = {
-  random: { c: 'var(--lvl-random)', n: 'Iniciante' },
-  heuristic: { c: 'var(--lvl-heuristic)', n: 'Amador' },
-  montecarlo: { c: 'var(--lvl-montecarlo)', n: 'Intermediário' },
-  adaptive: { c: 'var(--lvl-adaptive)', n: 'Adaptativo' },
-  expert: { c: 'var(--lvl-expert)', n: 'Expert' },
-}
 const HAND_PT: Record<string, string> = {
   'High Card': 'Carta alta',
   Pair: 'Par',
@@ -181,10 +175,10 @@ export function CouncilPanel() {
           <div
             key={c.level}
             className="council-row"
-            style={{ '--c': LVL[c.level]?.c ?? 'var(--text-dim)' } as unknown as CSSProperties}
+            style={{ '--c': levelColor(c.level) } as unknown as CSSProperties}
           >
             <span className="council-dot" />
-            <span className="council-name">{LVL[c.level]?.n ?? c.level}</span>
+            <span className="council-name">{levelName(c.level)}</span>
             <span className="council-act">
               {c.action}
               {c.amount ? ` ${c.amount}` : ''}

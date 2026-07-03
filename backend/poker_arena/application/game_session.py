@@ -11,6 +11,7 @@ Separa comandos (escrita) de queries (leitura) — CQRS-lite. Depende só do dom
 
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass, field
 
@@ -40,6 +41,7 @@ from .views import (
 )
 from .watch_stats import WatchStats
 
+_log = logging.getLogger(__name__)
 _MAX_LOG = 12
 _ACTIVE = ("human_turn", "bot_turn")
 _TYPES: dict[str, ActionType] = {
@@ -331,6 +333,7 @@ class GameSession:
         try:
             return analyze(self._hand, self._human_seat, self._opp_model, available_levels())
         except Exception:
+            _log.exception("falha ao calcular a análise da jogada do humano")
             return None
 
     def _opp_read(self) -> OpponentReadView | None:
@@ -386,6 +389,7 @@ class GameSession:
 
             return explain(p.name, self._level_of(p), obs, action, ins)
         except Exception:
+            _log.exception("falha ao montar o raciocínio didático do bot")
             return None
 
     def _log_action(self, seat: int, action: Action, ins: BotInsight | None) -> None:

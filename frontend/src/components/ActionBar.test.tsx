@@ -30,10 +30,10 @@ describe('ActionBar', () => {
       <ActionBar state={humanTurn()} onAction={noop} onNext={noop} onLeave={noop} busy={false} error={null} />,
     )
     // começa no mínimo legal (min_raise_to = 40)
-    expect(screen.getByRole('button', { name: /Aumentar p\/ 40/ })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: '½ pote' }))
+    expect(screen.getByRole('button', { name: /Aumentar p\/\s*40/ })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /½ Pote/i }))
     // callTo=20, potAfterCall=120 -> ½ pote = 20 + 60 = 80
-    expect(screen.getByRole('button', { name: /Aumentar p\/ 80/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Aumentar p\/\s*80/ })).toBeInTheDocument()
   })
 
   it('o atalho de teclado F desiste', async () => {

@@ -2,16 +2,8 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Info, UserPlus, Users, X } from 'lucide-react'
 import { api } from '../api'
+import { levelColor, levelName } from '../levels'
 import { useGame } from '../store'
-
-const LVL: Record<string, { n: string; c: string }> = {
-  human: { n: 'Você', c: 'var(--accent)' },
-  random: { n: 'Iniciante', c: 'var(--lvl-random)' },
-  heuristic: { n: 'Amador', c: 'var(--lvl-heuristic)' },
-  montecarlo: { n: 'Intermediário', c: 'var(--lvl-montecarlo)' },
-  adaptive: { n: 'Adaptativo', c: 'var(--lvl-adaptive)' },
-  expert: { n: 'Expert', c: 'var(--lvl-expert)' },
-}
 
 export default function ManageTable({ onClose }: { onClose: () => void }) {
   const { state, addPlayer, removePlayer, busy, error, colors } = useGame()
@@ -69,13 +61,13 @@ export default function ManageTable({ onClose }: { onClose: () => void }) {
             <div key={r.seat} className="manage-row">
               <span
                 className="manage-dot"
-                style={{ background: colors[r.name] ?? LVL[r.level]?.c ?? 'var(--text-dim)' }}
+                style={{ background: colors[r.name] ?? levelColor(r.level) }}
               />
               <span className="manage-name">
                 {r.name}
                 {r.is_human && <span className="manage-youtag">você</span>}
               </span>
-              <span className="manage-lvl">{LVL[r.level]?.n ?? r.level}</span>
+              <span className="manage-lvl">{levelName(r.level)}</span>
               <span className="manage-stack">{r.stack.toLocaleString('pt-BR')}</span>
               <button
                 className="manage-remove"
@@ -112,7 +104,7 @@ export default function ManageTable({ onClose }: { onClose: () => void }) {
           >
             {levels.map((l) => (
               <option key={l} value={l}>
-                {LVL[l]?.n ?? l}
+                {levelName(l)}
               </option>
             ))}
           </select>

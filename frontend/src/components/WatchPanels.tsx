@@ -1,14 +1,8 @@
 import { Activity, Gauge, TrendingUp, Trophy } from 'lucide-react'
+import { levelName } from '../levels'
 import { useGame } from '../store'
 import type { BotStat, WatchStats } from '../types'
 
-const LVL: Record<string, { c: string; n: string }> = {
-  random: { c: 'var(--lvl-random)', n: 'Iniciante' },
-  heuristic: { c: 'var(--lvl-heuristic)', n: 'Amador' },
-  montecarlo: { c: 'var(--lvl-montecarlo)', n: 'Intermediário' },
-  adaptive: { c: 'var(--lvl-adaptive)', n: 'Adaptativo' },
-  expert: { c: 'var(--lvl-expert)', n: 'Expert' },
-}
 const pct = (x: number) => `${Math.round(x * 100)}%`
 const num = (x: number) => x.toLocaleString('pt-BR')
 
@@ -51,7 +45,7 @@ export function LeaderboardPanel() {
             <span className="lb-name">
               {b.name}
               <small>
-                {LVL[b.level]?.n ?? b.level} · {b.hands_won} vit.
+                {levelName(b.level)} · {b.hands_won} vit.
               </small>
             </span>
             <div className="lb-bar">

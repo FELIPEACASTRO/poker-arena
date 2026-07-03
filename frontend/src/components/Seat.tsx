@@ -1,16 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { CircleUserRound, Trophy } from 'lucide-react'
+import { levelName } from '../levels'
 import type { Seat } from '../types'
 import { CardBack, CardFace } from './Card'
 
-const LABEL: Record<string, string> = {
-  human: 'Você',
-  random: 'Iniciante',
-  heuristic: 'Amador',
-  montecarlo: 'Intermediário',
-  adaptive: 'Adaptativo',
-  expert: 'Expert',
-}
 const levelOf = (kind: string) => (kind.startsWith('bot:') ? kind.slice(4) : 'human')
 
 export default function SeatView({
@@ -88,7 +81,7 @@ export default function SeatView({
             ))}
           {seat.is_button && <span className="dealer-chip">D</span>}
         </div>
-        <div className="seat-kind">{LABEL[level] ?? level}</div>
+        <div className="seat-kind">{levelName(level)}</div>
         <div className="seat-stack mono">{seat.stack.toLocaleString('pt-BR')}</div>
         {seat.current_bet > 0 && (
           <motion.div

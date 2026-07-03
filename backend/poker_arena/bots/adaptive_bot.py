@@ -46,7 +46,11 @@ class AdaptiveBot:
 
     def insight(self) -> BotInsight:
         effective, fold_to_bet, bias = self._last
-        if bias > 0.02:
+        if self._model.samples == 0:
+            # sem ninguém observado ainda (ex.: Modo Laboratório, sem humano) — não
+            # há estilo pra explorar, então joga pela força da mão
+            note = "sem oponente pra ler — joga pela força da mão"
+        elif bias > 0.02:
             note = "explora: você desiste muito → pressiona/blefa"
         elif bias < -0.02:
             note = "explora: você paga muito → só aposta valor"

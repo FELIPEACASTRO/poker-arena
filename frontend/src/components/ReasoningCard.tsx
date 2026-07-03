@@ -1,14 +1,8 @@
 import { Brain, Lightbulb } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { levelName } from '../levels'
 import { useGame } from '../store'
 
-const LVL: Record<string, string> = {
-  random: 'Iniciante',
-  heuristic: 'Amador',
-  montecarlo: 'Intermediário',
-  adaptive: 'Adaptativo',
-  expert: 'Expert',
-}
 const VERDICT: Record<string, { c: string; icon: string; t: string }> = {
   good: { c: 'var(--pos)', icon: '✓', t: 'boa' },
   ok: { c: 'var(--lvl-heuristic)', icon: '!', t: 'arriscada' },
@@ -40,7 +34,7 @@ export default function ReasoningCard() {
         <span className="reason-name" style={{ color }}>
           {r.name}
         </span>
-        <span className="reason-lvl">{LVL[r.level] ?? r.level}</span>
+        <span className="reason-lvl">{levelName(r.level)}</span>
         <span className="reason-headline">{headline}</span>
       </div>
 

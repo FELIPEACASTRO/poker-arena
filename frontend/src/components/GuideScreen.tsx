@@ -155,7 +155,7 @@ const BRAINS: BrainInfo[] = [
     name: 'Expert',
     tag: 'IA treinada (rede neural)',
     fala: '"Eu treinei MILHÕES de mãos contra mim mesmo. Eu não decoro — eu sinto."',
-    como: 'Sou uma REDE NEURAL treinada por self-play (joguei comigo mesmo milhões de vezes). Pra cada situação calculo a probabilidade de cada ação e escolho a melhor. Jogo apertado e equilibrado.',
+    como: 'Sou uma REDE NEURAL treinada por self-play (joguei comigo mesmo milhões de vezes). Pra cada situação calculo a probabilidade de cada ação e jogo ESTRATÉGIA MISTA: quando duas jogadas são próximas, eu SORTEIO entre elas (como os profissionais e o Pluribus) — por isso você não consegue prever meu padrão. Onde tenho certeza, não hesito.',
     imagine:
       'É o enxadrista campeão mundial que treinou a vida inteira jogando contra si mesmo — tipo o AlphaGo, que aprendeu sozinho e venceu os melhores do mundo. Ele não pensa em regras: ele "sente" a jogada certa.',
     fortes: [
@@ -335,6 +335,27 @@ export default function GuideScreen({ onClose }: { onClose: () => void }) {
           <p className="guide-rank-note">
             As cores aqui são as mesmas dos assentos e dos painéis no jogo. Abra o{' '}
             <b>Modo Laboratório</b> e veja a teoria virar prática ao vivo. 🔬
+          </p>
+        </div>
+
+        <div className="guide-science">
+          <h2>🎓 Habilidade ou sorte? A ciência responde</h2>
+          <p>
+            No WSOP 2010, com ~32 mil inscritos, economistas compararam jogadores
+            pré-classificados como hábeis com o resto do campo: os hábeis tiveram{' '}
+            <b>retorno de +30,5%</b> enquanto os demais perderam <b>−15,6%</b> — uma diferença
+            que a sorte não explica (<i>Levitt &amp; Miles, 2011, NBER</i>). Estudos
+            experimentais confirmam: quem recebe instrução de estratégia joga melhor
+            (DeDonno &amp; Detterman, 2008) e a habilidade <b>reduz as perdas</b> mesmo nas
+            mãos ruins (Meyer et al., 2013). Em 2024 o poker foi reconhecido{' '}
+            <b>esporte da mente</b> pela IMSA. É por isso que dá pra estudar poker na escola:
+            é <b>matemática, probabilidade e IA</b> — não aposta.
+          </p>
+          <p className="guide-science-note">
+            ⚖️ E a linhagem da IA vem de longe: CFR (2007) → Cepheus (2015) → DeepStack e
+            Libratus (2017) → <b>Pluribus</b> (2019, o primeiro superhumano em mesa de 6) →
+            a nossa Poker Arena, da mesma família de ideias (self-play + minimização de
+            arrependimento), rodando offline no seu navegador.
           </p>
         </div>
 

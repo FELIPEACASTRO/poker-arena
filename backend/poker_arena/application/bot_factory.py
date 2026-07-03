@@ -41,7 +41,7 @@ def _expert(seed: int | None) -> Bot:
         )
     from ..bots.ml_bot import MLBot  # import tardio: onnxruntime só quando usado
 
-    return MLBot(path)
+    return MLBot(path, seed=seed)
 
 
 _BUILDERS: dict[str, Callable[[int | None], Bot]] = {

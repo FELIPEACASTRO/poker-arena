@@ -2,7 +2,7 @@ import numpy as np
 import onnx
 from onnx import TensorProto, helper, numpy_helper
 
-from poker_arena.bots.ml_bot import MLBot, _choose
+from poker_arena.bots.ml_bot import MLBot
 from poker_arena.bots.observation import Observation, PublicPlayer, observation_for
 from poker_arena.engine.actions import ActionType
 from poker_arena.engine.cards import Card, Rank, Suit
@@ -46,15 +46,39 @@ def _game_obs():
     return h, observation_for(h)
 
 
-def test_choose_skips_illegal_and_picks_best_legal():
+def test_masked_probs_skip_illegal_and_pick_best_legal(tmp_path):
+    path = tmp_path / "expert.onnx"
+    _make_onnx(path, [0.1, 0.5, 9.0, 9.0, 9.0])  # maiores logits são ILEGAIS aqui
+    bot = MLBot(path, temperature=0.0, sizing_jitter=0.0)  # modo argmax (determinístico)
     obs = _obs({ActionType.FOLD, ActionType.CALL})  # raise/check/all_in ilegais
-    logits = [0.1, 0.5, 9.0, 9.0, 9.0]  # maiores são ILEGAIS -> deve ignorar
-    assert _choose(logits, obs).type == ActionType.CALL  # idx1 > idx0 entre os legais
+    assert bot.act(obs).type == ActionType.CALL  # idx1 > idx0 entre os legais
 
 
-def test_choose_respects_fold():
+def test_argmax_mode_respects_fold(tmp_path):
+    path = tmp_path / "expert.onnx"
+    _make_onnx(path, [9.0, 0.0, 0.0, 0.0, 0.0])
+    bot = MLBot(path, temperature=0.0, sizing_jitter=0.0)
     obs = _obs({ActionType.FOLD, ActionType.CALL, ActionType.RAISE})
-    assert _choose([9.0, 0.0, 0.0, 0.0, 0.0], obs).type == ActionType.FOLD
+    assert bot.act(obs).type == ActionType.FOLD
+
+
+def test_confident_model_is_deterministic_even_in_mixed_mode(tmp_path):
+    # logits com certeza esmagadora: o piso da estratégia mista descarta o resto
+    path = tmp_path / "expert.onnx"
+    _make_onnx(path, [9.0, 0.0, 0.0, 0.0, 0.0])
+    bot = MLBot(path, seed=1)  # defaults MISTOS
+    obs = _obs({ActionType.FOLD, ActionType.CALL, ActionType.RAISE})
+    assert all(bot.act(obs).type == ActionType.FOLD for _ in range(30))
+
+
+def test_balanced_model_mixes_actions(tmp_path):
+    # logits empatados entre fold e call: a estratégia mista deve variar a escolha
+    path = tmp_path / "expert.onnx"
+    _make_onnx(path, [1.0, 1.0, -9.0, -9.0, -9.0])
+    bot = MLBot(path, seed=5)
+    obs = _obs({ActionType.FOLD, ActionType.CALL})
+    kinds = {bot.act(obs).type for _ in range(60)}
+    assert kinds == {ActionType.FOLD, ActionType.CALL}  # imprevisível no spot parelho
 
 
 def test_mlbot_loads_real_onnx_and_plays_legally(tmp_path):

@@ -14,7 +14,8 @@ OpenSpiel/PyTorch. O backend só baixa o checkpoint pronto.
 | `notebooks/03_train_ppo_selfplay.ipynb` 🏋️ | **Treina o nível Expert** — PPO self-play sobre o NOSSO motor (6-max No-Limit). Aprende padrões e blefe; cada checkpoint = um nível. Exporta ONNX + publica no HF. | **Colab Pro+** (GPU, horas) |
 | `notebooks/04_qa_testes.ipynb` 🧪 | **QA completo** — contextualiza a solução pro time de QA e roda todos os tipos de teste da literatura (regressão+cobertura, teste de mesa, propriedade, valor-limite, negativo, segurança, determinismo, integração, desempenho). | Colab (CPU, minutos) |
 | `notebooks/05_pokerbench_warmstart.ipynb` 🧠🎯 | **Warm-start + benchmark GTO** (PokerBench). ⚠️ **Descontinuado**: auditoria impartial mostrou que a concordância com o solver **não prevê força** (o modelo perdia −350 bb/100 no cross-play). Mantido só como histórico. | — |
-| `notebooks/06_selfplay_bb100.ipynb` 🏆 | **Treino EFETIVO (use este)** — self-play **puro** no nosso motor (sem PokerBench → sem mismatch), medido por **bb/100 contra bots fixos** (a métrica que importa). Oponente = snapshot congelado; recompensa em bb; salva o **melhor** modelo no HF automaticamente. | **Colab Pro+** (GPU, horas) |
+| `notebooks/06_selfplay_bb100.ipynb` | Self-play **puro** medido por bb/100. Funciona, mas a análise devastadora mostrou o limite: sem diversidade de oponentes, sobram margens finas. **Superado pelo 07.** | Colab Pro+ (GPU, horas) |
+| `notebooks/07_expert_v2_populacao.ipynb` 🧬🏆 | **Treino EFETIVO (use este)** — baixa mãos REAIS (Zenodo 10796885, 21,6M, CC BY 4.0) → **priors do Adaptativo** + perfis humanos calibrados (fish/reg); treina o Expert v2 contra **POOL diverso** (snapshot + regras + sondas maniac/station/nit + humanos, rotacionados); **gate devastador pareado** — só promove no HF se vencer o v1 sem degradar nenhum confronto. | **Colab Pro+** (A100, horas) |
 
 ### Como rodar (Colab)
 1. Abrir o `.ipynb` no Google Colab.

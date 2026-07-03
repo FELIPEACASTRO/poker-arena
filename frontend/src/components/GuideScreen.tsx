@@ -134,7 +134,7 @@ const BRAINS: BrainInfo[] = [
     name: 'Adaptativo',
     tag: 'aprende e explora VOCÊ',
     fala: '"Eu te observo. Descobri que você desiste fácil — agora vou te pressionar."',
-    como: 'Começo neutro, mas vou ANOTANDO seu estilo (quanto você desiste a apostas, quão agressivo é). Se você desiste demais → eu blefo e roubo os potes. Se você paga tudo → só aposto com mão forte. Eu me MOLDO a você.',
+    como: 'Começo pelo retrato do HUMANO TÍPICO — medido em 250 mil mãos reais de poker online (o jogador mediano desiste ~70% das apostas!) — e vou ANOTANDO o seu estilo. Se você desiste demais → blefo e roubo os potes. Se você paga tudo → só aposto com mão forte. Eu me MOLDO a você.',
     imagine:
       'É o vendedor que percebe em 2 minutos: "esse cliente adora desconto e desiste fácil" — e ajusta o papo pra te empurrar mais. Ou o professor que muda a explicação pra CADA aluno. Ele joga contra VOCÊ, não contra as cartas.',
     fortes: [
@@ -142,7 +142,7 @@ const BRAINS: BrainInfo[] = [
       'Contra um humano previsível, é letal — aprende e ajusta.',
     ],
     fracos: [
-      'Precisa de tempo pra te "ler" (começa neutro).',
+      'Começa pelo "humano típico" — se você fugir do padrão, ele leva algumas mãos pra corrigir o retrato.',
       'A base é heurística, então contra um jogador perfeito ele tem teto.',
       'Se você MUDAR de estilo, ele demora a reagir.',
     ],

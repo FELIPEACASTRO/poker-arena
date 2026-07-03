@@ -14,6 +14,7 @@ echo(
 echo      [1]  Iniciar   (backend + frontend + navegador)
 echo      [2]  Parar     (encerra os servidores)
 echo      [3]  Abrir no navegador
+echo      [4]  Validar   (testes + build + lint)
 echo      [0]  Sair
 echo(
 set "opt="
@@ -21,6 +22,7 @@ set /p "opt=   Escolha e tecle ENTER: "
 if "%opt%"=="1" goto start
 if "%opt%"=="2" goto stop
 if "%opt%"=="3" goto open
+if "%opt%"=="4" goto validate
 if "%opt%"=="0" goto end
 goto menu
 
@@ -63,6 +65,14 @@ goto menu
 
 :open
 start "" "http://localhost:5173"
+goto menu
+
+:validate
+echo(
+echo   Rodando a validacao completa (pode levar 1-2 min)...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0assets\validar.ps1"
+echo(
+pause
 goto menu
 
 :end

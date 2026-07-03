@@ -56,26 +56,53 @@ print("Auth OK (HF + Kaggle)")  # nao imprime valores
 - `04_ppo_selfplay.ipynb` — PPO self-play (stable-baselines3).
 - `05_crossplay_matrix.ipynb` — matriz NFSP × Deep CFR × PPO × baselines (avaliação 6-max).
 
-## Roadmap: Expert v2 (achados da análise devastadora, jul/2026)
+## ✅ Expert v2 — ENTREGUE (jul/2026) — o registro histórico do método
 
-Bateria de medição (bb/100, sondas de exploração, 3k+ mãos por confronto) do
-checkpoint atual + estratégia mista na inferência:
+A jornada completa, medida em cada passo (commits `7bad5a6` → `ba83346`):
 
-| Achado (medido) | Valor |
-|---|---|
-| Vence todos os campos e sondas | random +486 · heuristic +239 · montecarlo +71 · maniac +351 · station +334 |
-| Margens mais finas | NitExploiter (aposta pequeno/foge de raise): **+22** · campo montecarlo: **+71** |
-| Ineficiências estruturais | fold-to-bet **70–78%** · sangria de blinds **−17 bb/100** (não defende nem rouba) |
-| Remendos de inferência (guarda de equity) | **REPROVADOS em benchmark pareado** (−357 amplo / −84 restrito): "call sem plano pós-flop" piora — a política treinada é coerente |
+**1. Análise devastadora do v1** (bb/100, sondas de exploração, 3k+ mãos/confronto):
+vencia tudo, mas com ineficiências: fold-to-bet 70–78%, sangria de blinds −17 bb/100,
+margens finas vs NitExploiter (+22) e campo montecarlo (+71). Remendos de inferência
+(guarda de equity) foram **testados e REPROVADOS** em pareado (−357 amplo / −84
+restrito) — a política treinada era coerente; o caminho era retreinar.
 
-O caminho real de melhoria é RETREINAR (notebook 06), com:
-1. **Pool de oponentes diverso** (population-based): treinar contra snapshots +
-   random/heuristic/montecarlo/maniac/station/nit — self-play puro deixa margens
-   finas contra estilos que não pagam premium.
-2. **Features novas no encoder** (exige re-treino, quebra o contrato v1):
+**2. Notebook 07 "População"**: 250k mãos REAIS de NLHE (Zenodo 10796885, CC BY 4.0,
+via uoftcprg/phh-dataset) → priors populacionais + perfis humanos calibrados
+(fish/reg) → treino PPO contra POOL diverso → gate devastador pareado.
+
+**3. O gate REPROVOU a 1ª tentativa** (e isso é o sistema funcionando): o v2.0
+melhorou heur/mc/station (+150 a +190) mas piorou vs maniac (−217, consistente em
+6 seeds) e nit (−27). Causas: maniac/nit entravam no pool só por sorteio, e o
+"melhor checkpoint" era selecionado só por vs-heurístico (régua ≠ gate).
+
+**4. v3 = correções guiadas pelos números**: maniac+nit GARANTIDOS em toda rotação
+do pool + seleção do checkpoint pela RÉGUA COMPOSTA (heur+maniac+nit) + 2× passos.
+
+**5. Gate APROVADO com dominância — melhor em TODOS os confrontos:**
+
+| Confronto | v1 | v2 | Δ |
+|---|---|---|---|
+| random | +422 | +656 | +235 |
+| heuristic | +82 | +395 | +313 |
+| montecarlo | −47 | −6 | +41 |
+| maniac | +476 | +655 | +179 |
+| station | +296 | +700 | +404 |
+| nit | +19 | +48 | +29 |
+| **SOMA** | **+1246** | **+2447** | **+1201** |
+
+**6. Verificação independente** (5 seeds fora do gate, local): heur +8 · maniac +160
+· nit +24 → promoção confirmada. Modelo em produção no backend; v1 preservado como
+backup local. **Bônus:** os priors reais (fold-to-bet 0.70, agressão 0.46; medianas
+de 3.588 jogadores) entraram no `OpponentModel` do Adaptativo (suavização bayesiana).
+
+## Roadmap: Expert v3 (trabalho futuro)
+
+1. **Features novas no encoder** (quebra o contrato v1, exige treino do zero):
    histórico de ações da mão (nº de raises na rua, agressor), stack efetivo em bb,
-   equity Monte Carlo como feature (o Intermediário "enxerga" melhor que o Expert).
-3. **Ação de roubo/defesa**: recompensa por blind ganho/perdido pra atacar a
-   sangria de −17 bb/100.
-4. **Gate de promoção**: só publicar o v2 se vencer o v1 em pareado E melhorar
-   NitExploiter/mc-field sem degradar o resto (a régua desta análise).
+   equity Monte Carlo como feature.
+2. **Recompensa de roubo/defesa de blind** — a sangria estrutural (−17 bb/100 ao
+   foldar) ainda é o custo fixo a atacar.
+3. **Pool com clones neurais** (behavior cloning das mãos com cartas reveladas) —
+   os perfis fish/reg atuais são paramétricos; clones aprendidos são o passo além.
+4. **Régua composta ampliada** no treino (incluir montecarlo/station no score do
+   checkpoint, se o custo de avaliação couber).

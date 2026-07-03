@@ -1307,6 +1307,168 @@
         "title": "OpponentReadSchema",
         "description": "O que o bot adaptativo já aprendeu sobre o humano (auto-learning visível)."
       },
+      "OptionSchema": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action",
+            "description": "fold | check | call | raise | all_in."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Rótulo da jogada (ex.: 'Pagar 40')."
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict",
+            "description": "`good` (boa), `ok` (arriscada) ou `bad` (ruim)."
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Explicação em português simples do porquê."
+          },
+          "chosen": {
+            "type": "boolean",
+            "title": "Chosen",
+            "description": "Se foi a jogada que o bot realmente escolheu."
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "label",
+          "verdict",
+          "reason",
+          "chosen"
+        ],
+        "title": "OptionSchema",
+        "description": "Uma jogada possível avaliada de forma didática (boa/arriscada/ruim e por quê)."
+      },
+      "ReasoningSchema": {
+        "properties": {
+          "seat": {
+            "type": "integer",
+            "title": "Seat",
+            "description": "Cadeira do bot que jogou."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Nome do bot."
+          },
+          "level": {
+            "type": "string",
+            "title": "Level",
+            "description": "Nível de IA."
+          },
+          "action": {
+            "type": "string",
+            "title": "Action",
+            "description": "Jogada escolhida."
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline",
+            "description": "Resumo (ex.: 'Sofia vai PAGAR')."
+          },
+          "how_it_thinks": {
+            "type": "string",
+            "title": "How It Thinks",
+            "description": "Como aquele paradigma raciocina."
+          },
+          "signal_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal Label",
+            "description": "O número que o próprio bot usou (ex.: 'Equity 37%')."
+          },
+          "signal_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal Value",
+            "description": "Esse sinal em [0,1] (para a barra)."
+          },
+          "hand_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hand Label",
+            "description": "Melhor mão atual ou as cartas (ex.: 'Par de Reis')."
+          },
+          "equity_pct": {
+            "type": "integer",
+            "title": "Equity Pct",
+            "description": "Chance real de ganhar (simulação), 0..100."
+          },
+          "pot": {
+            "type": "integer",
+            "title": "Pot",
+            "description": "Fichas no pote."
+          },
+          "to_call": {
+            "type": "integer",
+            "title": "To Call",
+            "description": "Quanto custa pagar."
+          },
+          "pot_odds_pct": {
+            "type": "integer",
+            "title": "Pot Odds Pct",
+            "description": "Preço relativo (pot odds), 0..100."
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/OptionSchema"
+            },
+            "type": "array",
+            "title": "Options",
+            "description": "As jogadas possíveis avaliadas."
+          },
+          "why_chosen": {
+            "type": "string",
+            "title": "Why Chosen",
+            "description": "Por que ESTE cérebro escolheu ESTA jogada."
+          }
+        },
+        "type": "object",
+        "required": [
+          "seat",
+          "name",
+          "level",
+          "action",
+          "headline",
+          "how_it_thinks",
+          "signal_label",
+          "signal_value",
+          "hand_label",
+          "equity_pct",
+          "pot",
+          "to_call",
+          "pot_odds_pct",
+          "options",
+          "why_chosen"
+        ],
+        "title": "ReasoningSchema",
+        "description": "Como o bot que acabou de jogar está pensando — o card didático (modo `watch`)."
+      },
       "RosterSeatSchema": {
         "properties": {
           "seat": {
@@ -1402,6 +1564,12 @@
             ],
             "title": "Cards",
             "description": "Cartas (ex.: `['Ah','Kd']`). Só as suas; as dos bots vêm `null`, exceto no showdown ou no modo `watch`."
+          },
+          "position": {
+            "type": "string",
+            "title": "Position",
+            "description": "Sigla da posição na mesa (BTN, SB, BB, UTG, UTG+1, MP1, MP2, DJ, HJ).",
+            "default": ""
           },
           "insight": {
             "anyOf": [
@@ -1543,6 +1711,17 @@
               }
             ],
             "description": "Estatísticas do Laboratório — presente só no modo `watch`."
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningSchema"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Como o bot que jogou está pensando — card didático (modo `watch`)."
           }
         },
         "type": "object",

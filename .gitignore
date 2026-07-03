@@ -33,6 +33,9 @@ env/
 *.onnx
 data/
 datasets/
+# exceção: dados EMPACOTADOS com a solução (pequenos e curados)
+!backend/poker_arena/data/
+!backend/poker_arena/data/*.jsonl
 checkpoints/
 runs/
 wandb/

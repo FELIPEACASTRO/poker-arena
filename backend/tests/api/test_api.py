@@ -38,6 +38,25 @@ def test_health(client):
     assert r.json() == {"status": "ok"}
 
 
+def test_copilot_reviews_a_spot(client):
+    r = client.post("/copilot", json={
+        "hole": ["As", "Ah"], "board": ["Kd", "7c", "2s"],
+        "pot": 100, "to_call": 20, "my_stack": 1000, "num_opponents": 1, "in_position": True,
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body["equity_pct"] >= 75  # AA overpair
+    assert body["recommendation"] in ("call", "raise", "all_in")
+    assert body["options"] and body["headline"]
+
+
+def test_copilot_rejects_invalid_spot(client):
+    r = client.post("/copilot", json={
+        "hole": ["As", "As"], "board": [], "pot": 100, "to_call": 20, "my_stack": 1000,
+    })
+    assert r.status_code == 400
+
+
 def test_levels_lists_available(client):
     from poker_arena.application.bot_factory import expert_model_path
 

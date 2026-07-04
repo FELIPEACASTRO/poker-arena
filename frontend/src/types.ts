@@ -146,6 +146,40 @@ export interface Reasoning {
   bluff_alpha_pct?: number | null // α: folds necessários pra aposta lucrar como blefe, 0..100
 }
 
+// ---- Copiloto (revisão de spot, pós-jogo) ----
+export interface CopilotRequest {
+  hole: string[]
+  board: string[]
+  pot: number
+  to_call: number
+  my_stack: number
+  num_opponents: number
+  in_position: boolean
+  big_blind?: number
+}
+export interface CopilotResult {
+  hand_label: string | null
+  equity_pct: number
+  pot: number
+  to_call: number
+  pot_odds_pct: number
+  ev_call: number
+  mdf_pct: number | null
+  outs: number
+  draws: string[]
+  nut: string | null
+  texture: string | null
+  blockers: string[]
+  spr: number | null
+  realization: string
+  realization_why: string
+  options: ReasoningOption[]
+  council: CouncilEntry[]
+  recommendation: string
+  recommendation_label: string
+  headline: string
+}
+
 export interface TableState {
   table_id: string
   hand_number: number

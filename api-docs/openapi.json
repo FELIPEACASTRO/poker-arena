@@ -40,6 +40,51 @@
         }
       }
     },
+    "/copilot": {
+      "post": {
+        "tags": [
+          "Copiloto"
+        ],
+        "summary": "Copiloto: revisar um spot (pós-jogo, offline)",
+        "description": "Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)\ne devolve a leitura completa: equity real, pot odds, EV, MDF, outs, a nut,\ntextura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o\nconselho das 5 IAs. É o painel 'Sua jogada' aplicado a qualquer situação — 100%\noffline, sem tocar em site nenhum. Ideal pra ESTUDAR/revisar mãos depois do jogo.",
+        "operationId": "copilot_copilot_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopilotRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopilotResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Spot inválido (cartas repetidas, quantidade errada, valores inválidos)."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/levels": {
       "get": {
         "tags": [
@@ -808,6 +853,247 @@
         ],
         "title": "ChipSeriesSchema",
         "description": "Série do stack de um bot ao fim de cada mão (a 'corrida das fichas')."
+      },
+      "CopilotRequest": {
+        "properties": {
+          "hole": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hole",
+            "description": "Suas 2 cartas (ex.: ['As','Kh'])."
+          },
+          "board": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Board",
+            "description": "Cartas comunitárias: 0 (pré-flop), 3 (flop), 4 (turn) ou 5 (river).",
+            "default": []
+          },
+          "pot": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Pot",
+            "description": "Fichas no pote (antes de você pagar)."
+          },
+          "to_call": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "To Call",
+            "description": "Quanto custa pagar (0 se você pode passar).",
+            "default": 0
+          },
+          "my_stack": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "My Stack",
+            "description": "Suas fichas."
+          },
+          "num_opponents": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Num Opponents",
+            "description": "Quantos oponentes ativos na mão.",
+            "default": 1
+          },
+          "in_position": {
+            "type": "boolean",
+            "title": "In Position",
+            "description": "Você age por último (em posição)? Afeta a realização da equity.",
+            "default": true
+          },
+          "big_blind": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Big Blind",
+            "description": "Big blind (só para dimensionar o aumento mínimo).",
+            "default": 20
+          }
+        },
+        "type": "object",
+        "required": [
+          "hole",
+          "pot",
+          "my_stack"
+        ],
+        "title": "CopilotRequest",
+        "description": "Um SPOT descrito pelo usuário para o Copiloto revisar (pós-jogo, offline)."
+      },
+      "CopilotResponse": {
+        "properties": {
+          "hand_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hand Label",
+            "description": "Melhor mão atual ou as cartas (ex.: 'Par de Reis', 'A-K')."
+          },
+          "equity_pct": {
+            "type": "integer",
+            "title": "Equity Pct",
+            "description": "Chance real de ganhar (simulação Monte Carlo vs oponentes desconhecidos), 0..100."
+          },
+          "pot": {
+            "type": "integer",
+            "title": "Pot"
+          },
+          "to_call": {
+            "type": "integer",
+            "title": "To Call"
+          },
+          "pot_odds_pct": {
+            "type": "integer",
+            "title": "Pot Odds Pct",
+            "description": "Preço relativo (pot odds), 0..100."
+          },
+          "ev_call": {
+            "type": "number",
+            "title": "Ev Call",
+            "description": "Valor esperado de pagar, em fichas (positivo = lucrativo)."
+          },
+          "mdf_pct": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mdf Pct",
+            "description": "Frequência mínima de defesa diante da aposta, 0..100. `null` sem aposta."
+          },
+          "outs": {
+            "type": "integer",
+            "title": "Outs",
+            "description": "Cartas que melhoram sua mão para a melhor."
+          },
+          "draws": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Draws",
+            "description": "Projetos ativos (flush, sequência)."
+          },
+          "nut": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nut",
+            "description": "A melhor mão possível no board (a 'nut')."
+          },
+          "texture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Texture",
+            "description": "Textura do board (seco/molhado)."
+          },
+          "blockers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Blockers",
+            "description": "Cartas suas que bloqueiam as mãos fortes do vilão."
+          },
+          "spr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spr",
+            "description": "Stack-to-pot ratio."
+          },
+          "realization": {
+            "type": "string",
+            "title": "Realization",
+            "description": "Realização da equity: `alta` (em posição), `média` ou `baixa` (fora)."
+          },
+          "realization_why": {
+            "type": "string",
+            "title": "Realization Why"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/OptionSchema"
+            },
+            "type": "array",
+            "title": "Options",
+            "description": "Cada jogada avaliada boa/arriscada/ruim + por quê."
+          },
+          "council": {
+            "items": {
+              "$ref": "#/components/schemas/CouncilEntrySchema"
+            },
+            "type": "array",
+            "title": "Council",
+            "description": "O que cada uma das 5 IAs faria neste spot."
+          },
+          "recommendation": {
+            "type": "string",
+            "title": "Recommendation",
+            "description": "Ação recomendada (fold/check/call/raise/all_in)."
+          },
+          "recommendation_label": {
+            "type": "string",
+            "title": "Recommendation Label",
+            "description": "Rótulo da recomendação (ex.: 'Pagar 40')."
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline",
+            "description": "Resumo em linguagem simples do que fazer e por quê."
+          }
+        },
+        "type": "object",
+        "required": [
+          "hand_label",
+          "equity_pct",
+          "pot",
+          "to_call",
+          "pot_odds_pct",
+          "ev_call",
+          "mdf_pct",
+          "outs",
+          "draws",
+          "nut",
+          "texture",
+          "blockers",
+          "spr",
+          "realization",
+          "realization_why",
+          "options",
+          "council",
+          "recommendation",
+          "recommendation_label",
+          "headline"
+        ],
+        "title": "CopilotResponse",
+        "description": "A leitura do Copiloto: o mesmo painel 'Sua jogada' para qualquer spot."
       },
       "CouncilEntrySchema": {
         "properties": {
@@ -2013,6 +2299,10 @@
     {
       "name": "Jogadores",
       "description": "Entrar/sair de jogadores na mesa ao vivo (como num cassino)."
+    },
+    {
+      "name": "Copiloto",
+      "description": "Revisar um spot pós-jogo (equity, MDF, veredito das jogadas, conselho das IAs) — offline."
     },
     {
       "name": "Catálogo",

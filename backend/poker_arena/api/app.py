@@ -29,6 +29,8 @@ from .mappers import to_config, to_response
 from .schemas import (
     ActionRequest,
     AddPlayerRequest,
+    CopilotRequest,
+    CopilotResponse,
     CreateTableRequest,
     TableStateResponse,
 )
@@ -81,6 +83,7 @@ TAGS_METADATA = [
     {"name": "Mesa", "description": "Criar uma partida e ler o estado da mesa."},
     {"name": "Jogada", "description": "Avançar o jogo: sua jogada, jogada dos bots e próxima mão."},
     {"name": "Jogadores", "description": "Entrar/sair de jogadores na mesa ao vivo (como num cassino)."},
+    {"name": "Copiloto", "description": "Revisar um spot pós-jogo (equity, MDF, veredito das jogadas, conselho das IAs) — offline."},
     {"name": "Catálogo", "description": "Dados de apoio (níveis de IA disponíveis)."},
     {"name": "Auditoria", "description": "Histórico das partidas gravadas e replay mão a mão."},
     {"name": "Tempo real", "description": "Canal WebSocket para jogar com push de estado."},
@@ -116,6 +119,33 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         """Retorna `{"status": "ok"}` se a API está no ar. Útil para o launcher/monitor."""
         return {"status": "ok"}
+
+    @app.post(
+        "/copilot",
+        response_model=CopilotResponse,
+        tags=["Copiloto"],
+        summary="Copiloto: revisar um spot (pós-jogo, offline)",
+        responses={400: {"description": "Spot inválido (cartas repetidas, quantidade errada, valores inválidos)."}},
+    )
+    def copilot(req: CopilotRequest) -> CopilotResponse:
+        """Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)
+        e devolve a leitura completa: equity real, pot odds, EV, MDF, outs, a nut,
+        textura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o
+        conselho das 5 IAs. É o painel 'Sua jogada' aplicado a qualquer situação — 100%
+        offline, sem tocar em site nenhum. Ideal pra ESTUDAR/revisar mãos depois do jogo."""
+        from ..application.copilot import InvalidSpotError, review_spot
+
+        try:
+            view = review_spot(
+                req.hole, req.board, req.pot, req.to_call, req.my_stack,
+                req.num_opponents, req.in_position, list(available_levels()),
+                big_blind=req.big_blind,
+            )
+        except InvalidSpotError as e:
+            raise HTTPException(400, str(e)) from e
+        from dataclasses import asdict
+
+        return CopilotResponse(**asdict(view))
 
     @app.get("/levels", tags=["Catálogo"], summary="Níveis de IA disponíveis")
     def levels() -> dict[str, list[str]]:

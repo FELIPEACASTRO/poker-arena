@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ClipboardList, Compass, Cpu, FlaskConical, Gamepad2, GraduationCap, LogOut, Users } from 'lucide-react'
+import { ClipboardList, Compass, Cpu, FlaskConical, Gamepad2, GraduationCap, LogOut, Sparkles, Users } from 'lucide-react'
 import ActionBar from './components/ActionBar'
 import AIMind from './components/AIMind'
 import { CouncilPanel, EquityPanel, EVPanel, HandPanel, ProfilePanel } from './components/Analysis'
 import AuditPage from './components/AuditPage'
+import CopilotScreen from './components/CopilotScreen'
 import GuideScreen from './components/GuideScreen'
 import ManageTable from './components/ManageTable'
 import PositionsGuide from './components/PositionsGuide'
@@ -27,8 +28,9 @@ export default function App() {
   const [guideOpen, setGuideOpen] = useState(false)
   const [auditOpen, setAuditOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
+  const [copilotOpen, setCopilotOpen] = useState(false)
   const [positions, setPositions] = useState<false | string>(false)
-  const modalOpen = guideOpen || auditOpen || manageOpen || positions !== false
+  const modalOpen = guideOpen || auditOpen || manageOpen || copilotOpen || positions !== false
 
   // modo laboratório: avança sozinho no ritmo escolhido (dá pra acompanhar e pensar)
   // pausa enquanto um modal está aberto (senão o re-render atrapalha digitar/interagir)
@@ -103,6 +105,14 @@ export default function App() {
                 >
                   <Compass size={16} />
                   <span className="guide-open-label">Posições</span>
+                </button>
+                <button
+                  className="btn btn-ghost guide-open"
+                  onClick={() => setCopilotOpen(true)}
+                  title="Copiloto: revisar um spot (pós-jogo, offline)"
+                >
+                  <Sparkles size={16} />
+                  <span className="guide-open-label">Copiloto</span>
                 </button>
                 <button
                   className="btn btn-ghost guide-open"
@@ -204,6 +214,7 @@ export default function App() {
             {guideOpen && <GuideScreen onClose={() => setGuideOpen(false)} />}
             {auditOpen && <AuditPage onClose={() => setAuditOpen(false)} />}
             {manageOpen && <ManageTable onClose={() => setManageOpen(false)} />}
+            {copilotOpen && <CopilotScreen onClose={() => setCopilotOpen(false)} />}
             {positions !== false && (
               <PositionsGuide focus={positions || undefined} onClose={() => setPositions(false)} />
             )}

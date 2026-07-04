@@ -864,6 +864,45 @@ body {
 /* banner de tilt (detector didático) */
 .tilt-banner { border-color: var(--lvl-heuristic); background: rgba(250, 204, 21, 0.08); }
 
+/* ---------- Copiloto (revisão de spot) ---------- */
+.copilot-modal { max-width: 720px; }
+.copilot-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 12px; margin-top: 4px; }
+.cp-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-dim); }
+.cp-field.cp-wide { grid-column: 1 / -1; }
+.cp-field input[type='text'], .cp-field input:not([type]), .cp-field input[type='number'] {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md);
+  padding: 8px 10px; color: var(--text); font-size: 14px; font-family: inherit;
+}
+.cp-field input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+.cp-check { flex-direction: row; align-items: center; gap: 8px; grid-column: 1 / -1; }
+.cp-check input { width: 16px; height: 16px; accent-color: var(--accent); }
+.cp-go { grid-column: 1 / -1; margin-top: 2px; }
+.cp-hint { font-size: 11px; color: var(--text-dim); margin: 8px 0 0; }
+.cp-hint code { background: var(--surface-3); padding: 1px 5px; border-radius: var(--r-sm); }
+.cp-error { margin-top: 12px; padding: 10px 12px; border-radius: var(--r-md); background: rgba(251,113,133,0.1); border: 1px solid var(--neg); color: var(--text); font-size: 13px; }
+
+.cp-result { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+.cp-headline { display: flex; gap: 8px; align-items: flex-start; font-size: 15px; font-weight: 600; color: var(--text); background: var(--accent-soft); border-radius: var(--r-md); padding: 11px 13px; }
+.cp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; margin-top: 14px; }
+.cp-grid > div { display: flex; flex-direction: column; gap: 2px; }
+.cp-grid span { font-size: 11px; color: var(--text-dim); }
+.cp-grid b { font-size: 15px; color: var(--text); }
+.cp-draws { font-size: 12.5px; color: var(--text-dim); background: var(--surface-2); border-radius: var(--r-md); padding: 6px 10px; margin: 8px 0 0; }
+.cp-h3 { font-size: 13px; color: var(--text-dim); margin: 18px 0 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+.cp-options { display: flex; flex-direction: column; gap: 8px; }
+.cp-opt { border-left: 3px solid var(--vc); background: var(--surface-2); border-radius: var(--r-md); padding: 8px 12px; }
+.cp-opt.is-rec { background: var(--accent-soft); }
+.cp-opt-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cp-opt-label { font-weight: 600; color: var(--text); font-size: 14px; }
+.cp-opt p { font-size: 12.5px; color: var(--text-dim); margin: 3px 0 0; line-height: 1.45; }
+.cp-rec-badge { font-size: 10px; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: var(--r-pill); text-transform: uppercase; }
+.cp-council { display: flex; flex-wrap: wrap; gap: 8px; }
+.cp-vote { display: flex; flex-direction: column; gap: 1px; border: 1px solid var(--border); border-left-width: 3px; border-radius: var(--r-md); padding: 6px 11px; min-width: 108px; }
+.cp-vote-lvl { font-size: 11px; font-weight: 600; }
+.cp-vote-act { font-size: 13px; color: var(--text); }
+.cp-ethic { display: flex; gap: 8px; align-items: flex-start; margin-top: 18px; padding: 10px 12px; font-size: 11.5px; line-height: 1.5; color: var(--text-dim); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); }
+.cp-ethic b { color: var(--text); }
+
 /* ============================================================
    Guia de posições da mesa
    ============================================================ */

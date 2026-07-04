@@ -348,6 +348,44 @@ class OptionSchema(BaseModel):
     chosen: bool = Field(description="Se foi a jogada que o bot realmente escolheu.")
 
 
+class CopilotRequest(BaseModel):
+    """Um SPOT descrito pelo usuário para o Copiloto revisar (pós-jogo, offline)."""
+
+    hole: list[str] = Field(description="Suas 2 cartas (ex.: ['As','Kh']).")
+    board: list[str] = Field(default=[], description="Cartas comunitárias: 0 (pré-flop), 3 (flop), 4 (turn) ou 5 (river).")
+    pot: int = Field(ge=0, description="Fichas no pote (antes de você pagar).")
+    to_call: int = Field(ge=0, default=0, description="Quanto custa pagar (0 se você pode passar).")
+    my_stack: int = Field(gt=0, description="Suas fichas.")
+    num_opponents: int = Field(ge=1, default=1, description="Quantos oponentes ativos na mão.")
+    in_position: bool = Field(default=True, description="Você age por último (em posição)? Afeta a realização da equity.")
+    big_blind: int = Field(gt=0, default=20, description="Big blind (só para dimensionar o aumento mínimo).")
+
+
+class CopilotResponse(BaseModel):
+    """A leitura do Copiloto: o mesmo painel 'Sua jogada' para qualquer spot."""
+
+    hand_label: str | None = Field(description="Melhor mão atual ou as cartas (ex.: 'Par de Reis', 'A-K').")
+    equity_pct: int = Field(description="Chance real de ganhar (simulação Monte Carlo vs oponentes desconhecidos), 0..100.")
+    pot: int
+    to_call: int
+    pot_odds_pct: int = Field(description="Preço relativo (pot odds), 0..100.")
+    ev_call: float = Field(description="Valor esperado de pagar, em fichas (positivo = lucrativo).")
+    mdf_pct: int | None = Field(description="Frequência mínima de defesa diante da aposta, 0..100. `null` sem aposta.")
+    outs: int = Field(description="Cartas que melhoram sua mão para a melhor.")
+    draws: list[str] = Field(description="Projetos ativos (flush, sequência).")
+    nut: str | None = Field(description="A melhor mão possível no board (a 'nut').")
+    texture: str | None = Field(description="Textura do board (seco/molhado).")
+    blockers: list[str] = Field(description="Cartas suas que bloqueiam as mãos fortes do vilão.")
+    spr: float | None = Field(description="Stack-to-pot ratio.")
+    realization: str = Field(description="Realização da equity: `alta` (em posição), `média` ou `baixa` (fora).")
+    realization_why: str
+    options: list[OptionSchema] = Field(description="Cada jogada avaliada boa/arriscada/ruim + por quê.")
+    council: list[CouncilEntrySchema] = Field(description="O que cada uma das 5 IAs faria neste spot.")
+    recommendation: str = Field(description="Ação recomendada (fold/check/call/raise/all_in).")
+    recommendation_label: str = Field(description="Rótulo da recomendação (ex.: 'Pagar 40').")
+    headline: str = Field(description="Resumo em linguagem simples do que fazer e por quê.")
+
+
 class ReasoningSchema(BaseModel):
     """Como o bot que acabou de jogar está pensando — o card didático (modo `watch`)."""
 

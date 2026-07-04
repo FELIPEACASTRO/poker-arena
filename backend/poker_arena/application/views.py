@@ -159,6 +159,35 @@ class ReasoningView:
 
 
 @dataclass(frozen=True)
+class CopilotView:
+    """A leitura do COPILOTO para um spot descrito pelo usuário (revisão pós-jogo).
+
+    É o painel 'Sua jogada' aplicado a qualquer situação que você digitar — sem
+    tocar em site nenhum. Só análise, 100% offline."""
+
+    hand_label: str | None  # melhor mão atual / cartas (ex.: "Par de Reis", "A-K")
+    equity_pct: int  # chance real de ganhar (simulação Monte Carlo vs oponentes)
+    pot: int
+    to_call: int
+    pot_odds_pct: int
+    ev_call: float  # valor esperado de pagar (em fichas)
+    mdf_pct: int | None
+    outs: int
+    draws: list[str]
+    nut: str | None
+    texture: str | None
+    blockers: list[str]
+    spr: float | None
+    realization: str  # alta | média | baixa
+    realization_why: str
+    options: list[OptionView]  # cada jogada avaliada boa/arriscada/ruim + por quê
+    council: list[CouncilEntryView]  # o que cada uma das 5 IAs faria neste spot
+    recommendation: str  # a ação recomendada (ex.: "call")
+    recommendation_label: str  # ex.: "Pagar 40"
+    headline: str  # resumo em linguagem simples do que fazer e por quê
+
+
+@dataclass(frozen=True)
 class PosStatView:
     """VPIP/PFR de um bot numa REGIÃO da mesa (cedo/meio/tarde/blinds)."""
 

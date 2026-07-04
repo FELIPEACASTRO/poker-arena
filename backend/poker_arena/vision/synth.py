@@ -12,10 +12,13 @@ escala pra treinar o detector agnóstico.
 
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass, field
 
 from PIL import Image, ImageDraw, ImageFont
+
+from .seats import derive_position
 
 RANKS = "23456789TJQKA"
 SUITS = "shdc"
@@ -31,6 +34,11 @@ TWO_COLOR = {"s": (20, 20, 20), "c": (20, 20, 20), "h": (200, 30, 40), "d": (200
 FOUR_COLOR = {"s": (20, 20, 20), "c": (20, 120, 40), "h": (200, 30, 40), "d": (30, 90, 210)}
 
 _FELTS = [(28, 92, 60), (24, 78, 96), (40, 46, 58), (60, 40, 46), (30, 70, 50), (18, 40, 70)]
+
+# avatares dos assentos = discos AZULADOS (B domina) — distintos do feltro (verde) e
+# das cartas (claras). O botão = disco DOURADO. F1 acha por blob de cor; F2 aprende.
+_SEAT_COLORS = [(60, 90, 150), (80, 70, 140), (50, 110, 155), (95, 90, 135), (55, 100, 165)]
+_BUTTON_COLOR = (232, 200, 60)
 
 
 @dataclass(frozen=True)
@@ -91,13 +99,62 @@ def _deal(rng: random.Random, k: int) -> list[str]:
     return deck[:k]
 
 
+def _draw_seats(
+    img: Image.Image, d: ImageDraw.ImageDraw, rng: random.Random, style: Style, W: int, H: int
+) -> dict:
+    """Desenha N assentos ao redor da mesa + o dealer button, e devolve o gabarito
+    (centros dos assentos, herói embaixo, assento do botão, nº de jogadores, posição)."""
+    n = rng.randint(2, 9)
+    cx, cy, rx, ry = W / 2, H / 2, W * 0.40, H * 0.44
+    centers: list[tuple[float, float]] = []
+    for i in range(n):  # assento 0 = HERÓI, embaixo (90°); demais espaçados ao redor
+        ang = math.radians(90 + i * 360 / n)
+        centers.append((cx + rx * math.cos(ang), cy + ry * math.sin(ang)))
+    hero_seat = 0
+    button_seat = rng.randrange(n)
+
+    for sx, sy in centers:
+        r = rng.randint(22, 30)
+        col = rng.choice(_SEAT_COLORS)
+        d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=col, outline=(230, 230, 235), width=2)
+        pw, ph = int(r * 2.1), int(r * 0.7)  # plaqueta de stack (escura, não confunde c/ carta)
+        d.rounded_rectangle([sx - pw / 2, sy + r + 2, sx + pw / 2, sy + r + 2 + ph],
+                            radius=4, fill=(28, 30, 36))
+        sf = _font(style.font, max(11, int(ph * 0.7)))
+        stk = str(rng.randint(5, 300))
+        d.text((sx - pw / 2 + 6, sy + r + 3), stk, font=sf, fill=(225, 225, 210))
+
+    sx, sy = centers[button_seat]  # botão AO LADO do assento (radial leve + tangencial),
+    ux, uy = (cx - sx), (cy - sy)  # nunca em cima das cartas do herói
+    lg = math.hypot(ux, uy) or 1.0
+    ux, uy = ux / lg, uy / lg
+    bx = sx + ux * 16 - uy * 42  # (-uy, ux) = direção tangencial
+    by = sy + uy * 16 + ux * 42
+    n_players, position = derive_position(centers, centers[hero_seat], (bx, by))
+    return {"seats": centers, "hero_seat": hero_seat, "button_seat": button_seat,
+            "n_players": n_players, "position": position, "button_xy": (bx, by)}
+
+
+def _draw_button(d: ImageDraw.ImageDraw, style: Style, bx: float, by: float) -> None:
+    """Desenha o dealer button — POR CIMA das cartas (como nos clientes 2D reais),
+    pra ele nunca ficar oculto pelas cartas do herói quando o botão é do herói."""
+    br = 13
+    box = [bx - br, by - br, bx + br, by + br]
+    d.ellipse(box, fill=_BUTTON_COLOR, outline=(120, 95, 10), width=2)
+    d.text((bx - 5, by - 9), "D", font=_font(style.font, 15), fill=(90, 70, 8))
+
+
 def render_table(
     seed: int | None = None,
     style: Style | None = None,
     n_board: int | None = None,
     noise: float = 0.15,
+    with_seats: bool = False,
 ) -> tuple[Image.Image, dict]:
-    """Mesa 2D com gabarito. Randomiza posição/escala/fundo/ruído dentro do estilo."""
+    """Mesa 2D com gabarito. Randomiza posição/escala/fundo/ruído dentro do estilo.
+
+    `with_seats=True` também desenha os jogadores + dealer button (nº de participantes
+    e posição no gabarito) — usado pra provar/treinar a leitura de assentos."""
     rng = random.Random(seed)
     style = style or rng.choice(STYLES)
     if n_board is None:
@@ -115,6 +172,9 @@ def render_table(
     truth = {"hole": hole, "board": board, "pot": 0, "style": style.name,
              "four_color": style.suit_colors is FOUR_COLOR}
 
+    if with_seats:  # jogadores + botão ANTES das cartas; RNG próprio p/ não mexer no layout
+        truth.update(_draw_seats(img, d, random.Random((seed or 0) * 2 + 777), style, W, H))
+
     def paste_card(card: str, cx: int, cy: int, scale: float) -> None:
         # clientes de poker 2D renderizam as cartas ALINHADAS (sem rotação) — fiel ao domínio
         cw = int(style.card_w * scale)
@@ -128,9 +188,9 @@ def render_table(
         by = H // 2 + rng.randint(-20, 10)
         for i, c in enumerate(board):
             paste_card(c, x0 + i * gap + rng.randint(-3, 3), by, rng.uniform(0.95, 1.06))
-    # hole embaixo (herói) — as duas cartas lado a lado, com folga
+    # hole do herói — acima do avatar do herói (como nos clientes reais), com folga
     hx = W // 2 + rng.randint(-40, 40)
-    hy = int(H * 0.82) + rng.randint(-12, 12)
+    hy = int(H * 0.74) + rng.randint(-10, 8)
     for i, c in enumerate(hole):
         paste_card(c, hx - 46 + i * 92, hy, rng.uniform(1.0, 1.1))
 
@@ -144,6 +204,9 @@ def render_table(
     bb = d.textbbox((0, 0), ptxt, font=pot_font)
     truth["pot_box"] = (px - (bb[2] - bb[0]) // 2, py, bb[2] - bb[0], bb[3] - bb[1])
     d.text((px - (bb[2] - bb[0]) // 2, py), ptxt, font=pot_font, fill=(240, 235, 210))
+
+    if with_seats:  # dealer button POR CIMA das cartas (nunca ocluso)
+        _draw_button(d, style, *truth["button_xy"])
 
     if noise > 0:  # ruído gaussiano leve (robustez / realismo)
         import numpy as np

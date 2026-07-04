@@ -6,12 +6,12 @@ A generalização a QUALQUER tela é o modelo treinado (F2, notebook) — aqui p
 o pipeline e a régua.
 """
 
+import numpy as np
 import pytest
 
 from poker_arena.vision import check_state, recognize_table, render_table
 from poker_arena.vision.recognize import RecognizedState, _read_card
 from poker_arena.vision.synth import CANONICAL, RANKS, SUITS, render_card
-import numpy as np
 
 
 def test_generator_returns_image_and_truth():
@@ -71,9 +71,64 @@ def test_pipeline_produces_valid_state():
     assert st.board == truth["board"]
 
 
+# ---------- leitura de JOGADORES + POSIÇÃO (assentos + dealer button) ----------
+def test_detecta_numero_de_participantes_no_estilo_canonico():
+    cok = tot = 0
+    for seed in range(40):
+        img, truth = render_table(seed=seed, style=CANONICAL, with_seats=True, noise=0.1)
+        st = recognize_table(img)
+        tot += 1
+        cok += st.n_players == truth["n_players"]
+    assert cok / tot >= 0.90, f"contagem de jogadores caiu para {cok/tot:.0%}"
+
+
+def test_deriva_posicao_do_heroi_no_estilo_canonico():
+    cok = tot = 0
+    for seed in range(40):
+        img, truth = render_table(seed=seed, style=CANONICAL, with_seats=True, noise=0.1)
+        st = recognize_table(img)
+        tot += 1
+        cok += st.position == truth["position"]
+    assert cok / tot >= 0.90, f"posição do herói caiu para {cok/tot:.0%}"
+
+
+def test_assentos_nao_derrubam_a_leitura_das_cartas():
+    # a mesa completa (com jogadores) não pode piorar a leitura das cartas
+    cok = ctot = 0
+    for seed in range(30):
+        img, truth = render_table(seed=seed, style=CANONICAL, with_seats=True, noise=0.1)
+        st = recognize_table(img)
+        tc = truth["hole"] + truth["board"]
+        got = st.hole + st.board
+        ctot += len(tc)
+        cok += sum(1 for c in tc if c in got)
+    assert cok / ctot >= 0.95
+
+
+def test_abstem_de_jogadores_quando_a_cor_do_feltro_colide():
+    # feltro azul colide com o avatar azul -> ABSTÉM (0 jogadores), não conta errado
+    from poker_arena.vision.synth import STYLES
+
+    blue = next(s for s in STYLES if s.name == "blue-4color")
+    abstidos = 0
+    for seed in range(20):
+        img, _ = render_table(seed=seed, style=blue, with_seats=True, noise=0.1)
+        st = recognize_table(img)
+        abstidos += st.n_players == 0
+    assert abstidos >= 15  # abstém na grande maioria (F2 treinado é que generaliza)
+
+
+def test_sanity_avisa_quando_nao_detecta_jogadores():
+    st = RecognizedState(hole=["As", "Kd"], board=[], pot=100, n_cards=2,
+                         confidence=0.9, n_players=0)
+    r = check_state(st)
+    assert r.ok and any("jogadores" in w for w in r.warnings)
+
+
 # ---------- sanity-check (a rede de segurança) ----------
 def test_sanity_accepts_a_plausible_state():
-    st = RecognizedState(hole=["As", "Kd"], board=["Qs", "Jh", "2c"], pot=100, n_cards=5, confidence=0.9)
+    st = RecognizedState(hole=["As", "Kd"], board=["Qs", "Jh", "2c"], pot=100,
+                         n_cards=5, confidence=0.9)
     assert check_state(st).ok
 
 

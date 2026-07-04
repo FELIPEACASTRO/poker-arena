@@ -175,7 +175,9 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
                 <div className="cp-review-sum">
                   👁️ Detectado: <b>{vision.detected.hole.join(' ') || '—'}</b>
                   {vision.detected.board.length > 0 && <> · board <b>{vision.detected.board.join(' ')}</b></>}
-                  {vision.detected.pot != null && <> · pote <b>{vision.detected.pot}</b></>}{' '}
+                  {vision.detected.pot != null && <> · pote <b>{vision.detected.pot}</b></>}
+                  {vision.detected.n_players > 0 && <> · <b>{vision.detected.n_players}</b> jogadores</>}
+                  {vision.detected.position && <> · posição <b>{vision.detected.position}</b></>}{' '}
                   <small>(confiança {Math.round(vision.detected.confidence * 100)}%)</small>
                 </div>
                 {!vision.sanity.ok && (

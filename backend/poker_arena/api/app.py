@@ -184,13 +184,16 @@ def create_app() -> FastAPI:
 
         st = recognize_table(img)
         sanity = check_state(st)
+        # a VISÃO manda quando detecta os jogadores/posição; senão, cai no informado
+        eff_opponents = st.n_players - 1 if st.n_players >= 2 else num_opponents
+        eff_position = st.position or position
         decision = None
         if sanity.ok:
             try:
                 view = review_spot(
                     st.hole, st.board, st.pot or 0, to_call, my_stack,
-                    num_opponents, in_position, list(available_levels()),
-                    position=position,
+                    eff_opponents, in_position, list(available_levels()),
+                    position=eff_position,
                 )
                 decision = CopilotResponse(**asdict(view))
             except Exception:  # se o estado passa no sanity mas o copiloto recusa, abstém
@@ -198,7 +201,8 @@ def create_app() -> FastAPI:
                 sanity.problems.append("estado detectado não formou um spot válido")
         return FromImageResponse(
             detected={"hole": st.hole, "board": st.board, "pot": st.pot,
-                      "n_cards": st.n_cards, "confidence": st.confidence},
+                      "n_cards": st.n_cards, "confidence": st.confidence,
+                      "n_players": st.n_players, "position": st.position},
             sanity={"ok": sanity.ok, "problems": sanity.problems, "warnings": sanity.warnings},
             decision=decision,
         )

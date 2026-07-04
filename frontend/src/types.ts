@@ -212,6 +212,8 @@ export interface FromImageResult {
     pot: number | null
     n_cards: number
     confidence: number
+    n_players: number // participantes detectados na mesa (0 = não detectou)
+    position: string // posição do herói derivada dos assentos + botão ('' se não detectou)
   }
   sanity: { ok: boolean; problems: string[]; warnings: string[] }
   decision: CopilotResult | null

@@ -45,5 +45,9 @@ def check_state(st: RecognizedState, *, min_confidence: float = 0.35) -> SanityR
         warnings.append(f"confiança baixa ({st.confidence}) — leitura incerta")
     if st.pot is None:
         warnings.append("não consegui ler o pote")
+    if st.n_players and not (2 <= st.n_players <= 10):
+        problems.append(f"nº de participantes implausível: {st.n_players} (2 a 10)")
+    if not st.n_players:
+        warnings.append("não detectei os jogadores — usando o nº informado")
 
     return SanityResult(ok=not problems, problems=problems, warnings=warnings)

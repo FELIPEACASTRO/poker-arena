@@ -397,6 +397,8 @@ class DetectedStateSchema(BaseModel):
     pot: int | None = Field(description="Pote lido (None se não leu).")
     n_cards: int = Field(description="Quantas cartas foram localizadas.")
     confidence: float = Field(description="Confiança média da leitura, 0..1.")
+    n_players: int = Field(default=0, description="Participantes detectados na mesa (0 = não detectou; cai no valor informado).")
+    position: str = Field(default="", description="Posição do herói derivada dos assentos + botão (BTN/SB/BB/UTG/...). Vazia se não detectou.")
 
 
 class SanitySchema(BaseModel):

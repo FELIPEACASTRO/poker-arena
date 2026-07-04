@@ -22,9 +22,9 @@ N = 80
 
 
 def measure(style) -> dict:
-    cok = ctot = hx = bx = px = 0
+    cok = ctot = hx = bx = px = npl = pos = abst = 0
     for seed in range(N):
-        img, truth = render_table(seed=20000 + seed, style=style)
+        img, truth = render_table(seed=20000 + seed, style=style, with_seats=True)
         st = recognize_table(img)
         tc = truth["hole"] + truth["board"]
         gc = st.hole + st.board
@@ -33,27 +33,36 @@ def measure(style) -> dict:
         hx += set(st.hole) == set(truth["hole"])
         bx += st.board == truth["board"]
         px += st.pot == truth["pot"]
+        npl += st.n_players == truth["n_players"]
+        pos += st.position == truth["position"]
+        abst += st.n_players == 0
     return {
         "cartas": 100 * cok / ctot,
         "hole": 100 * hx / N,
         "board": 100 * bx / N,
         "pote": 100 * px / N,
+        "jogadores": 100 * npl / N,
+        "posicao": 100 * pos / N,
+        "absteve": 100 * abst / N,
     }
 
 
 def save_example(style, seed: int, out: Path) -> None:
-    img, truth = render_table(seed=seed, style=style)
+    img, truth = render_table(seed=seed, style=style, with_seats=True)
     st = recognize_table(img)
-    canvas = Image.new("RGB", (img.width, img.height + 70), (10, 14, 20))
+    canvas = Image.new("RGB", (img.width, img.height + 96), (10, 14, 20))
     canvas.paste(img, (0, 0))
     d = ImageDraw.Draw(canvas)
-    ok = set(st.hole) == set(truth["hole"]) and st.board == truth["board"]
+    ok = (set(st.hole) == set(truth["hole"]) and st.board == truth["board"]
+          and st.n_players == truth["n_players"] and st.position == truth["position"])
     d.text((12, img.height + 8),
-           f"GABARITO  hole={truth['hole']} board={truth['board']} pot={truth['pot']}",
+           f"GABARITO  hole={truth['hole']} board={truth['board']} pot={truth['pot']} "
+           f"jogadores={truth['n_players']} pos={truth['position']}",
            fill=(180, 200, 220))
     verdict = "OK" if ok else "DIVERGIU"
     d.text((12, img.height + 34),
-           f"DETECTADO hole={st.hole} board={st.board} pot={st.pot}  ->  {verdict}",
+           f"DETECTADO hole={st.hole} board={st.board} pot={st.pot} "
+           f"jogadores={st.n_players} pos={st.position!r}  ->  {verdict}",
            fill=(120, 230, 140) if ok else (240, 170, 90))
     canvas.save(out / f"exemplo_{style.name}.png")
 
@@ -89,6 +98,22 @@ def main() -> None:
         "",
         f"**Calibrado: {seen:.1f}% de cartas** · **média nunca-visto: {unseen:.1f}%** → "
         f"queda de **{seen - unseen:.1f} pontos** = o gap de domínio que o modelo (F2) fecha.",
+        "",
+        "## Jogadores + posição (assentos + dealer button)",
+        "",
+        "Contar participantes e derivar a posição do herói (regra oficial) a partir dos",
+        "assentos e do botão. A F1 acha por blob de cor (calibrado no canônico); quando a",
+        "cor do feltro **colide** com a do avatar, ela **ABSTÉM** (0 jogadores) em vez de",
+        "contar errado — e o copiloto cai no nº informado. O modelo treinado (F2) generaliza.",
+        "",
+        "| Estilo | Nº de jogadores | Posição do herói | Absteve |",
+        "|---|---|---|---|",
+    ]
+    for name, m, _ in rows:
+        lines.append(
+            f"| {name} | {m['jogadores']:.0f}% | {m['posicao']:.0f}% | {m['absteve']:.0f}% |"
+        )
+    lines += [
         "",
         "Imagens de exemplo (gabarito × detectado) salvas nesta pasta.",
     ]

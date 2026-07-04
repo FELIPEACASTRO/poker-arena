@@ -1495,6 +1495,18 @@
             "type": "number",
             "title": "Confidence",
             "description": "Confiança média da leitura, 0..1."
+          },
+          "n_players": {
+            "type": "integer",
+            "title": "N Players",
+            "description": "Participantes detectados na mesa (0 = não detectou; cai no valor informado).",
+            "default": 0
+          },
+          "position": {
+            "type": "string",
+            "title": "Position",
+            "description": "Posição do herói derivada dos assentos + botão (BTN/SB/BB/UTG/...). Vazia se não detectou.",
+            "default": ""
           }
         },
         "type": "object",

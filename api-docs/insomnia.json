@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-07-04T20:25:22.000Z",
+  "__export_date": "2026-07-04T21:03:19.000Z",
   "__export_source": "poker-arena:generate.py",
   "resources": [
     {
@@ -23,7 +23,7 @@
         "game_id": "COLE_AQUI_O_id_DA_PARTIDA",
         "seat": 0
       },
-      "metaSortKey": 1783196722253
+      "metaSortKey": 1783198999042
     },
     {
       "_id": "fld_mesa",

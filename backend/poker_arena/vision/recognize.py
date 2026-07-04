@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
+from .seats import derive_position
 from .synth import _RANK_DISP, _SUIT_SYM, CANONICAL, RANKS, SUITS, Style, _font
 
 _TH = 150  # brilho acima disso = interior de carta (claro sobre feltro escuro)
@@ -36,6 +37,8 @@ class RecognizedState:
     pot: int | None = None
     n_cards: int = 0
     confidence: float = 1.0  # menor quando algo ficou ambíguo
+    n_players: int = 0  # participantes na mesa (0 = não detectado)
+    position: str = ""  # posição do herói (BTN/SB/BB/UTG/...) — "" se indefinida
 
 
 def _gray(img: Image.Image) -> np.ndarray:
@@ -123,6 +126,38 @@ def _find_cards(gray: np.ndarray) -> list[tuple[int, int, int, int]]:
         if 1.15 <= ar <= 1.75 and Wd >= min_w and Hd >= min_w * 1.1:  # proporção de carta
             out.append((X, Y, Wd, Hd))
     return out
+
+
+def _blob_centers(
+    mask: np.ndarray, scale: int, min_area: int, max_dim: float, ar_lo: float, ar_hi: float
+) -> list[tuple[float, float]]:
+    """Centros (na resolução original) dos componentes ~redondos de uma máscara de cor.
+    `max_dim` descarta blobs grandes demais (ex.: feltro azul virando um bloco só) —
+    aí a leitura de assentos ABSTÉM (0 jogadores) em vez de contar errado."""
+    out = []
+    for x, y, w, h in _components(mask, min_area):
+        ar = w / max(h, 1)
+        if ar_lo <= ar <= ar_hi and w <= max_dim and h <= max_dim:
+            out.append(((x + w / 2) * scale, (y + h / 2) * scale))
+    return out
+
+
+def _locate_seats(rgb: np.ndarray) -> tuple[list[tuple[float, float]], tuple[float, float] | None]:
+    """Acha os avatares dos jogadores (discos AZULADOS) e o dealer button (disco
+    DOURADO) por blob de cor. AGNÓSTICO A RESOLUÇÃO (escala pela largura). É o baseline
+    F1 (estilo canônico); o detector treinado (F2) generaliza pra qualquer UI."""
+    H, W = rgb.shape[:2]
+    scale = max(1, round(W / 300))
+    small = np.asarray(Image.fromarray(rgb).resize((max(1, W // scale), max(1, H // scale))))
+    s16 = small.astype(np.int16)
+    r, g, b = s16[..., 0], s16[..., 1], s16[..., 2]
+    mx = small.max(2)
+    seat_mask = (b > r + 12) & (b >= g) & (b > 90) & (mx < 205)  # disco azulado (não claro)
+    btn_mask = (r > 180) & (g > 140) & (b < 130)  # disco dourado
+    unit = (W * 0.03) / scale  # ~diâmetro do avatar na imagem reduzida
+    seats = _blob_centers(seat_mask, scale, int(unit * unit * 0.35), unit * 2.6, 0.55, 1.8)
+    btns = _blob_centers(btn_mask, scale, max(6, int(unit * unit * 0.10)), unit * 1.6, 0.5, 2.0)
+    return seats, (btns[0] if btns else None)
 
 
 def _color_class(rgb_crop: np.ndarray) -> str:
@@ -259,18 +294,34 @@ def recognize_table(img: Image.Image) -> RecognizedState:
     boxes = _find_cards(gray)
     reads = [( *_read_card(rgb, b), b) for b in boxes]  # (card, score, box)
 
-    hole, board, confs = [], [], []
+    Wpx = gray.shape[1]
+    hole, board, confs, hole_boxes = [], [], [], []
     for card, score, box in reads:
         x, y, w, h = box
         cy = y + h / 2
         confs.append(score)
-        (hole if cy > H * 0.66 else board).append((x, card))
+        if cy > H * 0.66:
+            hole.append((x, card))
+            hole_boxes.append(box)
+        else:
+            board.append((x, card))
     hole = [c for _, c in sorted(hole)][:2]
     board = [c for _, c in sorted(board)][:5]
     pot, potc = _read_pot(rgb, gray)
     if pot is not None:
         confs.append(potc)
+
+    # participantes + posição: assentos/botão por blob -> geometria (ordem de ação)
+    seats, button = _locate_seats(rgb)
+    if hole_boxes:  # herói fica onde estão as cartas do herói
+        hero = (float(np.mean([b[0] + b[2] / 2 for b in hole_boxes])),
+                float(np.mean([b[1] + b[3] / 2 for b in hole_boxes])))
+    else:
+        hero = (Wpx / 2, H * 0.9)
+    n_players, position = (derive_position(seats, hero, button) if len(seats) >= 2 else (0, ""))
+
     return RecognizedState(
         hole=hole, board=board, pot=pot, n_cards=len(reads),
         confidence=round(float(np.mean(confs)) if confs else 0.0, 3),
+        n_players=n_players, position=position,
     )

@@ -23,6 +23,15 @@ def _create(client, level="heuristic", n=5, stack=500):
     return client.post("/tables", json=body)
 
 
+def test_root_redirects_to_docs(client):
+    # a raiz '/' nao pode dar 404 feio: redireciona pra documentacao interativa
+    r = client.get("/", follow_redirects=False)
+    assert r.status_code in (307, 308)
+    assert r.headers["location"] == "/docs"
+    # e seguindo o redirect, chega na doc (200)
+    assert client.get("/").status_code == 200
+
+
 def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200

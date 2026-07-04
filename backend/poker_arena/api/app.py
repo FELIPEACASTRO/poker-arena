@@ -11,6 +11,7 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from ..application import (
     ExpertUnavailable,
@@ -104,6 +105,12 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.get("/", include_in_schema=False)
+    def root() -> RedirectResponse:
+        """Raiz amiga: manda pra documentação interativa (evita o 404 feio de quem
+        abre a URL base do backend por engano). Não é um endpoint da API."""
+        return RedirectResponse(url="/docs")
 
     @app.get("/health", tags=["Sistema"], summary="Saúde do serviço")
     def health() -> dict[str, str]:

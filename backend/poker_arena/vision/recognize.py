@@ -107,17 +107,20 @@ def _components(mask: np.ndarray, min_area: int) -> list[tuple[int, int, int, in
 
 
 def _find_cards(gray: np.ndarray) -> list[tuple[int, int, int, int]]:
-    """Localiza as cartas (regiões claras com proporção ~1.4) em resolução cheia."""
+    """Localiza as cartas (regiões claras, proporção ~1.4). AGNÓSTICO A RESOLUÇÃO:
+    o downscale e o tamanho mínimo de carta escalam com a largura da imagem, então
+    funciona em qualquer monitor/tela (cada aluno tem uma)."""
     H, W = gray.shape
-    scale = 3
-    small = np.asarray(Image.fromarray(gray).resize((W // scale, H // scale)))
+    scale = max(1, round(W / 300))  # processa em ~300px de largura, qualquer resolução
+    small = np.asarray(Image.fromarray(gray).resize((max(1, W // scale), max(1, H // scale))))
     mask = small > _TH
-    boxes = _components(mask, min_area=(20 * 28) // (scale * scale))
+    min_w = max(16.0, W * 0.025)  # carta >= 2.5% da largura da imagem
+    boxes = _components(mask, min_area=int((min_w * min_w * 1.2) / (scale * scale)))
     out = []
     for x, y, w, h in boxes:
         X, Y, Wd, Hd = x * scale, y * scale, w * scale, h * scale
         ar = Hd / max(Wd, 1)
-        if 1.15 <= ar <= 1.75 and Wd >= 30 and Hd >= 42:  # proporção de carta
+        if 1.15 <= ar <= 1.75 and Wd >= min_w and Hd >= min_w * 1.1:  # proporção de carta
             out.append((X, Y, Wd, Hd))
     return out
 

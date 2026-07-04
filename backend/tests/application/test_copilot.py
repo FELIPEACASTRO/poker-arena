@@ -93,3 +93,38 @@ def test_review_hand_rejects_unknown_player():
 def test_review_hand_rejects_garbage():
     with pytest.raises(InvalidSpotError):
         review_hand("isto não é PHH", hero=0, available_levels=LEVELS)
+
+
+# ---------- posição e nº de participantes (regra oficial) ----------
+def test_position_flows_to_the_view():
+    v = review_spot(["As", "Kh"], [], 30, 0, 1000, 4, True, LEVELS, position="BTN")
+    assert v.position == "BTN"
+    assert v.num_players == 5  # você + 4 oponentes
+    assert v.realization == "alta"  # botão fecha a ação
+
+
+def test_early_position_never_looser_than_button_preflop():
+    # mesma mão marginal pré-flop enfrentando aposta: UTG (cedo) não pode ser MAIS
+    # solto que o BTN (regra: aperta em posição cedo)
+    order = {"fold": 0, "check": 1, "call": 2, "all_in": 3, "raise": 3}
+    utg = review_spot(["Qd", "Jc"], [], 40, 20, 1000, 5, False, LEVELS, position="UTG")
+    btn = review_spot(["Qd", "Jc"], [], 40, 20, 1000, 5, True, LEVELS, position="BTN")
+    assert order[utg.recommendation] <= order[btn.recommendation]
+
+
+def test_position_tax_can_turn_a_marginal_call_into_a_fold():
+    from poker_arena.application.copilot import _recommend
+    from poker_arena.bots.observation import Observation, PublicPlayer
+    from poker_arena.engine.actions import ActionType
+    from poker_arena.engine.evaluator import card_from_str
+
+    me = PublicPlayer(0, "X", 1000, 0, 0, "active", False)
+    obs = Observation(
+        seat=0, hole=(card_from_str("Ah"), card_from_str("Kd")), board=(), pot=30,
+        to_call=20, current_bet=20, min_raise_to=40,
+        legal_actions=frozenset({ActionType.FOLD, ActionType.CALL, ActionType.RAISE}),
+        players=(me,), num_active=2,
+    )
+    # equity 0.45 vs pot odds 0.40: paga sem tax; com tax posicional alto (0.10), folda
+    assert _recommend(obs, 0.45, 40, obs.legal_actions, 0.0)[0] == ActionType.CALL
+    assert _recommend(obs, 0.45, 40, obs.legal_actions, 0.10)[0] == ActionType.FOLD

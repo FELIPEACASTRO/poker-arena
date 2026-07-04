@@ -185,6 +185,8 @@ class CopilotView:
     recommendation: str  # a ação recomendada (ex.: "call")
     recommendation_label: str  # ex.: "Pagar 40"
     headline: str  # resumo em linguagem simples do que fazer e por quê
+    position: str | None = None  # posição na mesa (SB/BB/UTG/.../BTN), se informada
+    num_players: int = 0  # participantes na mesa (você + oponentes)
 
 
 @dataclass(frozen=True)

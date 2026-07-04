@@ -22,6 +22,7 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
   const [stack, setStack] = useState(1000)
   const [opp, setOpp] = useState(1)
   const [inPos, setInPos] = useState(true)
+  const [position, setPosition] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [res, setRes] = useState<CopilotResult | null>(null)
@@ -45,6 +46,7 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
         my_stack: stack,
         num_opponents: opp,
         in_position: inPos,
+        position: position || null,
       })
       setRes(r)
     } catch (e) {
@@ -80,6 +82,7 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
           my_stack: stack,
           num_opponents: opp,
           in_position: inPos,
+          position: position || undefined,
         }),
       )
     } catch (e) {
@@ -280,6 +283,17 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
             <span>Oponentes</span>
             <input type="number" min={1} max={8} value={opp} onChange={(e) => setOpp(+e.target.value)} />
           </label>
+          <label className="cp-field">
+            <span>Sua posição (opcional)</span>
+            <select value={position} onChange={(e) => setPosition(e.target.value)}>
+              <option value="">— não sei —</option>
+              {['UTG', 'UTG+1', 'MP1', 'MP2', 'DJ', 'HJ', 'BTN', 'SB', 'BB'].map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="cp-field cp-check">
             <input type="checkbox" checked={inPos} onChange={(e) => setInPos(e.target.checked)} />
             <span>Em posição (ajo por último)</span>
@@ -303,6 +317,8 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
 
             <div className="cp-grid">
               <div><span>Mão</span><b>{res.hand_label ?? '—'}</b></div>
+              {res.position && <div><span>Posição</span><b>{res.position}</b></div>}
+              {res.num_players ? <div><span>Participantes</span><b className="mono">{res.num_players}</b></div> : null}
               <div><span>Chance real (equity)</span><b className="mono">{res.equity_pct}%</b></div>
               <div><span>Preço (pot odds)</span><b className="mono">{res.pot_odds_pct}%</b></div>
               <div><span>EV de pagar</span><b className="mono">{res.ev_call >= 0 ? '+' : ''}{res.ev_call}</b></div>

@@ -51,6 +51,21 @@ class InvalidSpotError(ValueError):
     """Entrada de spot inválida (cartas repetidas, quantidade errada, etc.)."""
 
 
+# "quão tarde" é cada posição (0 = mais cedo/apertado, 1 = botão/mais solto).
+# Regra oficial: em posição mais cedo, com mais gente pra agir, joga-se MAIS APERTADO.
+_POS_LATENESS = {
+    "UTG": 0.0, "UTG+1": 0.12, "MP1": 0.25, "MP2": 0.38, "DJ": 0.55, "HJ": 0.70,
+    "BTN": 1.0, "SB": 0.15, "BB": 0.30,
+}
+
+
+def _position_factor(position: str | None) -> float:
+    """Fator de 'lateness' da posição (0.5 neutro se desconhecida)."""
+    if not position:
+        return 0.5
+    return _POS_LATENESS.get(position.strip().upper().split()[0], 0.5)
+
+
 def _parse_cards(items: list[str]) -> list[Card]:
     out: list[Card] = []
     for s in items:
@@ -89,10 +104,16 @@ def review_spot(
     in_position: bool,
     available_levels: list[str],
     *,
+    position: str | None = None,
     big_blind: int = 20,
     samples: int = 400,
 ) -> CopilotView:
-    """Analisa um spot descrito pelo usuário e devolve a leitura do copiloto."""
+    """Analisa um spot descrito pelo usuário e devolve a leitura do copiloto.
+
+    Se `position` (SB/BB/UTG/.../BTN) for informada, o copiloto segue a regra oficial:
+    joga mais APERTADO em posição cedo e mais solto no botão, e a realização da equity
+    vem da posição real. Sem ela, usa só `in_position`.
+    """
     hole = _parse_cards(hole_cards)
     board = _parse_cards(board_cards)
     if len(hole) != 2:
@@ -167,10 +188,18 @@ def review_spot(
         except Exception:
             continue
 
-    # recomendação = a MATEMÁTICA (determinística e sólida). Não segue o voto do
-    # Expert (que é 6-max, usa estratégia mista e pode errar num spot fora da sua
-    # distribuição) — o Expert aparece só no conselho, como opinião.
-    rec_type, rec_amount = _recommend(obs, equity, po, legal)
+    # POSIÇÃO (regra oficial): mais cedo/mais gente -> mais apertado. Só no pré-flop
+    # e escalado pelo nº de jogadores atrás. Se a posição vier, ela manda no in_position.
+    factor = _position_factor(position)
+    if position:
+        in_position = factor >= 0.7  # só o botão (e quase-botão) fecha a ação
+    preflop_tax = 0.0
+    if len(board) == 0 and position:
+        preflop_tax = (1 - factor) * 0.12 * min(num_opponents, 5) / 5
+
+    # recomendação = a MATEMÁTICA (determinística e sólida) + tax posicional pré-flop.
+    # Não segue o voto do Expert (6-max, estratégia mista) — o Expert é só o conselho.
+    rec_type, rec_amount = _recommend(obs, equity, po, legal, preflop_tax)
     mdf_pct, _alpha = _gto_numbers(obs, Action(rec_type, amount=rec_amount))
     # marca a opção recomendada como "chosen"
     options = [
@@ -208,23 +237,27 @@ def review_spot(
         recommendation=rec_type.value,
         recommendation_label=rec_label,
         headline=_headline(rec_type, eq, po, to_call, ev_call),
+        position=(position or None),
+        num_players=num_opponents + 1,
     )
 
 
 _VALUE = 0.66  # equity acima disso = mão de valor (vale apostar/aumentar)
 
 
-def _recommend(obs, equity, po, legal) -> tuple[ActionType, int]:
-    """Jogada recomendada SÓ pela matemática (determinística e sólida): equity vs
-    preço vs limiar de valor. Nunca desiste de um pagamento lucrativo."""
+def _recommend(obs, equity, po, legal, preflop_tax: float = 0.0) -> tuple[ActionType, int]:
+    """Jogada recomendada pela matemática (determinística) + tax posicional pré-flop:
+    equity vs preço vs limiar de valor. Nunca desiste de um pagamento lucrativo. Em
+    posição cedo (tax>0), exige mais equity pra entrar/aumentar antes do flop."""
+    value = _VALUE + preflop_tax  # em posição cedo, precisa de mão mais forte
     if obs.to_call == 0:  # sem aposta: apostar por valor com mão forte, senão passar
-        if equity >= _VALUE and ActionType.RAISE in legal:
+        if equity >= value and ActionType.RAISE in legal:
             return ActionType.RAISE, obs.min_raise_to
         return ActionType.CHECK, 0
     # enfrentando aposta:
-    if equity >= _VALUE and ActionType.RAISE in legal:
+    if equity >= value and ActionType.RAISE in legal:
         return ActionType.RAISE, obs.min_raise_to  # mão forte -> aumenta por valor
-    if equity >= po / 100:  # pagar é lucrativo
+    if equity >= po / 100 + preflop_tax:  # pagar é lucrativo (com o custo da posição)
         if ActionType.CALL in legal:
             return ActionType.CALL, 0
         if ActionType.ALL_IN in legal:  # stack curto: pagar equivale a all-in
@@ -302,11 +335,14 @@ def review_hand(phh_text: str, hero: int, available_levels: list[str]) -> HandRe
             to_call = max(0, street_max - cur[hero])
             active_others = sum(1 for j in range(n) if not folded[j] and j != hero)
             if active_others >= 1:
+                from .positions import position as _pos_label
+
                 spot = review_spot(
                     holes[hero], board, pot=sum(committed), to_call=to_call,
                     my_stack=max(starts[hero] - committed[hero], 1),
                     num_opponents=active_others, in_position=(hero == n - 1),
                     available_levels=available_levels,
+                    position=_pos_label(hero, n - 1, n),  # PHH: p1=SB -> botão é o último
                 )
                 actual = {"f": "fold", "cc": ("check" if to_call == 0 else "call"),
                           "cbr": "raise"}.get(verb, verb)

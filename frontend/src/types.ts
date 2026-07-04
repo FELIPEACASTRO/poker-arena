@@ -155,6 +155,7 @@ export interface CopilotRequest {
   my_stack: number
   num_opponents: number
   in_position: boolean
+  position?: string | null
   big_blind?: number
 }
 export interface CopilotResult {
@@ -178,6 +179,8 @@ export interface CopilotResult {
   recommendation: string
   recommendation_label: string
   headline: string
+  position?: string | null
+  num_players?: number
 }
 
 // ---- Revisão de mão inteira (colar histórico PHH) ----

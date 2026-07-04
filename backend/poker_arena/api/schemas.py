@@ -358,6 +358,7 @@ class CopilotRequest(BaseModel):
     my_stack: int = Field(gt=0, description="Suas fichas.")
     num_opponents: int = Field(ge=1, default=1, description="Quantos oponentes ativos na mão.")
     in_position: bool = Field(default=True, description="Você age por último (em posição)? Afeta a realização da equity.")
+    position: str | None = Field(default=None, description="Posição na mesa: SB/BB/UTG/UTG+1/MP1/MP2/DJ/HJ/BTN. Se informada, o copiloto segue a regra oficial (mais apertado em posição cedo).")
     big_blind: int = Field(gt=0, default=20, description="Big blind (só para dimensionar o aumento mínimo).")
 
 
@@ -384,6 +385,8 @@ class CopilotResponse(BaseModel):
     recommendation: str = Field(description="Ação recomendada (fold/check/call/raise/all_in).")
     recommendation_label: str = Field(description="Rótulo da recomendação (ex.: 'Pagar 40').")
     headline: str = Field(description="Resumo em linguagem simples do que fazer e por quê.")
+    position: str | None = Field(default=None, description="Posição considerada (SB/BB/UTG/.../BTN).")
+    num_players: int = Field(default=0, description="Participantes na mesa (você + oponentes).")
 
 
 class DetectedStateSchema(BaseModel):

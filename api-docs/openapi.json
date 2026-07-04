@@ -811,6 +811,17 @@
             "type": "boolean",
             "title": "In Position",
             "default": true
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
           }
         },
         "type": "object",
@@ -1030,6 +1041,18 @@
             "description": "Você age por último (em posição)? Afeta a realização da equity.",
             "default": true
           },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position",
+            "description": "Posição na mesa: SB/BB/UTG/UTG+1/MP1/MP2/DJ/HJ/BTN. Se informada, o copiloto segue a regra oficial (mais apertado em posição cedo)."
+          },
           "big_blind": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
@@ -1192,6 +1215,24 @@
             "type": "string",
             "title": "Headline",
             "description": "Resumo em linguagem simples do que fazer e por quê."
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position",
+            "description": "Posição considerada (SB/BB/UTG/.../BTN)."
+          },
+          "num_players": {
+            "type": "integer",
+            "title": "Num Players",
+            "description": "Participantes na mesa (você + oponentes).",
+            "default": 0
           }
         },
         "type": "object",

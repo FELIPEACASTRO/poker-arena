@@ -47,6 +47,20 @@ def test_recognizer_high_accuracy_on_canonical_style():
     assert acc >= 0.90, f"acurácia canônica caiu para {acc:.0%} (esperado >=90%)"
 
 
+def test_recognizer_is_resolution_agnostic():
+    # cada aluno tem um monitor/tela diferente -> a MESMA mesa em resoluções variadas
+    for size in [(900, 600), (1280, 853), (1600, 1067)]:
+        cok = ctot = 0
+        for seed in range(15):
+            img, truth = render_table(seed=seed, style=CANONICAL)
+            st = recognize_table(img.resize(size))
+            tc = truth["hole"] + truth["board"]
+            got = st.hole + st.board
+            ctot += len(tc)
+            cok += sum(1 for c in tc if c in got)
+        assert cok / ctot >= 0.85, f"{size}: {cok/ctot:.0%} (esperado >=85%)"
+
+
 def test_pipeline_produces_valid_state():
     img, truth = render_table(seed=42, style=CANONICAL, n_board=5)
     st = recognize_table(img)

@@ -72,7 +72,13 @@ export const api = {
 
   fromImage: (
     file: File,
-    opts: { to_call: number; my_stack: number; num_opponents: number; in_position: boolean },
+    opts: {
+      to_call: number
+      my_stack: number
+      num_opponents: number
+      in_position: boolean
+      position?: string
+    },
   ) => {
     const fd = new FormData()
     fd.append('image', file)
@@ -80,6 +86,7 @@ export const api = {
     fd.append('my_stack', String(opts.my_stack))
     fd.append('num_opponents', String(opts.num_opponents))
     fd.append('in_position', String(opts.in_position))
+    if (opts.position) fd.append('position', opts.position)
     return fetch(`${BASE}/copilot/from-image`, { method: 'POST', body: fd }).then((r) =>
       asJson<FromImageResult>(r),
     )

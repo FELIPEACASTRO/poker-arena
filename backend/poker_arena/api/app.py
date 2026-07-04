@@ -142,7 +142,7 @@ def create_app() -> FastAPI:
             view = review_spot(
                 req.hole, req.board, req.pot, req.to_call, req.my_stack,
                 req.num_opponents, req.in_position, list(available_levels()),
-                big_blind=req.big_blind,
+                position=req.position, big_blind=req.big_blind,
             )
         except InvalidSpotError as e:
             raise HTTPException(400, str(e)) from e
@@ -163,6 +163,7 @@ def create_app() -> FastAPI:
         my_stack: int = Form(1000),
         num_opponents: int = Form(1),
         in_position: bool = Form(True),
+        position: str | None = Form(None),
     ) -> FromImageResponse:
         """VISÃO → estado → sanity → Copiloto. A imagem é lida (cartas + pote) pela
         visão; o estado passa pelo sanity-check de regras (a rede de segurança); se
@@ -189,6 +190,7 @@ def create_app() -> FastAPI:
                 view = review_spot(
                     st.hole, st.board, st.pot or 0, to_call, my_stack,
                     num_opponents, in_position, list(available_levels()),
+                    position=position,
                 )
                 decision = CopilotResponse(**asdict(view))
             except Exception:  # se o estado passa no sanity mas o copiloto recusa, abstém

@@ -869,11 +869,11 @@ body {
 .copilot-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 12px; margin-top: 4px; }
 .cp-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-dim); }
 .cp-field.cp-wide { grid-column: 1 / -1; }
-.cp-field input[type='text'], .cp-field input:not([type]), .cp-field input[type='number'] {
+.cp-field input[type='text'], .cp-field input:not([type]), .cp-field input[type='number'], .cp-field select {
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md);
   padding: 8px 10px; color: var(--text); font-size: 14px; font-family: inherit;
 }
-.cp-field input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+.cp-field input:focus, .cp-field select:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
 .cp-check { flex-direction: row; align-items: center; gap: 8px; grid-column: 1 / -1; }
 .cp-check input { width: 16px; height: 16px; accent-color: var(--accent); }
 .cp-go { grid-column: 1 / -1; margin-top: 2px; }

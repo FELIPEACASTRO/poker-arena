@@ -32,6 +32,8 @@ from .schemas import (
     CopilotRequest,
     CopilotResponse,
     CreateTableRequest,
+    HandReviewRequest,
+    HandReviewResponse,
     TableStateResponse,
 )
 
@@ -146,6 +148,28 @@ def create_app() -> FastAPI:
         from dataclasses import asdict
 
         return CopilotResponse(**asdict(view))
+
+    @app.post(
+        "/copilot/review-hand",
+        response_model=HandReviewResponse,
+        tags=["Copiloto"],
+        summary="Copiloto: revisar uma MÃO inteira (cole o histórico PHH)",
+        responses={400: {"description": "Histórico inválido, jogador inexistente ou sem decisões suas."}},
+    )
+    def review_hand_endpoint(req: HandReviewRequest) -> HandReviewResponse:
+        """Cole o histórico da mão (formato PHH — o texto que o jogo exporta ao FIM da
+        mão) e escolha qual jogador é você. O copiloto reproduz a mão e revisa CADA
+        decisão sua, comparando com a recomendação. É estudo pós-jogo (como rever um
+        PGN de xadrez), 100% offline — não lê tela de jogo ao vivo."""
+        from ..application.copilot import InvalidSpotError, review_hand
+
+        try:
+            view = review_hand(req.phh, req.player - 1, list(available_levels()))
+        except InvalidSpotError as e:
+            raise HTTPException(400, str(e)) from e
+        from dataclasses import asdict
+
+        return HandReviewResponse(**asdict(view))
 
     @app.get("/levels", tags=["Catálogo"], summary="Níveis de IA disponíveis")
     def levels() -> dict[str, list[str]]:

@@ -903,6 +903,29 @@ body {
 .cp-ethic { display: flex; gap: 8px; align-items: flex-start; margin-top: 18px; padding: 10px 12px; font-size: 11.5px; line-height: 1.5; color: var(--text-dim); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); }
 .cp-ethic b { color: var(--text); }
 
+/* abas do copiloto (spot / colar mão) */
+.cp-tabs { display: flex; gap: 6px; margin: 4px 0 12px; }
+.cp-tabs button { flex: 1; padding: 8px; border-radius: var(--r-md); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); font: inherit; font-size: 13px; cursor: pointer; }
+.cp-tabs button.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); font-weight: 600; }
+
+/* revisão de mão (PHH) */
+.cp-hand textarea { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 9px 11px; color: var(--text); font-family: var(--mono, monospace); font-size: 12px; resize: vertical; box-sizing: border-box; }
+.cp-hand textarea:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+.cp-hand-go { display: flex; align-items: flex-end; gap: 12px; margin-top: 10px; }
+.cp-hand-go .cp-field { flex: 0 0 140px; }
+.cp-hand-go .btn { flex: 1; }
+.cp-review { margin-top: 16px; }
+.cp-review-sum { font-size: 13.5px; color: var(--text); background: var(--accent-soft); border-radius: var(--r-md); padding: 10px 12px; margin-bottom: 12px; }
+.cp-dec { border-left: 3px solid var(--border); background: var(--surface-2); border-radius: var(--r-md); padding: 9px 12px; margin-bottom: 8px; }
+.cp-dec.is-ok { border-left-color: var(--pos); }
+.cp-dec.is-diff { border-left-color: var(--warn); }
+.cp-dec-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.cp-dec-street { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); font-weight: 700; }
+.cp-dec-cards { font-size: 13px; color: var(--text); font-weight: 600; }
+.cp-dec-eq { font-size: 12px; color: var(--text-dim); margin-left: auto; }
+.cp-dec-verdict { font-size: 13px; color: var(--text); margin-top: 4px; }
+.cp-dec-why { font-size: 12px; color: var(--text-dim); margin: 3px 0 0; line-height: 1.45; }
+
 /* ============================================================
    Guia de posições da mesa
    ============================================================ */

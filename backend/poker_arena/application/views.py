@@ -188,6 +188,33 @@ class CopilotView:
 
 
 @dataclass(frozen=True)
+class HandReviewDecisionView:
+    """Uma decisão SUA numa mão importada, avaliada pelo copiloto (resumo)."""
+
+    street: str  # pré-flop | flop | turn | river
+    board: list[str]
+    hole: list[str]
+    pot: int
+    to_call: int
+    equity_pct: int
+    recommendation: str  # ação recomendada (fold/check/call/raise)
+    recommendation_label: str
+    headline: str
+    your_action: str  # o que você REALMENTE fez, segundo o histórico
+    matched: bool  # sua jogada bateu com a recomendação do copiloto?
+
+
+@dataclass(frozen=True)
+class HandReviewView:
+    """Revisão de uma mão inteira: cada decisão sua vs a recomendação do copiloto."""
+
+    hero: str
+    decisions: list[HandReviewDecisionView]
+    matched: int  # quantas das suas jogadas bateram com a recomendação
+    total: int
+
+
+@dataclass(frozen=True)
 class PosStatView:
     """VPIP/PFR de um bot numa REGIÃO da mesa (cedo/meio/tarde/blinds)."""
 

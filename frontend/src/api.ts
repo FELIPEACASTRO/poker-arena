@@ -5,6 +5,7 @@ import type {
   CreateConfig,
   GameLog,
   GameSummary,
+  HandReviewResult,
   TableState,
 } from './types'
 
@@ -61,5 +62,10 @@ export const api = {
   copilot: (body: CopilotRequest) =>
     fetch(`${BASE}/copilot`, { ...POST, body: JSON.stringify(body) }).then((r) =>
       asJson<CopilotResult>(r),
+    ),
+
+  reviewHand: (phh: string, player: number) =>
+    fetch(`${BASE}/copilot/review-hand`, { ...POST, body: JSON.stringify({ phh, player }) }).then(
+      (r) => asJson<HandReviewResult>(r),
     ),
 }

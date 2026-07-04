@@ -85,6 +85,51 @@
         }
       }
     },
+    "/copilot/review-hand": {
+      "post": {
+        "tags": [
+          "Copiloto"
+        ],
+        "summary": "Copiloto: revisar uma MÃO inteira (cole o histórico PHH)",
+        "description": "Cole o histórico da mão (formato PHH — o texto que o jogo exporta ao FIM da\nmão) e escolha qual jogador é você. O copiloto reproduz a mão e revisa CADA\ndecisão sua, comparando com a recomendação. É estudo pós-jogo (como rever um\nPGN de xadrez), 100% offline — não lê tela de jogo ao vivo.",
+        "operationId": "review_hand_endpoint_copilot_review_hand_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Histórico inválido, jogador inexistente ou sem decisões suas."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/levels": {
       "get": {
         "tags": [
@@ -1302,6 +1347,139 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HandReviewDecisionSchema": {
+        "properties": {
+          "street": {
+            "type": "string",
+            "title": "Street",
+            "description": "pré-flop | flop | turn | river."
+          },
+          "board": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Board",
+            "description": "Board naquele momento."
+          },
+          "hole": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hole",
+            "description": "Suas cartas."
+          },
+          "pot": {
+            "type": "integer",
+            "title": "Pot"
+          },
+          "to_call": {
+            "type": "integer",
+            "title": "To Call"
+          },
+          "equity_pct": {
+            "type": "integer",
+            "title": "Equity Pct"
+          },
+          "recommendation": {
+            "type": "string",
+            "title": "Recommendation",
+            "description": "Ação recomendada (fold/check/call/raise)."
+          },
+          "recommendation_label": {
+            "type": "string",
+            "title": "Recommendation Label"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline"
+          },
+          "your_action": {
+            "type": "string",
+            "title": "Your Action",
+            "description": "O que você REALMENTE fez, segundo o histórico."
+          },
+          "matched": {
+            "type": "boolean",
+            "title": "Matched",
+            "description": "Sua jogada bateu com a recomendação do copiloto?"
+          }
+        },
+        "type": "object",
+        "required": [
+          "street",
+          "board",
+          "hole",
+          "pot",
+          "to_call",
+          "equity_pct",
+          "recommendation",
+          "recommendation_label",
+          "headline",
+          "your_action",
+          "matched"
+        ],
+        "title": "HandReviewDecisionSchema",
+        "description": "Uma decisão sua na mão, avaliada pelo copiloto."
+      },
+      "HandReviewRequest": {
+        "properties": {
+          "phh": {
+            "type": "string",
+            "title": "Phh",
+            "description": "O histórico da mão no formato PHH (o texto que o jogo exporta ao fim da mão)."
+          },
+          "player": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Player",
+            "description": "Qual jogador é você (número 1..N, como no PHH: p1, p2, ...).",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "phh"
+        ],
+        "title": "HandReviewRequest",
+        "description": "Uma mão inteira (formato PHH, colada) para o Copiloto revisar decisão a decisão."
+      },
+      "HandReviewResponse": {
+        "properties": {
+          "hero": {
+            "type": "string",
+            "title": "Hero",
+            "description": "Nome do jogador revisado."
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/HandReviewDecisionSchema"
+            },
+            "type": "array",
+            "title": "Decisions"
+          },
+          "matched": {
+            "type": "integer",
+            "title": "Matched",
+            "description": "Quantas das suas jogadas bateram com a recomendação."
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total de decisões suas na mão."
+          }
+        },
+        "type": "object",
+        "required": [
+          "hero",
+          "decisions",
+          "matched",
+          "total"
+        ],
+        "title": "HandReviewResponse",
+        "description": "Revisão da mão inteira: cada decisão sua vs a recomendação do copiloto."
       },
       "HumanAnalysisSchema": {
         "properties": {

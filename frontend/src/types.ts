@@ -180,6 +180,27 @@ export interface CopilotResult {
   headline: string
 }
 
+// ---- Revisão de mão inteira (colar histórico PHH) ----
+export interface HandReviewDecision {
+  street: string
+  board: string[]
+  hole: string[]
+  pot: number
+  to_call: number
+  equity_pct: number
+  recommendation: string
+  recommendation_label: string
+  headline: string
+  your_action: string
+  matched: boolean
+}
+export interface HandReviewResult {
+  hero: string
+  decisions: HandReviewDecision[]
+  matched: number
+  total: number
+}
+
 export interface TableState {
   table_id: string
   hand_number: number

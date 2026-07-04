@@ -386,6 +386,38 @@ class CopilotResponse(BaseModel):
     headline: str = Field(description="Resumo em linguagem simples do que fazer e por quê.")
 
 
+class HandReviewRequest(BaseModel):
+    """Uma mão inteira (formato PHH, colada) para o Copiloto revisar decisão a decisão."""
+
+    phh: str = Field(description="O histórico da mão no formato PHH (o texto que o jogo exporta ao fim da mão).")
+    player: int = Field(default=1, ge=1, description="Qual jogador é você (número 1..N, como no PHH: p1, p2, ...).")
+
+
+class HandReviewDecisionSchema(BaseModel):
+    """Uma decisão sua na mão, avaliada pelo copiloto."""
+
+    street: str = Field(description="pré-flop | flop | turn | river.")
+    board: list[str] = Field(description="Board naquele momento.")
+    hole: list[str] = Field(description="Suas cartas.")
+    pot: int
+    to_call: int
+    equity_pct: int
+    recommendation: str = Field(description="Ação recomendada (fold/check/call/raise).")
+    recommendation_label: str
+    headline: str
+    your_action: str = Field(description="O que você REALMENTE fez, segundo o histórico.")
+    matched: bool = Field(description="Sua jogada bateu com a recomendação do copiloto?")
+
+
+class HandReviewResponse(BaseModel):
+    """Revisão da mão inteira: cada decisão sua vs a recomendação do copiloto."""
+
+    hero: str = Field(description="Nome do jogador revisado.")
+    decisions: list[HandReviewDecisionSchema]
+    matched: int = Field(description="Quantas das suas jogadas bateram com a recomendação.")
+    total: int = Field(description="Total de decisões suas na mão.")
+
+
 class ReasoningSchema(BaseModel):
     """Como o bot que acabou de jogar está pensando — o card didático (modo `watch`)."""
 

@@ -30,7 +30,13 @@ from .analysis import (
     _texture,
 )
 from .reasoning import _ORDER, _gto_numbers, _option, _preflop_label
-from .views import CopilotView, CouncilEntryView, OptionView
+from .views import (
+    CopilotView,
+    CouncilEntryView,
+    HandReviewDecisionView,
+    HandReviewView,
+    OptionView,
+)
 
 _ACT_PT = {
     ActionType.FOLD: "Desistir",
@@ -232,6 +238,118 @@ def _label_for(t: ActionType, obs, amount: int) -> str:
     if t == ActionType.RAISE:
         return f"Aumentar p/ {amount}"
     return _ACT_PT.get(t, t.value)
+
+
+_STREETS = ["pré-flop", "flop", "turn", "river"]
+
+
+def _cards_of(s: str) -> list[str]:
+    return [s[i : i + 2] for i in range(0, len(s), 2)]
+
+
+def review_hand(phh_text: str, hero: int, available_levels: list[str]) -> HandReviewView:
+    """Revisa uma mão inteira (formato PHH): reproduz as apostas e, em CADA decisão
+    do herói, chama o copiloto e compara com o que ele realmente fez.
+
+    O PHH é o texto que o próprio jogo exporta ao FIM da mão — revisar isso é estudo
+    pós-jogo (como um PGN de xadrez), 100% offline. Não lê tela de jogo ao vivo."""
+    import tomllib
+
+    try:
+        raw = tomllib.loads(phh_text)
+    except Exception as e:
+        raise InvalidSpotError(
+            "não consegui ler o histórico — cole no formato PHH (ex.: as mãos do "
+            f"dataset do Pluribus). Detalhe: {e}"
+        ) from e
+    if "actions" not in raw or "starting_stacks" not in raw:
+        raise InvalidSpotError("o histórico precisa ter 'actions' e 'starting_stacks' (formato PHH)")
+
+    starts = [int(x) for x in raw["starting_stacks"]]
+    n = len(starts)
+    if not (0 <= hero < n):
+        raise InvalidSpotError(f"jogador do herói inválido (escolha 1..{n})")
+    names = raw.get("players") or [f"Jogador {i + 1}" for i in range(n)]
+    blinds = [int(x) for x in (raw.get("blinds_or_straddles") or [])]
+
+    holes: dict[int, list[str]] = {}
+    cur = [blinds[i] if i < len(blinds) else 0 for i in range(n)]  # aposta desta rua
+    committed = list(cur)  # total comprometido na mão
+    street_max = max(cur) if cur else 0
+    board: list[str] = []
+    folded = [False] * n
+    street = 0
+    decisions: list[HandReviewDecisionView] = []
+
+    for tok in raw["actions"]:
+        parts = tok.split()
+        if parts[0] == "d":  # cartas distribuídas pelo dealer
+            if parts[1] == "dh" and "?" not in parts[3]:  # hole (ignora obfuscadas)
+                holes[int(parts[2][1:]) - 1] = _cards_of(parts[3])
+            elif parts[1] == "db":  # board -> nova rua
+                board += _cards_of(parts[2])
+                street += 1
+                cur = [0] * n
+                street_max = 0
+            continue
+        seat = int(parts[0][1:]) - 1
+        verb = parts[1]
+        if verb == "sm":  # showdown reveal
+            continue
+
+        # É uma decisão do HERÓI? captura o spot ANTES de aplicar a ação
+        if seat == hero and not folded[hero] and hero in holes:
+            to_call = max(0, street_max - cur[hero])
+            active_others = sum(1 for j in range(n) if not folded[j] and j != hero)
+            if active_others >= 1:
+                spot = review_spot(
+                    holes[hero], board, pot=sum(committed), to_call=to_call,
+                    my_stack=max(starts[hero] - committed[hero], 1),
+                    num_opponents=active_others, in_position=(hero == n - 1),
+                    available_levels=available_levels,
+                )
+                actual = {"f": "fold", "cc": ("check" if to_call == 0 else "call"),
+                          "cbr": "raise"}.get(verb, verb)
+                decisions.append(HandReviewDecisionView(
+                    street=_STREETS[min(street, 3)],
+                    board=list(board),
+                    hole=holes[hero],
+                    pot=spot.pot,
+                    to_call=spot.to_call,
+                    equity_pct=spot.equity_pct,
+                    recommendation=spot.recommendation,
+                    recommendation_label=spot.recommendation_label,
+                    headline=spot.headline,
+                    your_action=actual,
+                    matched=(actual == spot.recommendation),
+                ))
+
+        # aplica a ação ao estado
+        if verb == "f":
+            folded[seat] = True
+        elif verb == "cc":
+            owe = min(street_max - cur[seat], starts[seat] - committed[seat])
+            cur[seat] += owe
+            committed[seat] += owe
+        elif verb == "cbr":
+            to = int(float(parts[2]))
+            committed[seat] += to - cur[seat]
+            cur[seat] = to
+            street_max = max(street_max, to)
+
+    if hero not in holes:
+        raise InvalidSpotError(
+            f"não achei as SUAS cartas no histórico para {names[hero]} — confira o "
+            "jogador escolhido (você só pode revisar uma mão em que veja a sua mão)"
+        )
+    if not decisions:
+        raise InvalidSpotError("nenhuma decisão sua encontrada nessa mão (você não chegou a agir)")
+    return HandReviewView(
+        hero=names[hero],
+        decisions=decisions,
+        matched=sum(1 for d in decisions if d.matched),
+        total=len(decisions),
+    )
 
 
 def _headline(t: ActionType, eq: int, po: int, to_call: int, ev: float) -> str:

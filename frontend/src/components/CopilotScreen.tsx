@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Compass, Lightbulb, Sparkles, X } from 'lucide-react'
 import { api } from '../api'
 import { levelColor, levelName } from '../levels'
-import type { CopilotResult } from '../types'
+import type { CopilotResult, HandReviewResult } from '../types'
 
 const VERDICT: Record<string, { c: string; icon: string }> = {
   good: { c: 'var(--pos)', icon: '✅' },
@@ -14,6 +14,7 @@ const VERDICT: Record<string, { c: string; icon: string }> = {
 const cards = (s: string) => s.trim().split(/[\s,]+/).filter(Boolean)
 
 export default function CopilotScreen({ onClose }: { onClose: () => void }) {
+  const [mode, setMode] = useState<'spot' | 'hand'>('spot')
   const [hole, setHole] = useState('As Ks')
   const [board, setBoard] = useState('Qs Js 2h')
   const [pot, setPot] = useState(100)
@@ -24,6 +25,10 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [res, setRes] = useState<CopilotResult | null>(null)
+  // aba "colar mão" (histórico PHH)
+  const [phh, setPhh] = useState('')
+  const [player, setPlayer] = useState(1)
+  const [review, setReview] = useState<HandReviewResult | null>(null)
 
   async function analyze() {
     setBusy(true)
@@ -42,6 +47,19 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao analisar o spot')
       setRes(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function analyzeHand() {
+    setBusy(true)
+    setError(null)
+    try {
+      setReview(await api.reviewHand(phh, player))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao revisar a mão')
+      setReview(null)
     } finally {
       setBusy(false)
     }
@@ -73,11 +91,81 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
         </header>
 
         <p className="guide-intro">
-          Descreva um spot que você jogou (ou quer estudar) — suas cartas, o board, o pote e o
-          preço — e o copiloto te dá a <b>leitura completa</b> e <b>o que fazer</b>, com o veredito
-          de cada jogada. É o motor da Arena aplicado a qualquer situação. 🧭
+          Duas formas de usar: descreva <b>um spot</b> à mão, ou <b>cole o histórico</b> de uma mão
+          inteira (o texto que o jogo exporta no fim) e revise todas as suas decisões de uma vez. 🧭
         </p>
 
+        <div className="cp-tabs">
+          <button className={mode === 'spot' ? 'is-on' : ''} onClick={() => setMode('spot')}>
+            Spot único
+          </button>
+          <button className={mode === 'hand' ? 'is-on' : ''} onClick={() => setMode('hand')}>
+            Colar mão (histórico)
+          </button>
+        </div>
+
+        {mode === 'hand' && (
+          <div className="cp-hand">
+            <label className="cp-field cp-wide">
+              <span>Cole o histórico da mão (formato PHH)</span>
+              <textarea
+                value={phh}
+                onChange={(e) => setPhh(e.target.value)}
+                rows={7}
+                placeholder={"variant = 'NT'\nblinds_or_straddles = [50, 100, 0, 0, 0, 0]\nstarting_stacks = [10000, ...]\nactions = ['d dh p1 AsKh', ...]\nplayers = ['Você', ...]"}
+              />
+            </label>
+            <div className="cp-hand-go">
+              <label className="cp-field">
+                <span>Qual jogador é você?</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={9}
+                  value={player}
+                  onChange={(e) => setPlayer(+e.target.value)}
+                />
+              </label>
+              <button className="btn btn-accent" onClick={analyzeHand} disabled={busy || !phh.trim()}>
+                {busy ? 'Revisando…' : 'Revisar minhas decisões'}
+              </button>
+            </div>
+            <p className="cp-hint">
+              O PHH é o padrão de pesquisa (ex.: as mãos do dataset do Pluribus). Só analisa mãos em
+              que suas cartas aparecem — é <b>estudo pós-jogo</b>, como rever um PGN de xadrez.
+            </p>
+
+            {error && <div className="cp-error">⚠️ {error}</div>}
+
+            {review && (
+              <div className="cp-review">
+                <div className="cp-review-sum">
+                  Revisando <b>{review.hero}</b>: <b>{review.matched}/{review.total}</b> das suas
+                  jogadas bateram com a recomendação do copiloto.
+                </div>
+                {review.decisions.map((d, i) => (
+                  <div className={'cp-dec' + (d.matched ? ' is-ok' : ' is-diff')} key={i}>
+                    <div className="cp-dec-top">
+                      <span className="cp-dec-street">{d.street}</span>
+                      <span className="cp-dec-cards">
+                        {d.hole.join(' ')} {d.board.length > 0 && `· ${d.board.join(' ')}`}
+                      </span>
+                      <span className="cp-dec-eq mono">equity {d.equity_pct}%</span>
+                    </div>
+                    <div className="cp-dec-verdict">
+                      Você: <b>{d.your_action}</b> · Copiloto: <b>{d.recommendation_label}</b>{' '}
+                      {d.matched ? '✅' : '⚠️ diferente'}
+                    </div>
+                    <p className="cp-dec-why">{d.headline}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {mode === 'spot' && (
+        <>
         <div className="copilot-form">
           <label className="cp-field cp-wide">
             <span>Suas 2 cartas</span>
@@ -175,6 +263,8 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           </div>
+        )}
+        </>
         )}
 
         <div className="cp-ethic">

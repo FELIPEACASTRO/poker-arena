@@ -180,6 +180,10 @@ class Hand:
         active = [p for p in self.players if p.status == PlayerStatus.ACTIVE]
         if not active:
             return True  # todos os contestantes estão all-in
+        if len(active) == 1 and active[0].current_bet >= self.current_bet:
+            # sobrou UM jogador com fichas e nada a pagar: não existe mais aposta
+            # possível (ninguém pode responder) — a rodada encerra e as cartas correm
+            return True
         return all(p.acted and p.current_bet == self.current_bet for p in active)
 
     # ---- progressão do board ----

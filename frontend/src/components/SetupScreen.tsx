@@ -170,6 +170,22 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
             : 'Dica: rode o backend antes — '}
           {mode === 'play' && <code>uvicorn poker_arena.api.app:app</code>}
         </p>
+
+        <div className="rg-note">
+          <b>Aviso — projeto educacional.</b> A Poker Arena é um estudo de{' '}
+          <b>probabilidade, estatística e IA</b>. Não há dinheiro real, apostas nem prêmios —
+          as fichas são só pontos. No mundo real, poker envolve risco financeiro e o acaso
+          domina o curto prazo; bots são proibidos em todo site de verdade. Se o jogo deixar
+          de ser diversão para alguém: <b>CVV 188</b> (24h, gratuito) ·{' '}
+          <a href="https://www.gov.br/fazenda/pt-br/composicao/orgaos/secretaria-de-premios-e-apostas/jogo-responsavel" target="_blank" rel="noreferrer">
+            gov.br/Jogo&nbsp;Responsável
+          </a>{' '}
+          ·{' '}
+          <a href="https://www.jogadoresanonimos.com.br" target="_blank" rel="noreferrer">
+            Jogadores&nbsp;Anônimos
+          </a>
+          .
+        </div>
       </div>
     </div>
   )

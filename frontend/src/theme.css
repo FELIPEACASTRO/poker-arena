@@ -795,6 +795,10 @@ body {
 .sm-bar { flex: 1; height: 5px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; }
 .sm-bar span { display: block; height: 100%; border-radius: var(--r-pill); }
 
+/* stats extras de HUD (WTSD, W$SD, VPIP por região) */
+.style-extra { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 5px; }
+.style-extra > span { font-size: 10px; color: var(--text-dim); background: var(--surface-3); padding: 1px 7px; border-radius: var(--r-pill); cursor: help; }
+
 /* estatísticas da sessão */
 .sess-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
 .sess-grid > div { display: flex; flex-direction: column; }
@@ -839,6 +843,26 @@ body {
 .reason-opt-reason { font-size: 11px; line-height: 1.4; color: var(--text-dim); }
 
 .reason-why { font-size: 12px; line-height: 1.45; color: var(--text); background: var(--accent-soft); border-radius: var(--r-md); padding: 8px 10px; margin: 11px 0 0; }
+
+/* linhas GTO na análise da sua mão (MDF, equity realization) */
+.hand-gto { font-size: 11.5px; line-height: 1.45; color: var(--text-dim); background: var(--surface-2); border-radius: var(--r-md); padding: 7px 10px; margin: 8px 0 0; cursor: help; }
+.hand-gto b { color: var(--text); }
+
+/* aviso de jogo responsável (projeto educacional) */
+.rg-note { margin-top: var(--s4); padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); font-size: 11px; line-height: 1.55; color: var(--text-dim); text-align: left; }
+.rg-note b { color: var(--text); }
+.rg-note a { color: var(--accent); text-decoration: none; }
+.rg-note a:hover { text-decoration: underline; }
+
+/* seção "habilidade ou sorte" do guia */
+.guide-science { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s5); margin-bottom: var(--s5); }
+.guide-science h2 { margin: 0 0 10px; font-size: 17px; color: var(--text); }
+.guide-science p { font-size: 13.5px; line-height: 1.6; color: var(--text-dim); margin: 0 0 10px; }
+.guide-science b { color: var(--text); }
+.guide-science-note { border-top: 1px dashed var(--border); padding-top: 10px; }
+
+/* banner de tilt (detector didático) */
+.tilt-banner { border-color: var(--lvl-heuristic); background: rgba(250, 204, 21, 0.08); }
 
 /* ============================================================
    Guia de posições da mesa

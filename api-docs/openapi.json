@@ -722,6 +722,33 @@
             "type": "number",
             "title": "Aggression",
             "description": "% de ações agressivas (agressivo x passivo), em [0,1]."
+          },
+          "pfr": {
+            "type": "number",
+            "title": "Pfr",
+            "description": "Preflop Raise: % de mãos que abriu aumentando no pré-flop, em [0,1]. O gap VPIP−PFR separa o agressivo do passivo.",
+            "default": 0.0
+          },
+          "wtsd": {
+            "type": "number",
+            "title": "Wtsd",
+            "description": "Went To ShowDown: % das mãos com flop visto em que chegou ao showdown, em [0,1].",
+            "default": 0.0
+          },
+          "wsd": {
+            "type": "number",
+            "title": "Wsd",
+            "description": "Won at ShowDown: % dos showdowns que venceu, em [0,1].",
+            "default": 0.0
+          },
+          "positions": {
+            "items": {
+              "$ref": "#/components/schemas/PosStatSchema"
+            },
+            "type": "array",
+            "title": "Positions",
+            "description": "VPIP/PFR por região da mesa (cedo/meio/tarde/blinds).",
+            "default": []
           }
         },
         "type": "object",
@@ -1139,6 +1166,51 @@
             "type": "integer",
             "title": "Your Profile Samples",
             "description": "Tamanho da amostra do seu perfil."
+          },
+          "mdf": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mdf",
+            "description": "MDF (frequência mínima de defesa) diante da aposta atual, em [0,1]. `null` sem aposta a pagar. Referência teórica (heads-up/river)."
+          },
+          "realization": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Realization",
+            "description": "Equity Realization qualitativa: `alta` (em posição), `média` ou `baixa` (fora de posição)."
+          },
+          "realization_why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Realization Why",
+            "description": "Por que a realização é essa (ordem de ação pós-flop)."
+          },
+          "blockers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Blockers",
+            "description": "Cartas suas que bloqueiam as mãos mais fortes possíveis do vilão (nut flush, quadra/full).",
+            "default": []
           }
         },
         "type": "object",
@@ -1296,6 +1368,18 @@
             "type": "integer",
             "title": "Samples",
             "description": "Quantas jogadas suas já foram observadas."
+          },
+          "tilt": {
+            "type": "boolean",
+            "title": "Tilt",
+            "description": "Detector didático de tilt: sua agressão subiu além do limiar nas mãos seguintes a uma perda grande (>=15 bb).",
+            "default": false
+          },
+          "tilt_delta": {
+            "type": "number",
+            "title": "Tilt Delta",
+            "description": "Agressão pós-perda − agressão de base, em [-1,1].",
+            "default": 0.0
           }
         },
         "type": "object",
@@ -1345,6 +1429,39 @@
         ],
         "title": "OptionSchema",
         "description": "Uma jogada possível avaliada de forma didática (boa/arriscada/ruim e por quê)."
+      },
+      "PosStatSchema": {
+        "properties": {
+          "bucket": {
+            "type": "string",
+            "title": "Bucket",
+            "description": "`early` | `middle` | `late` | `blinds`."
+          },
+          "hands": {
+            "type": "integer",
+            "title": "Hands",
+            "description": "Mãos jogadas nessa região."
+          },
+          "vpip": {
+            "type": "number",
+            "title": "Vpip",
+            "description": "VPIP na região, em [0,1]."
+          },
+          "pfr": {
+            "type": "number",
+            "title": "Pfr",
+            "description": "PFR na região, em [0,1]."
+          }
+        },
+        "type": "object",
+        "required": [
+          "bucket",
+          "hands",
+          "vpip",
+          "pfr"
+        ],
+        "title": "PosStatSchema",
+        "description": "VPIP/PFR de um bot numa REGIÃO da mesa (amostras agregadas)."
       },
       "ReasoningSchema": {
         "properties": {
@@ -1446,6 +1563,30 @@
             "type": "string",
             "title": "Why Chosen",
             "description": "Por que ESTE cérebro escolheu ESTA jogada."
+          },
+          "mdf_pct": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mdf Pct",
+            "description": "MDF de quem enfrenta a aposta atual, 0..100 (referência teórica heads-up/river). `null` sem aposta."
+          },
+          "bluff_alpha_pct": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bluff Alpha Pct",
+            "description": "α: % de desistências que a aposta/aumento DESTE bot precisa pra lucrar como blefe puro (risco/(risco+recompensa)), 0..100. `null` quando a ação não é agressiva."
           }
         },
         "type": "object",

@@ -5,6 +5,12 @@ import type { BotStat, WatchStats } from '../types'
 
 const pct = (x: number) => `${Math.round(x * 100)}%`
 const num = (x: number) => x.toLocaleString('pt-BR')
+const POS_PT: Record<string, string> = {
+  early: 'cedo',
+  middle: 'meio',
+  late: 'tarde',
+  blinds: 'blinds',
+}
 
 function useWatch(): WatchStats | null {
   const { state } = useGame()
@@ -85,7 +91,7 @@ export function StylePanel() {
               <span className="style-tag">{styleTag(b)}</span>
             </div>
             <div className="style-metric">
-              <span className="sm-k">
+              <span className="sm-k" title="VPIP: % de mãos em que entrou voluntariamente no pote">
                 entra em <b>{pct(b.vpip)}</b> das mãos
               </span>
               <div className="sm-bar">
@@ -93,12 +99,41 @@ export function StylePanel() {
               </div>
             </div>
             <div className="style-metric">
-              <span className="sm-k">
+              <span
+                className="sm-k"
+                title="PFR: % de mãos que ABRIU aumentando no pré-flop. Gap grande entre VPIP e PFR = entra muito mas só pagando (passivo)"
+              >
+                abre aumentando <b>{pct(b.pfr)}</b>
+              </span>
+              <div className="sm-bar">
+                <span style={{ width: pct(b.pfr), background: 'var(--lvl-heuristic)' }} />
+              </div>
+            </div>
+            <div className="style-metric">
+              <span className="sm-k" title="% das ações que são aposta/aumento">
                 agressão <b>{pct(b.aggression)}</b>
               </span>
               <div className="sm-bar">
                 <span style={{ width: pct(b.aggression), background: 'var(--lvl-expert)' }} />
               </div>
+            </div>
+            <div className="style-extra">
+              <span title="WTSD: viu o flop e foi até o showdown — alto = paga-tudo">
+                showdown {pct(b.wtsd)}
+              </span>
+              <span title="W$SD: % dos showdowns que venceu — qualidade das mãos que mostra">
+                vence lá {pct(b.wsd)}
+              </span>
+              {b.positions
+                .filter((p) => p.hands >= 3)
+                .map((p) => (
+                  <span
+                    key={p.bucket}
+                    title={`VPIP na região (${p.hands} mãos): disciplina posicional — cedo joga menos, tarde joga mais`}
+                  >
+                    {POS_PT[p.bucket] ?? p.bucket} {pct(p.vpip)}
+                  </span>
+                ))}
             </div>
           </div>
         ))}

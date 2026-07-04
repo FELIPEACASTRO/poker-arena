@@ -706,6 +706,7 @@ dev = [
     { name = "httpx" },
     { name = "mypy" },
     { name = "onnx" },
+    { name = "pokerkit" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
@@ -725,9 +726,19 @@ dev = [
     { name = "httpx", specifier = ">=0.27" },
     { name = "mypy", specifier = ">=1.10" },
     { name = "onnx", specifier = ">=1.22.0" },
+    { name = "pokerkit", specifier = ">=0.6" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-cov" },
     { name = "ruff", specifier = ">=0.6" },
+]
+
+[[package]]
+name = "pokerkit"
+version = "0.7.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d2/b2/c7bf52e69ede8a6297b1779fb8ca3dc37d59c436dac6da263978cc47f7ee/pokerkit-0.7.4.tar.gz", hash = "sha256:df6d69ef0a292b672cd1ef5de2163db50cdac20a2189f700a35d92bcdbcba9ed", size = 109389, upload-time = "2026-05-22T12:05:33.154Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/8f/78d0bec4093f9cf0e5416a772ed18b06057dedacc0a721aab1e80f285d69/pokerkit-0.7.4-py3-none-any.whl", hash = "sha256:4cdb1a0c9dc95409da066682f764282c4e2547f620d4747458f38d28fa7e6761", size = 113684, upload-time = "2026-05-22T12:05:31.991Z" },
 ]
 
 [[package]]

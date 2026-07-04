@@ -167,7 +167,11 @@ export default function AuditPage({ onClose }: { onClose: () => void }) {
                   }}
                 >
                   <span className="audit-game-mode">
-                    {g.mode === 'watch' ? '🔬 Modo Laboratório' : '🎮 Você joga'}
+                    {g.mode === 'pluribus'
+                      ? '🏆 Pluribus — a IA que venceu campeões (Science, 2019)'
+                      : g.mode === 'watch'
+                        ? '🔬 Modo Laboratório'
+                        : '🎮 Você joga'}
                   </span>
                   <span className="audit-game-hands">{g.hands} mãos</span>
                   <span className="audit-game-date">

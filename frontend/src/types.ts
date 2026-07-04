@@ -40,6 +40,8 @@ export interface OpponentRead {
   fold_to_bet: number
   aggression: number
   samples: number
+  tilt?: boolean // detector didático: agressão subiu após perda grande (>=15 bb)
+  tilt_delta?: number // agressão pós-perda − base, em [-1,1]
 }
 
 export interface WinProb {
@@ -73,9 +75,19 @@ export interface Analysis {
   your_profile_fold: number
   your_profile_aggr: number
   your_profile_samples: number
+  mdf?: number | null // frequência mínima de defesa diante da aposta atual [0,1]
+  realization?: string | null // equity realization qualitativa: alta | média | baixa
+  realization_why?: string | null
+  blockers?: string[] // cartas suas que bloqueiam as mãos mais fortes do vilão
 }
 
 // ---- painéis do modo laboratório (jogo automático) ----
+export interface PosStat {
+  bucket: string // early | middle | late | blinds
+  hands: number
+  vpip: number // 0..1
+  pfr: number // 0..1
+}
 export interface BotStat {
   seat: number
   name: string
@@ -86,6 +98,10 @@ export interface BotStat {
   hands_dealt: number
   vpip: number // 0..1 — % de mãos que entra (solto x apertado)
   aggression: number // 0..1 — % de ações agressivas (agressivo x passivo)
+  pfr: number // 0..1 — % de mãos que abre aumentando (gap VPIP−PFR = passividade)
+  wtsd: number // 0..1 — viu o flop e chegou ao showdown
+  wsd: number // 0..1 — showdowns vencidos
+  positions: PosStat[] // VPIP/PFR por região da mesa
 }
 export interface ChipSeries {
   seat: number
@@ -126,6 +142,8 @@ export interface Reasoning {
   pot_odds_pct: number
   options: ReasoningOption[]
   why_chosen: string
+  mdf_pct?: number | null // MDF de quem enfrenta a aposta, 0..100
+  bluff_alpha_pct?: number | null // α: folds necessários pra aposta lucrar como blefe, 0..100
 }
 
 export interface TableState {

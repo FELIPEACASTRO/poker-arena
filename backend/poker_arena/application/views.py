@@ -58,6 +58,10 @@ class OpponentReadView:
     fold_to_bet: float
     aggression: float
     samples: int
+    # detector didático de TILT (Palomäki et al.): agressão sobe logo após perder
+    # um pote grande. tilt=True quando a diferença passa do limiar com amostra mínima.
+    tilt: bool = False
+    tilt_delta: float = 0.0  # agressão pós-perda − agressão de base, em [-1, 1]
 
 
 @dataclass(frozen=True)
@@ -98,6 +102,13 @@ class HumanAnalysisView:
     your_profile_fold: float
     your_profile_aggr: float
     your_profile_samples: int
+    # GTO: MDF = frequência mínima de defesa diante da aposta atual (None sem aposta)
+    mdf: float | None = None
+    # Equity Realization (qualitativa): quanto da equity você tende a realizar
+    realization: str | None = None  # "alta" | "média" | "baixa"
+    realization_why: str | None = None
+    # cartas suas que bloqueiam as mãos mais fortes possíveis do vilão
+    blockers: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -141,11 +152,25 @@ class ReasoningView:
     pot_odds_pct: int  # preço relativo (pot odds), 0..100
     options: list[OptionView]  # as jogadas possíveis avaliadas
     why_chosen: str  # por que ESTE cérebro escolheu ESTA jogada
+    # GTO (didático): MDF de quem enfrenta a aposta atual; α = fold equity que a
+    # aposta/aumento DESTE bot precisa pra lucrar como blefe puro. None quando n/a.
+    mdf_pct: int | None = None
+    bluff_alpha_pct: int | None = None
+
+
+@dataclass(frozen=True)
+class PosStatView:
+    """VPIP/PFR de um bot numa REGIÃO da mesa (cedo/meio/tarde/blinds)."""
+
+    bucket: str  # early | middle | late | blinds
+    hands: int  # mãos jogadas nessa região
+    vpip: float  # [0,1]
+    pfr: float  # [0,1]
 
 
 @dataclass(frozen=True)
 class BotStatView:
-    """Estatística ao vivo de um bot no modo laboratório."""
+    """Estatística ao vivo de um bot no modo laboratório (definições padrão de HUD)."""
 
     seat: int
     name: str
@@ -156,6 +181,10 @@ class BotStatView:
     hands_dealt: int
     vpip: float  # % de mãos que entrou voluntariamente (solto x apertado)
     aggression: float  # % de ações agressivas (agressivo x passivo)
+    pfr: float = 0.0  # % de mãos que ABRIU aumentando no pré-flop
+    wtsd: float = 0.0  # % das mãos com flop visto em que chegou ao showdown
+    wsd: float = 0.0  # % dos showdowns que venceu
+    positions: list[PosStatView] = field(default_factory=list)  # VPIP/PFR por região
 
 
 @dataclass(frozen=True)

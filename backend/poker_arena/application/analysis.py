@@ -112,6 +112,64 @@ def _position(seat: int, button: int, n: int) -> str:
     return f"{lbl} — {position_full(lbl)}" if lbl else "—"
 
 
+_SUIT_SYM = {"s": "♠", "h": "♥", "d": "♦", "c": "♣"}
+_RANK_SYM = {14: "A", 13: "K", 12: "Q", 11: "J", 10: "10"}
+
+
+def _pretty(card) -> str:
+    r = int(card.rank)
+    return f"{_RANK_SYM.get(r, str(r))}{_SUIT_SYM.get(card.suit.value, card.suit.value)}"
+
+
+def _realization(seat: int, button: int, players) -> tuple[str, str]:
+    """Equity Realization (qualitativa): posição na ordem de ação pós-flop.
+
+    Equity × realização = EV: quem FECHA a ação (em posição) realiza mais da sua
+    equity; quem age primeiro (fora de posição) realiza menos. Não cravamos um
+    número — isso exigiria um solver — só o sentido, que é exato.
+    """
+    n = len(players)
+    active = [i for i, p in enumerate(players) if p.status != PlayerStatus.FOLDED]
+    if len(active) < 2:
+        return "média", ""
+    order = sorted(active, key=lambda i: (i - button - 1) % n)
+    if order[-1] == seat:
+        return "alta", "você fecha a ação (em posição): decide vendo o que todos fizeram"
+    if order[0] == seat:
+        return "baixa", "você age primeiro (fora de posição): decide no escuro"
+    return "média", "você age no meio da ordem de ação"
+
+
+def _blockers(hole, board) -> list[str]:
+    """Cartas suas que REMOVEM combos das mãos mais fortes do vilão (aritmética
+    de combos, sem simulação). Cobre os dois casos clássicos e verificáveis:
+    bloquear o nut flush e bloquear quadra/full house em board pareado."""
+    if len(board) < 3:
+        return []
+    out: list[str] = []
+    suits = Counter(c.suit for c in board)
+    for suit, cnt in suits.items():
+        if cnt >= 3:  # flush possível
+            on_board = {int(c.rank) for c in board if c.suit == suit}
+            top_missing = next(r for r in range(14, 1, -1) if r not in on_board)
+            held = next(
+                (c for c in hole if c.suit == suit and int(c.rank) == top_missing), None
+            )
+            if held:
+                out.append(
+                    f"Seu {_pretty(held)} bloqueia o nut flush — o vilão não pode ter a melhor cor"
+                )
+    rank_counts = Counter(int(c.rank) for c in board)
+    for r, cnt in rank_counts.items():
+        if cnt >= 2:  # board pareado
+            held = next((c for c in hole if int(c.rank) == r), None)
+            if held:
+                out.append(
+                    f"Seu {_pretty(held)} bloqueia quadra/full house — sobram menos combos fortes"
+                )
+    return out[:2]
+
+
 def _council_bot(level: str, opp_model: OpponentModel):
     if level == "adaptive":  # usa a leitura REAL do humano
         return AdaptiveBot(opp_model)
@@ -144,6 +202,9 @@ def analyze(
     to_call = hand.amount_to_call()
     pot_odds = to_call / (pot + to_call) if to_call > 0 else 0.0
     ev_call = equity * (pot + to_call) - (1 - equity) * to_call
+    # MDF (frequência mínima de defesa): 1 − to_call/pote (pote já contém a aposta)
+    mdf = (1 - to_call / pot) if (to_call > 0 and pot > 0) else None
+    realization, realization_why = _realization(seat, hand.button, players)
     others = [
         p.stack
         for i, p in enumerate(players)
@@ -198,4 +259,8 @@ def analyze(
         your_profile_fold=round(profile.fold_to_bet, 2),
         your_profile_aggr=round(profile.aggression, 2),
         your_profile_samples=profile.samples,
+        mdf=(round(mdf, 4) if mdf is not None else None),
+        realization=realization,
+        realization_why=realization_why,
+        blockers=_blockers(me.hole, board),
     )

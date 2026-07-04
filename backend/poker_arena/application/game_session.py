@@ -34,6 +34,7 @@ from .views import (
     InsightView,
     LegalView,
     OpponentReadView,
+    PosStatView,
     RosterSeatView,
     SeatView,
     TableStateView,
@@ -143,8 +144,17 @@ class GameSession:
         self._insight_by_seat = {}
         self._last_reasoning = None
         if self._logger is not None or self._stats is not None:
+            from .positions import position
+
+            n = len(self._hand.players)
             seats = [
-                {"seat": i, "name": p.name, "level": self._level_of(p), "start": self._hand_starts[id(p)]}
+                {
+                    "seat": i,
+                    "name": p.name,
+                    "level": self._level_of(p),
+                    "start": self._hand_starts[id(p)],
+                    "position": position(i, self._hand.button, n),
+                }
                 for i, p in enumerate(self._hand.players)
             ]
             if self._logger is not None:
@@ -285,20 +295,35 @@ class GameSession:
         # só os jogadores que estão na mesa AGORA (quem saiu some dos painéis)
         current = {p.name for p in self._table.players}
         names = [n for n in st.per if n in current]
-        bots = [
-            BotStatView(
+
+        def _bot_stat(n: str) -> BotStatView:
+            p = st.per[n]
+            dealt = p["hands_dealt"]
+            return BotStatView(
                 seat=st.info[n]["seat"],
                 name=n,
                 level=st.info[n]["level"],
-                stack=st.per[n]["stack"],
-                delta=st.per[n]["stack"] - st.per[n]["start"],
-                hands_won=st.per[n]["hands_won"],
-                hands_dealt=st.per[n]["hands_dealt"],
-                vpip=(st.per[n]["vpip"] / st.per[n]["hands_dealt"]) if st.per[n]["hands_dealt"] else 0.0,
-                aggression=(st.per[n]["aggressive"] / st.per[n]["actions"]) if st.per[n]["actions"] else 0.0,
+                stack=p["stack"],
+                delta=p["stack"] - p["start"],
+                hands_won=p["hands_won"],
+                hands_dealt=dealt,
+                vpip=(p["vpip"] / dealt) if dealt else 0.0,
+                aggression=(p["aggressive"] / p["actions"]) if p["actions"] else 0.0,
+                pfr=(p["pfr"] / dealt) if dealt else 0.0,
+                wtsd=(p["wtsd"] / p["saw_flop"]) if p["saw_flop"] else 0.0,
+                wsd=(p["wsd"] / p["wtsd"]) if p["wtsd"] else 0.0,
+                positions=[
+                    PosStatView(
+                        bucket=b,
+                        hands=hands,
+                        vpip=(vp / hands) if hands else 0.0,
+                        pfr=(pf / hands) if hands else 0.0,
+                    )
+                    for b, (hands, vp, pf) in p["pos"].items()
+                ],
             )
-            for n in names
-        ]
+
+        bots = [_bot_stat(n) for n in names]
         bots.sort(key=lambda b: b.stack, reverse=True)
         series = [
             ChipSeriesView(
@@ -340,7 +365,13 @@ class GameSession:
         if self._opp_model is None:
             return None
         r = self._opp_model.read()
-        return OpponentReadView(r.fold_to_bet, r.aggression, r.samples)
+        return OpponentReadView(
+            r.fold_to_bet,
+            r.aggression,
+            r.samples,
+            tilt=self._opp_model.tilt,
+            tilt_delta=round(self._opp_model.tilt_delta, 2),
+        )
 
     def total_chips(self) -> int:
         """Invariante de conservação (todas as fichas, inclusive no pote)."""
@@ -431,7 +462,13 @@ class GameSession:
             if self._logger is not None:
                 self._logger.finish_hand(_cards(self._hand.board), pot, winners_info, result)
             if self._stats is not None:
-                self._stats.finish_hand(winners_info, pot, result, showdown)
+                self._stats.finish_hand(
+                    winners_info, pot, result, showdown, contenders=[p.name for p in contesting]
+                )
+        # detector de tilt: informa ao modelo do oponente o resultado do humano em bb
+        if self._opp_model is not None and self._human is not None:
+            delta = self._human.stack - self._hand_starts.get(id(self._human), self._human.stack)
+            self._opp_model.note_hand_result(delta / max(self._table.bb, 1))
         self._table.end_hand()
         human_broke = self._human is not None and self._human.stack <= 0
         tournament_over = not self._rebuy and (self._table.is_over() or human_broke)

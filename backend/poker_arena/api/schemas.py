@@ -234,6 +234,8 @@ class OpponentReadSchema(BaseModel):
     fold_to_bet: float = Field(description="Frequência com que você desiste diante de apostas, em [0,1].")
     aggression: float = Field(description="Sua agressividade observada, em [0,1].")
     samples: int = Field(description="Quantas jogadas suas já foram observadas.")
+    tilt: bool = Field(default=False, description="Detector didático de tilt: sua agressão subiu além do limiar nas mãos seguintes a uma perda grande (>=15 bb).")
+    tilt_delta: float = Field(default=0.0, description="Agressão pós-perda − agressão de base, em [-1,1].")
 
 
 class WinProbSchema(BaseModel):
@@ -273,6 +275,19 @@ class HumanAnalysisSchema(BaseModel):
     your_profile_fold: float = Field(description="Seu fold-to-bet observado, em [0,1].")
     your_profile_aggr: float = Field(description="Sua agressão observada, em [0,1].")
     your_profile_samples: int = Field(description="Tamanho da amostra do seu perfil.")
+    mdf: float | None = Field(default=None, description="MDF (frequência mínima de defesa) diante da aposta atual, em [0,1]. `null` sem aposta a pagar. Referência teórica (heads-up/river).")
+    realization: str | None = Field(default=None, description="Equity Realization qualitativa: `alta` (em posição), `média` ou `baixa` (fora de posição).")
+    realization_why: str | None = Field(default=None, description="Por que a realização é essa (ordem de ação pós-flop).")
+    blockers: list[str] = Field(default=[], description="Cartas suas que bloqueiam as mãos mais fortes possíveis do vilão (nut flush, quadra/full).")
+
+
+class PosStatSchema(BaseModel):
+    """VPIP/PFR de um bot numa REGIÃO da mesa (amostras agregadas)."""
+
+    bucket: str = Field(description="`early` | `middle` | `late` | `blinds`.")
+    hands: int = Field(description="Mãos jogadas nessa região.")
+    vpip: float = Field(description="VPIP na região, em [0,1].")
+    pfr: float = Field(description="PFR na região, em [0,1].")
 
 
 class BotStatSchema(BaseModel):
@@ -287,6 +302,10 @@ class BotStatSchema(BaseModel):
     hands_dealt: int = Field(description="Mãos jogadas.")
     vpip: float = Field(description="% de mãos que entrou voluntariamente (solto x apertado), em [0,1].")
     aggression: float = Field(description="% de ações agressivas (agressivo x passivo), em [0,1].")
+    pfr: float = Field(default=0.0, description="Preflop Raise: % de mãos que abriu aumentando no pré-flop, em [0,1]. O gap VPIP−PFR separa o agressivo do passivo.")
+    wtsd: float = Field(default=0.0, description="Went To ShowDown: % das mãos com flop visto em que chegou ao showdown, em [0,1].")
+    wsd: float = Field(default=0.0, description="Won at ShowDown: % dos showdowns que venceu, em [0,1].")
+    positions: list[PosStatSchema] = Field(default=[], description="VPIP/PFR por região da mesa (cedo/meio/tarde/blinds).")
 
 
 class ChipSeriesSchema(BaseModel):
@@ -347,6 +366,8 @@ class ReasoningSchema(BaseModel):
     pot_odds_pct: int = Field(description="Preço relativo (pot odds), 0..100.")
     options: list[OptionSchema] = Field(description="As jogadas possíveis avaliadas.")
     why_chosen: str = Field(description="Por que ESTE cérebro escolheu ESTA jogada.")
+    mdf_pct: int | None = Field(default=None, description="MDF de quem enfrenta a aposta atual, 0..100 (referência teórica heads-up/river). `null` sem aposta.")
+    bluff_alpha_pct: int | None = Field(default=None, description="α: % de desistências que a aposta/aumento DESTE bot precisa pra lucrar como blefe puro (risco/(risco+recompensa)), 0..100. `null` quando a ação não é agressiva.")
 
 
 class TableStateResponse(BaseModel):

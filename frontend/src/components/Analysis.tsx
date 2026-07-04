@@ -116,10 +116,34 @@ export function HandPanel() {
         </div>
       </div>
       {a.draws.length > 0 && <p className="hand-draws">🎯 {a.draws.join(' · ')}</p>}
+      {(a.blockers ?? []).map((b, i) => (
+        <p key={i} className="hand-draws" title="Blocker: uma carta sua remove combinações das mãos mais fortes possíveis do vilão">
+          🧱 {b}
+        </p>
+      ))}
       <div className={'potodds ' + (good ? 'is-good' : 'is-bad')}>
         Pot odds: precisa de <b className="mono">{pctOf(need)}</b>, você tem{' '}
         <b className="mono">{pctOf(a.equity)}</b> → {good ? 'pagar é +EV ✅' : 'pagar é −EV ⚠️'}
       </div>
+      {a.mdf != null && (
+        <p
+          className="hand-gto"
+          title="MDF (frequência mínima de defesa): pela teoria GTO, contra essa aposta você precisa continuar (pagar/aumentar) pelo menos essa fração das vezes — desistir mais que isso te deixa explorável por blefes. Referência teórica (heads-up/river)."
+        >
+          🛡️ Defesa mínima (MDF): continue <b className="mono">{pctOf(a.mdf)}</b> das vezes
+          contra esse tamanho de aposta.
+        </p>
+      )}
+      {a.realization && (
+        <p
+          className="hand-gto"
+          title="Equity Realization: equity é a chance no showdown, mas quanto dela vira EV depende da posição — quem fecha a ação realiza mais; fora de posição realiza menos."
+        >
+          {a.realization === 'alta' ? '📈' : a.realization === 'baixa' ? '📉' : '➖'} Realização
+          da equity <b>{a.realization}</b>
+          {a.realization_why ? ` — ${a.realization_why}` : ''}
+        </p>
+      )}
     </div>
   )
 }

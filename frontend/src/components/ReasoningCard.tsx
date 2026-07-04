@@ -65,6 +65,18 @@ export default function ReasoningCard() {
           <b>{r.pot_odds_pct}%</b>
           <small>preço (pot odds)</small>
         </span>
+        {r.mdf_pct != null && (
+          <span title="MDF (frequência mínima de defesa): pela teoria GTO, quem enfrenta essa aposta precisa continuar pelo menos essa fração das vezes pra não ser explorável (referência heads-up/river)">
+            <b>{r.mdf_pct}%</b>
+            <small>defesa mínima (MDF)</small>
+          </span>
+        )}
+        {r.bluff_alpha_pct != null && (
+          <span title="α (fold equity): se essa aposta fosse um blefe puro, ela só lucraria se os rivais desistissem pelo menos essa % das vezes — α = risco ÷ (risco + recompensa)">
+            <b>{r.bluff_alpha_pct}%</b>
+            <small>folds p/ blefe (α)</small>
+          </span>
+        )}
       </div>
 
       {r.signal_label && (

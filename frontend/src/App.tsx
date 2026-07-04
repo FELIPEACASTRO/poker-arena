@@ -154,6 +154,19 @@ export default function App() {
                     </>
                   )}
                   <AnimatePresence>
+                    {read?.tilt && (
+                      <motion.div
+                        className="brain-banner tilt-banner"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                      >
+                        🔥 <b>Cuidado: sinal de tilt.</b> Sua agressão subiu{' '}
+                        <b>{Math.round((read.tilt_delta ?? 0) * 100)} pontos</b> logo após uma
+                        perda grande — a ciência mostra que perder o controle emocional custa
+                        caro (Palomäki, 2014). Respire e volte ao plano.
+                      </motion.div>
+                    )}
                     {read && read.samples >= 8 && (
                       <motion.div
                         className="brain-banner"

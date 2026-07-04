@@ -88,6 +88,12 @@ class MatchLogger:
 
 
 # ---------------- leitura (para a página de auditoria) ----------------
+def _bundled_dir() -> Path:
+    """Partidas EMPACOTADAS com a solução (ex.: as mãos publicadas do Pluribus,
+    uoftcprg/phh-dataset, CC BY 4.0) — aparecem na auditoria como replay."""
+    return Path(__file__).resolve().parents[1] / "data"
+
+
 def _read_lines(path: Path) -> list[dict]:
     out = []
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -100,29 +106,38 @@ def _read_lines(path: Path) -> list[dict]:
     return out
 
 
+def _summary_of(path: Path) -> dict | None:
+    rows = _read_lines(path)
+    meta = next((r for r in rows if r.get("type") == "meta"), None)
+    if not meta:
+        return None
+    hands = [r for r in rows if r.get("type") == "hand"]
+    return {
+        "id": meta["id"],
+        "created": meta.get("created"),
+        "mode": meta.get("mode"),
+        "levels": meta.get("levels", []),
+        "hands": len(hands),
+        "last": hands[-1]["ts"] if hands else meta.get("created"),
+    }
+
+
 def list_games(log_dir: Path | None = None) -> list[dict]:
-    """Resumo de cada partida gravada (mais recente primeiro)."""
+    """Resumo de cada partida (gravadas + empacotadas), mais recente primeiro."""
     d = log_dir or _log_dir()
-    if not d.exists():
-        return []
     games = []
-    for f in d.glob("*.jsonl"):
-        rows = _read_lines(f)
-        meta = next((r for r in rows if r.get("type") == "meta"), None)
-        if not meta:
-            continue
-        hands = [r for r in rows if r.get("type") == "hand"]
-        games.append(
-            {
-                "id": meta["id"],
-                "created": meta.get("created"),
-                "mode": meta.get("mode"),
-                "levels": meta.get("levels", []),
-                "hands": len(hands),
-                "last": hands[-1]["ts"] if hands else meta.get("created"),
-            }
-        )
+    if d.exists():
+        for f in d.glob("*.jsonl"):
+            s = _summary_of(f)
+            if s:
+                games.append(s)
     games.sort(key=lambda g: g["last"] or "", reverse=True)
+    bundled = _bundled_dir()
+    if bundled.exists():  # empacotadas vão pro fim (histórico do usuário primeiro)
+        for f in sorted(bundled.glob("*.jsonl")):
+            s = _summary_of(f)
+            if s:
+                games.append(s)
     return games
 
 
@@ -130,8 +145,10 @@ def read_game(session_id: str, log_dir: Path | None = None) -> dict | None:
     """Partida completa (meta + todas as mãos) para auditoria/replay."""
     d = log_dir or _log_dir()
     path = d / f"{session_id}.jsonl"
-    if not path.exists():
-        return None
+    if not path.exists():  # não gravada? tenta as empacotadas (ex.: 'pluribus')
+        path = _bundled_dir() / f"{session_id}.jsonl"
+        if not path.exists():
+            return None
     rows = _read_lines(path)
     meta = next((r for r in rows if r.get("type") == "meta"), None)
     if not meta:

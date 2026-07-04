@@ -229,6 +229,28 @@ def _why(level: str, name: str, past: str, inf: str, sig: int | None, eq: int,
     )
 
 
+def _gto_numbers(obs: Observation, action: Action) -> tuple[int | None, int | None]:
+    """MDF e α (fold equity do blefe) — fórmulas fechadas de GTO, didáticas.
+
+    - Enfrentando aposta: quem paga precisa de equity α = to_call/pote; o MDF
+      (frequência mínima de defesa) do defensor é 1 − α. Ex. verificado: aposta 60
+      num pote de 100 → pote fica 160 → α = 37,5%, MDF = 62,5%.
+    - Ao apostar/aumentar: um blefe puro lucra se os rivais desistem mais que
+      α = risco / (risco + recompensa), com risco = fichas que o bot adiciona e
+      recompensa = pote atual. Referência teórica (heads-up/river).
+    """
+    mdf_pct: int | None = None
+    if obs.to_call > 0 and obs.pot > 0:
+        mdf_pct = round((1 - obs.to_call / obs.pot) * 100)
+    bluff_alpha_pct: int | None = None
+    if action.type in (ActionType.RAISE, ActionType.ALL_IN):
+        me = next(p for p in obs.players if p.seat == obs.seat)
+        added = (action.amount - me.current_bet) if action.type == ActionType.RAISE else me.stack
+        if added > 0 and added > obs.to_call:  # só quando a ação é de fato agressiva
+            bluff_alpha_pct = round(added / (added + obs.pot) * 100)
+    return mdf_pct, bluff_alpha_pct
+
+
 def explain(
     name: str, level: str, obs: Observation, action: Action, insight: BotInsight | None
 ) -> ReasoningView:
@@ -236,6 +258,7 @@ def explain(
     equity = estimate_equity(obs.hole, obs.board, n_opp, _EQUITY_SAMPLES, _RNG)
     pot_odds = obs.to_call / (obs.pot + obs.to_call) if obs.to_call > 0 else 0.0
     eq, po = round(equity * 100), round(pot_odds * 100)
+    mdf_pct, bluff_alpha_pct = _gto_numbers(obs, action)
     sig = round(insight.confidence * 100) if insight else None
 
     hand_label = _hand_name(obs.hole, obs.board)
@@ -266,4 +289,6 @@ def explain(
         pot_odds_pct=po,
         options=options,
         why_chosen=_why(level, name, past, inf, sig, eq, po, obs.to_call, insight),
+        mdf_pct=mdf_pct,
+        bluff_alpha_pct=bluff_alpha_pct,
     )

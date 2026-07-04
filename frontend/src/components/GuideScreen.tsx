@@ -140,13 +140,15 @@ const BRAINS: BrainInfo[] = [
     fortes: [
       'EXPLORA suas fraquezas em tempo real.',
       'Contra um humano previsível, é letal — aprende e ajusta.',
+      'Detecta TILT: se você fica mais agressivo logo depois de perder um pote grande, ele percebe e avisa (ciência real — Palomäki, 2014).',
     ],
     fracos: [
+      'NO MODO LABORATÓRIO (só bots) ele não tem HUMANO pra ler → não explora ninguém e joga só a força da mão, ficando ATRÁS do Intermediário. O brilho dele é contra VOCÊ.',
       'Começa pelo "humano típico" — se você fugir do padrão, ele leva algumas mãos pra corrigir o retrato.',
       'A base é heurística, então contra um jogador perfeito ele tem teto.',
-      'Se você MUDAR de estilo, ele demora a reagir.',
     ],
-    vidro: '"explora: você desiste muito → pressiona/blefa" + "desiste 70% das vezes".',
+    vidro:
+      'no Laboratório (sem humano): "sem leitura confiável — jogo pela força da mão". Contra VOCÊ, depois de te ler: "explora: você desiste muito → pressiona/blefa".',
   },
   {
     id: 'expert',
@@ -159,15 +161,16 @@ const BRAINS: BrainInfo[] = [
     imagine:
       'É o enxadrista campeão mundial que treinou a vida inteira jogando contra si mesmo — tipo o AlphaGo, que aprendeu sozinho e venceu os melhores do mundo. Ele não pensa em regras: ele "sente" a jogada certa.',
     fortes: [
-      'O mais forte de todos — termina com 80%+ das fichas.',
+      'O mais forte de todos NO LONGO PRAZO — o melhor lucro medido (+450 bb/100, disparado na nossa bateria de testes).',
       'Equilibrado (difícil de explorar) e disciplinado: ataca só com vantagem.',
       'Leva os POTÕES.',
     ],
     fracos: [
       'Vence POUCAS mãos (desiste muito) — parece "passivo" pra quem conta mãos.',
+      'Em POUCAS mãos, a sorte pode escondê-lo no fundo do placar (é variância — veja o box abaixo). A força dele só aparece no longo prazo.',
       'Foi treinado pra jogar bem CONTRA TODOS, não pra explorar ao máximo UM humano fraco (aí o Adaptativo brilha mais).',
     ],
-    vidro: 'as 5 barras de probabilidade da rede neural, ao vivo.',
+    vidro: 'as 5 barras de probabilidade da rede neural, ao vivo — e, quando duas jogadas empatam, o card avisa que ele SORTEOU (estratégia mista).',
   },
 ]
 
@@ -273,14 +276,31 @@ export default function GuideScreen({ onClose }: { onClose: () => void }) {
           </section>
         ))}
 
+        <div className="guide-science" style={{ borderColor: 'var(--lvl-montecarlo)' }}>
+          <h2>🎲 Sorte × Habilidade: a variância (leia isto!)</h2>
+          <p>
+            Abriu o Laboratório e viu o <b>Amador</b> (ou até o Iniciante) liderando, com o{' '}
+            <b>Expert</b> lá no fundo? <b>É normal — é variância.</b> No poker, em POUCAS mãos a{' '}
+            <b>sorte domina</b>: quem pega cartas boas dispara, não importa a habilidade. Só em{' '}
+            <b>MILHARES de mãos</b> a habilidade aparece e a ordem "certa" se forma.
+          </p>
+          <p className="guide-science-note">
+            🔬 Medimos exatamente isso: em <b>3 sessões curtas</b>, venceram 3 perfis diferentes
+            (puro azar). Já em <b>10.000 mãos justas</b> (mesmo baralho, sem sorte de stack), o
+            Expert lucrou <b>+450</b> e todos os outros ficaram MUITO atrás. <b>Placar de 1
+            sessão não mede habilidade — mede sorte.</b>
+          </p>
+        </div>
+
         <div className="guide-power">
           <Brain size={18} />
           <div>
             <b>Pare e pense (Brain Power)</b>
             <p>
-              Por que o <b>Expert</b> vence MENOS mãos, mas tem MAIS fichas? Porque ganhar no poker
-              é levar <b>FICHAS</b>, não quantidade de mãos. O Expert <b>desiste do lixo</b> e ataca
-              só os <b>potões</b>. É exatamente o que o painel <i>"Quem mais ganha"</i> mostra!
+              Por que o <b>Expert</b> vence MENOS mãos, mas ganha mais fichas <b>no longo prazo</b>?
+              Porque ganhar no poker é levar <b>FICHAS</b>, não quantidade de mãos. O Expert{' '}
+              <b>desiste do lixo</b> e ataca só os <b>potões</b>. É exatamente o que o painel{' '}
+              <i>"Quem mais ganha"</i> mostra — depois de mãos suficientes!
             </p>
           </div>
         </div>
@@ -326,15 +346,29 @@ export default function GuideScreen({ onClose }: { onClose: () => void }) {
             <Trophy size={18} /> No fim das contas (por habilidade)
           </h2>
           <p>
+            <b>Contra VOCÊ</b> (Modo Jogar) — o Adaptativo sobe porque te EXPLORA:
+          </p>
+          <p>
             <span style={{ color: 'var(--lvl-expert)' }}>Expert</span> ≫{' '}
             <span style={{ color: 'var(--lvl-adaptive)' }}>Adaptativo</span> &gt;{' '}
             <span style={{ color: 'var(--lvl-montecarlo)' }}>Intermediário</span> &gt;{' '}
             <span style={{ color: 'var(--lvl-heuristic)' }}>Amador</span> &gt;{' '}
             <span style={{ color: 'var(--lvl-random)' }}>Iniciante</span>
           </p>
+          <p style={{ marginTop: '12px' }}>
+            <b>No Modo Laboratório</b> (só bots, sem humano pra explorar) — o Adaptativo cai,
+            porque não tem quem ler. É a ordem que você vê no placar (medida em 10 mil mãos):
+          </p>
+          <p>
+            <span style={{ color: 'var(--lvl-expert)' }}>Expert</span> ≫{' '}
+            <span style={{ color: 'var(--lvl-montecarlo)' }}>Intermediário</span> &gt;{' '}
+            <span style={{ color: 'var(--lvl-adaptive)' }}>Adaptativo</span> &gt;{' '}
+            <span style={{ color: 'var(--lvl-heuristic)' }}>Amador</span> &gt;{' '}
+            <span style={{ color: 'var(--lvl-random)' }}>Iniciante</span>
+          </p>
           <p className="guide-rank-note">
-            As cores aqui são as mesmas dos assentos e dos painéis no jogo. Abra o{' '}
-            <b>Modo Laboratório</b> e veja a teoria virar prática ao vivo. 🔬
+            As cores aqui são as mesmas dos assentos e dos painéis no jogo. Lembre: essa ordem só
+            aparece depois de MUITAS mãos — em poucas, é a sorte que manda (variância). 🔬
           </p>
         </div>
 

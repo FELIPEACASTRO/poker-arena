@@ -159,3 +159,14 @@ def test_ausencia_do_modelo_e_graciosa(monkeypatch, tmp_path):
     assert vision_model_path().name == "nao_existe.onnx"
     with pytest.raises(FileNotFoundError):
         recognize_table_onnx(Image.new("RGB", (100, 100)))
+
+
+def test_aceita_o_nome_do_arquivo_publicado_pelo_hf(tmp_path):
+    # o notebook publica como table_yolo11n.onnx; o backend acha sem renomear
+    from poker_arena.vision.onnx_recognize import _pick_model
+
+    assert _pick_model(tmp_path).name == "poker_vision.onnx"  # nenhum existe -> canônico
+    (tmp_path / "table_yolo11n.onnx").write_bytes(b"x")
+    assert _pick_model(tmp_path).name == "table_yolo11n.onnx"  # acha o do HF
+    (tmp_path / "poker_vision.onnx").write_bytes(b"x")
+    assert _pick_model(tmp_path).name == "poker_vision.onnx"  # canônico tem prioridade

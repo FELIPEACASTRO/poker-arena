@@ -31,12 +31,24 @@ _CONF = 0.35
 _IOU = 0.5
 
 
+_MODEL_NAMES = ("poker_vision.onnx", "table_yolo11n.onnx")  # nome canônico + o que o HF publica
+
+
+def _pick_model(models: Path) -> Path:
+    """Primeiro nome conhecido que existir em `models/` (aceita o .onnx do HF sem
+    renomear); senão o nome canônico (pra mensagem de erro quando nenhum existe)."""
+    for name in _MODEL_NAMES:
+        if (models / name).exists():
+            return models / name
+    return models / _MODEL_NAMES[0]
+
+
 def vision_model_path() -> Path:
     """Onde o backend procura o detector treinado. Override via POKER_VISION_MODEL."""
     env = os.environ.get("POKER_VISION_MODEL")
     if env:
         return Path(env)
-    return Path(__file__).resolve().parents[2] / "models" / "poker_vision.onnx"
+    return _pick_model(Path(__file__).resolve().parents[2] / "models")
 
 
 def vision_model_available() -> bool:

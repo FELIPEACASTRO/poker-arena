@@ -43,9 +43,26 @@ export default function SetupScreen({ onCreate, busy, error }: Props) {
     'adaptive',
   ])
 
-  // o Expert só aparece quando o modelo treinado existe no backend
+  // o Expert só aparece quando o modelo treinado existe no backend. Como o backend
+  // pode estar SUBINDO quando esta tela abre, tenta de novo por alguns segundos —
+  // senão o Expert "some" até um reload manual (era o bug relatado).
   useEffect(() => {
-    api.getLevels().then((r) => setAvailable(r.levels)).catch(() => {})
+    let alive = true
+    let tries = 0
+    const load = () => {
+      api
+        .getLevels()
+        .then((r) => {
+          if (alive) setAvailable(r.levels)
+        })
+        .catch(() => {
+          if (alive && tries++ < 10) setTimeout(load, 1000) // backend subindo? re-tenta
+        })
+    }
+    load()
+    return () => {
+      alive = false
+    }
   }, [])
   const levelOptions = LEVELS.filter((l) => available.includes(l.id))
 

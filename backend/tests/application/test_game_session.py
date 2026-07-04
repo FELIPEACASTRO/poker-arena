@@ -162,6 +162,17 @@ def test_step_outside_bot_turn_raises():
 
 
 # ---------- painéis do modo laboratório (estatísticas ao vivo) ----------
+def test_watch_stats_appear_immediately_not_after_first_hand():
+    # UX: o placar aparece ASSIM QUE a mesa é montada (senão fica ~20s em branco no
+    # começo, pois a 1ª mão demora por causa da pausa entre jogadas)
+    s = _watch(stack=500)
+    ws = s.view().watch_stats  # PRIMEIRA visão, sem nenhum step/mão terminada
+    assert ws is not None
+    assert ws.hands == 0  # nenhuma mão completa ainda
+    assert len(ws.bots) == 6
+    assert all(b.stack == 500 and b.delta == 0 and b.hands_won == 0 for b in ws.bots)
+
+
 def test_watch_mode_accumulates_live_stats():
     s = _watch(stack=500)
     for _ in range(400):

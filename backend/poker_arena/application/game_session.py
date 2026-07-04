@@ -288,9 +288,12 @@ class GameSession:
         return out
 
     def _watch_stats_view(self) -> WatchStatsView | None:
-        """Painéis do modo laboratório — só quando há estatísticas (sem humano)."""
+        """Painéis do modo laboratório. Aparecem ASSIM QUE a mesa é montada (já com
+        todos no stack inicial), não só depois da 1ª mão — senão ficam ~20s em branco
+        no começo (a 1ª mão demora por causa da pausa entre jogadas). As estatísticas
+        (VPIP/agressão/corrida das fichas) preenchem conforme o jogo anda."""
         st = self._stats
-        if st is None or st.hands == 0:
+        if st is None or not st.per:  # só quando a 1ª mão já foi distribuída (roster pronto)
             return None
         # só os jogadores que estão na mesa AGORA (quem saiu some dos painéis)
         current = {p.name for p in self._table.players}

@@ -3,6 +3,7 @@ import type {
   CopilotRequest,
   CopilotResult,
   CreateConfig,
+  FromImageResult,
   GameLog,
   GameSummary,
   HandReviewResult,
@@ -68,4 +69,19 @@ export const api = {
     fetch(`${BASE}/copilot/review-hand`, { ...POST, body: JSON.stringify({ phh, player }) }).then(
       (r) => asJson<HandReviewResult>(r),
     ),
+
+  fromImage: (
+    file: File,
+    opts: { to_call: number; my_stack: number; num_opponents: number; in_position: boolean },
+  ) => {
+    const fd = new FormData()
+    fd.append('image', file)
+    fd.append('to_call', String(opts.to_call))
+    fd.append('my_stack', String(opts.my_stack))
+    fd.append('num_opponents', String(opts.num_opponents))
+    fd.append('in_position', String(opts.in_position))
+    return fetch(`${BASE}/copilot/from-image`, { method: 'POST', body: fd }).then((r) =>
+      asJson<FromImageResult>(r),
+    )
+  },
 }

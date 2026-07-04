@@ -201,6 +201,19 @@ export interface HandReviewResult {
   total: number
 }
 
+// ---- Copiloto a partir de uma IMAGEM (visão computacional) ----
+export interface FromImageResult {
+  detected: {
+    hole: string[]
+    board: string[]
+    pot: number | null
+    n_cards: number
+    confidence: number
+  }
+  sanity: { ok: boolean; problems: string[]; warnings: string[] }
+  decision: CopilotResult | null
+}
+
 export interface TableState {
   table_id: string
   hand_number: number

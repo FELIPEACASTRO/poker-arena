@@ -16,6 +16,7 @@ OpenSpiel/PyTorch. O backend só baixa o checkpoint pronto.
 | `notebooks/05_pokerbench_warmstart.ipynb` 🧠🎯 | **Warm-start + benchmark GTO** (PokerBench). ⚠️ **Descontinuado**: auditoria impartial mostrou que a concordância com o solver **não prevê força** (o modelo perdia −350 bb/100 no cross-play). Mantido só como histórico. | — |
 | `notebooks/06_selfplay_bb100.ipynb` | Self-play **puro** medido por bb/100. Funciona, mas a análise devastadora mostrou o limite: sem diversidade de oponentes, sobram margens finas. **Superado pelo 07.** | Colab Pro+ (GPU, horas) |
 | `notebooks/07_expert_v2_populacao.ipynb` 🧬🏆 | **Treino EFETIVO (use este)** — baixa mãos REAIS (Zenodo 10796885, 21,6M, CC BY 4.0) → **priors do Adaptativo** + perfis humanos calibrados (fish/reg); treina o Expert v2 contra **POOL diverso** (snapshot + regras + sondas maniac/station/nit + humanos, rotacionados); **gate devastador pareado** — só promove no HF se vencer o v1 sem degradar nenhum confronto. | **Colab Pro+** (A100, horas) |
+| `notebooks/08_vision_agnostic.ipynb` 👁️🧠 | **Visão agnóstica a tela (Fase 2)** — gera mesas 2D SINTÉTICAS com dezenas de estilos (domain randomization: fonte, deck 2/4-cores, feltro, tema, escala) e treina **YOLO11n** pra localizar+classificar as 52 cartas; avalia em **HELD-OUT de estilos NUNCA vistos** (a prova de generalização). Complementa a Fase 1 (reconhecedor por template em `backend/poker_arena/vision/`, que prova o pipeline mas não generaliza sozinho). | **Colab** (GPU, ~1h) |
 
 ### Como rodar (Colab)
 1. Abrir o `.ipynb` no Google Colab.

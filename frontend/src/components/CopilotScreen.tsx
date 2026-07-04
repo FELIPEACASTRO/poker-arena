@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Compass, Lightbulb, Sparkles, X } from 'lucide-react'
 import { api } from '../api'
 import { levelColor, levelName } from '../levels'
-import type { CopilotResult, HandReviewResult } from '../types'
+import type { CopilotResult, FromImageResult, HandReviewResult } from '../types'
 
 const VERDICT: Record<string, { c: string; icon: string }> = {
   good: { c: 'var(--pos)', icon: '✅' },
@@ -14,7 +14,7 @@ const VERDICT: Record<string, { c: string; icon: string }> = {
 const cards = (s: string) => s.trim().split(/[\s,]+/).filter(Boolean)
 
 export default function CopilotScreen({ onClose }: { onClose: () => void }) {
-  const [mode, setMode] = useState<'spot' | 'hand'>('spot')
+  const [mode, setMode] = useState<'spot' | 'hand' | 'image'>('spot')
   const [hole, setHole] = useState('As Ks')
   const [board, setBoard] = useState('Qs Js 2h')
   const [pot, setPot] = useState(100)
@@ -29,6 +29,9 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
   const [phh, setPhh] = useState('')
   const [player, setPlayer] = useState(1)
   const [review, setReview] = useState<HandReviewResult | null>(null)
+  // aba "da imagem" (visão computacional)
+  const [imgPreview, setImgPreview] = useState<string | null>(null)
+  const [vision, setVision] = useState<FromImageResult | null>(null)
 
   async function analyze() {
     setBusy(true)
@@ -60,6 +63,27 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao revisar a mão')
       setReview(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function analyzeImage(file: File) {
+    setImgPreview(URL.createObjectURL(file))
+    setBusy(true)
+    setError(null)
+    setVision(null)
+    try {
+      setVision(
+        await api.fromImage(file, {
+          to_call: toCall,
+          my_stack: stack,
+          num_opponents: opp,
+          in_position: inPos,
+        }),
+      )
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao ler a imagem')
     } finally {
       setBusy(false)
     }
@@ -102,7 +126,72 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
           <button className={mode === 'hand' ? 'is-on' : ''} onClick={() => setMode('hand')}>
             Colar mão (histórico)
           </button>
+          <button className={mode === 'image' ? 'is-on' : ''} onClick={() => setMode('image')}>
+            Da imagem (visão)
+          </button>
         </div>
+
+        {mode === 'image' && (
+          <div className="cp-hand">
+            <p className="cp-hint">
+              Envie um <b>screenshot 2D</b> da mesa — a visão lê suas cartas, o board e o pote,
+              valida (regras de poker) e o Copiloto decide. Estudo pós-jogo, offline.
+            </p>
+            <div className="copilot-form">
+              <label className="cp-field cp-wide cp-upload">
+                <span>Screenshot da mesa (PNG/JPG)</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => e.target.files?.[0] && analyzeImage(e.target.files[0])}
+                />
+              </label>
+              <label className="cp-field">
+                <span>Custa pagar</span>
+                <input type="number" min={0} value={toCall} onChange={(e) => setToCall(+e.target.value)} />
+              </label>
+              <label className="cp-field">
+                <span>Seu stack</span>
+                <input type="number" min={1} value={stack} onChange={(e) => setStack(+e.target.value)} />
+              </label>
+              <label className="cp-field">
+                <span>Oponentes</span>
+                <input type="number" min={1} max={8} value={opp} onChange={(e) => setOpp(+e.target.value)} />
+              </label>
+              <label className="cp-field cp-check">
+                <input type="checkbox" checked={inPos} onChange={(e) => setInPos(e.target.checked)} />
+                <span>Em posição</span>
+              </label>
+            </div>
+
+            {error && <div className="cp-error">⚠️ {error}</div>}
+            {imgPreview && <img className="cp-imgprev" src={imgPreview} alt="mesa enviada" />}
+
+            {vision && (
+              <div className="cp-review">
+                <div className="cp-review-sum">
+                  👁️ Detectado: <b>{vision.detected.hole.join(' ') || '—'}</b>
+                  {vision.detected.board.length > 0 && <> · board <b>{vision.detected.board.join(' ')}</b></>}
+                  {vision.detected.pot != null && <> · pote <b>{vision.detected.pot}</b></>}{' '}
+                  <small>(confiança {Math.round(vision.detected.confidence * 100)}%)</small>
+                </div>
+                {!vision.sanity.ok && (
+                  <div className="cp-error">
+                    🛡️ Abstive: {vision.sanity.problems.join('; ')} — leitura implausível, não decido com lixo.
+                  </div>
+                )}
+                {vision.sanity.warnings.length > 0 && (
+                  <p className="cp-hint">⚠️ {vision.sanity.warnings.join(' · ')}</p>
+                )}
+                {vision.decision && (
+                  <div className="cp-headline">
+                    <Lightbulb size={18} /> {vision.decision.headline}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {mode === 'hand' && (
           <div className="cp-hand">

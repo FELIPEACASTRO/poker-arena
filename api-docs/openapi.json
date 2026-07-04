@@ -1522,6 +1522,12 @@
       },
       "FromImageResponse": {
         "properties": {
+          "engine": {
+            "type": "string",
+            "title": "Engine",
+            "description": "Quem leu a imagem: `F2-onnx` (modelo treinado agnóstico, quando o .onnx está instalado) ou `F1-template` (baseline por template + blob).",
+            "default": "F1-template"
+          },
           "detected": {
             "$ref": "#/components/schemas/DetectedStateSchema"
           },

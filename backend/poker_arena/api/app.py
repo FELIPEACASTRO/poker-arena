@@ -175,14 +175,25 @@ def create_app() -> FastAPI:
         from PIL import Image as PILImage
 
         from ..application.copilot import review_spot
-        from ..vision import check_state, recognize_table
+        from ..vision import (
+            check_state,
+            recognize_table,
+            recognize_table_onnx,
+            vision_model_available,
+        )
 
         try:
             img = PILImage.open(io.BytesIO(await image.read())).convert("RGB")
         except Exception as e:
             raise HTTPException(400, f"imagem inválida: {e}") from e
 
-        st = recognize_table(img)
+        # F2 (modelo TREINADO, agnóstico) quando o .onnx está instalado; senão F1 (template)
+        if vision_model_available():
+            engine = "F2-onnx"
+            st = recognize_table_onnx(img)
+        else:
+            engine = "F1-template"
+            st = recognize_table(img)
         sanity = check_state(st)
         # a VISÃO manda quando detecta os jogadores/posição; senão, cai no informado
         eff_opponents = st.n_players - 1 if st.n_players >= 2 else num_opponents
@@ -200,6 +211,7 @@ def create_app() -> FastAPI:
                 sanity.ok = False
                 sanity.problems.append("estado detectado não formou um spot válido")
         return FromImageResponse(
+            engine=engine,
             detected={"hole": st.hole, "board": st.board, "pot": st.pot,
                       "n_cards": st.n_cards, "confidence": st.confidence,
                       "n_players": st.n_players, "position": st.position},

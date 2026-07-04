@@ -412,6 +412,7 @@ class SanitySchema(BaseModel):
 class FromImageResponse(BaseModel):
     """Pipeline VISÃO → estado → sanity → Copiloto: o que foi detectado e a decisão."""
 
+    engine: str = Field(default="F1-template", description="Quem leu a imagem: `F2-onnx` (modelo treinado agnóstico, quando o .onnx está instalado) ou `F1-template` (baseline por template + blob).")
     detected: DetectedStateSchema
     sanity: SanitySchema
     decision: CopilotResponse | None = Field(description="A decisão do Copiloto (null se o sanity-check abstém).")

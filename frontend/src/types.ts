@@ -206,6 +206,7 @@ export interface HandReviewResult {
 
 // ---- Copiloto a partir de uma IMAGEM (visão computacional) ----
 export interface FromImageResult {
+  engine: string // 'F2-onnx' (modelo treinado agnóstico) ou 'F1-template' (baseline)
   detected: {
     hole: string[]
     board: string[]

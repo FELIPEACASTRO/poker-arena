@@ -7,6 +7,7 @@ agnóstico a qualquer tela. Regra de ouro: todo número passa por sanity-check d
 regras de poker ANTES de chegar ao Copiloto.
 """
 
+from .onnx_recognize import recognize_table_onnx, vision_model_available
 from .recognize import RecognizedState, recognize_table
 from .sanity import SanityResult, check_state
 from .synth import STYLES, Style, render_table
@@ -18,5 +19,7 @@ __all__ = [
     "Style",
     "check_state",
     "recognize_table",
+    "recognize_table_onnx",
     "render_table",
+    "vision_model_available",
 ]

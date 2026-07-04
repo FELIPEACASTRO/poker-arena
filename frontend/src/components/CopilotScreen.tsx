@@ -173,7 +173,7 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
             {vision && (
               <div className="cp-review">
                 <div className="cp-review-sum">
-                  👁️ Detectado: <b>{vision.detected.hole.join(' ') || '—'}</b>
+                  👁️ Detectado <span className="cp-engine">{vision.engine === 'F2-onnx' ? 'IA treinada' : 'baseline'}</span>: <b>{vision.detected.hole.join(' ') || '—'}</b>
                   {vision.detected.board.length > 0 && <> · board <b>{vision.detected.board.join(' ')}</b></>}
                   {vision.detected.pot != null && <> · pote <b>{vision.detected.pot}</b></>}
                   {vision.detected.n_players > 0 && <> · <b>{vision.detected.n_players}</b> jogadores</>}

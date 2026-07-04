@@ -94,6 +94,18 @@ class OpponentModel:
         return (self.raises + POP_AGGRESSION * _PRIOR_WEIGHT) / (total + _PRIOR_WEIGHT)
 
     @property
+    def read_confidence(self) -> float:
+        """Confiança na leitura (0 sem observações, 1 com amostra plena).
+
+        A EXPLORAÇÃO do AdaptiveBot é escalada por isto: sem evidência sobre ESTE
+        oponente (ex.: Modo Laboratório, sem humano → faced_bet=0), a confiança é 0
+        e não há viés de agressão — o bot joga a força pura da mão, sem virar maníaco.
+        O prior populacional (0.70) segue valendo como ESTIMATIVA/display, não como
+        gatilho de agressão sem lastro.
+        """
+        return min(1.0, self.faced_bet / _MIN_SAMPLES)
+
+    @property
     def _baseline_aggr(self) -> float | None:
         """Agressão de base SEM o default neutro (None enquanto a amostra é pequena)."""
         total = self.calls + self.raises

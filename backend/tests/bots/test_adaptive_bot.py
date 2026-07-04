@@ -50,3 +50,31 @@ def test_neutral_without_reads_does_not_bluff():
     # sem dados do oponente (modelo vazio), joga a forca crua -> CHECK
     action = AdaptiveBot(OpponentModel()).act(_obs())
     assert action.type == ActionType.CHECK
+
+
+def test_no_read_means_zero_exploitation_bias():
+    # regressao (Modo Laboratorio): mesmo com o prior populacional (fold 0.70), sem
+    # observacoes reais o vies de exploracao e ZERO -> nao vira maniaco
+    bot = AdaptiveBot(OpponentModel())
+    bot.act(_obs())
+    _effective, _f2b, bias = bot._last
+    assert bias == 0.0  # read_confidence=0 zera o vies apesar do prior
+    assert "força da mão" in bot.insight().label
+
+
+def test_partial_read_scales_exploitation():
+    # com leitura PARCIAL (abaixo do minimo), a exploracao e proporcional (nao plena)
+    m = OpponentModel()
+    for _ in range(4):  # metade do minimo (_MIN_SAMPLES=8)
+        m.observe("fold", to_call=10)
+    assert 0.0 < m.read_confidence < 1.0
+    bot = AdaptiveBot(m)
+    bot.act(_obs())
+    _e, _f, bias_partial = bot._last
+    full = OpponentModel()
+    for _ in range(20):
+        full.observe("fold", to_call=10)
+    b2 = AdaptiveBot(full)
+    b2.act(_obs())
+    _e2, _f2, bias_full = b2._last
+    assert 0 < bias_partial < bias_full  # leitura parcial explora menos que a plena

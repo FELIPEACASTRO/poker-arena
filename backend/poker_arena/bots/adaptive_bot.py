@@ -38,22 +38,25 @@ class AdaptiveBot:
             strength = postflop_strength(obs.hole, obs.board)
         else:
             strength = preflop_strength(obs.hole)
-        # leitura do oponente -> vies de exploracao (0.5 = neutro)
-        bias = (self._model.fold_to_bet - 0.5) * self._aggr
+        # exploração SÓ com leitura real: o viés é escalado pela confiança na leitura.
+        # Sem observações (Modo Laboratório, sem humano), read_confidence=0 -> viés 0
+        # -> joga a força pura da mão (não vira maníaco). Com um humano observado no
+        # Modo Jogar, o viés cresce e ele passa a explorar o estilo real do oponente.
+        bias = (self._model.fold_to_bet - 0.5) * self._aggr * self._model.read_confidence
         effective = min(1.0, max(0.0, strength + bias))
         self._last = (effective, self._model.fold_to_bet, bias)
         return decide_from_equity(obs, effective, self._raise_threshold)
 
     def insight(self) -> BotInsight:
         effective, fold_to_bet, bias = self._last
-        if self._model.samples < 8:  # o prior populacional ainda domina a leitura
-            note = "prior de 250 mil mãos reais: o oponente típico desiste ~70% → pressiono"
+        if self._model.read_confidence < 1.0:  # sem leitura confiável -> não explora
+            note = "sem leitura confiável do oponente — jogo pela força da mão"
         elif bias > 0.02:
             note = "explora: você desiste muito → pressiona/blefa"
         elif bias < -0.02:
             note = "explora: você paga muito → só aposta valor"
         else:
-            note = "ainda lendo seu estilo (neutro)"
+            note = "leitura equilibrada — jogo pela força da mão"
         return BotInsight(
             kind="adaptive",
             label=note,

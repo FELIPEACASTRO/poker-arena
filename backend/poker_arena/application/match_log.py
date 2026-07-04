@@ -17,10 +17,34 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+_MAX_GAMES = 10  # mantém só as N partidas mais recentes no histórico (evita lixo)
+
+
 def _log_dir() -> Path:
     """Diretório dos logs (configurável por env -> testes usam um temp)."""
     env = os.environ.get("POKER_LOG_DIR")
     return Path(env) if env else (Path(__file__).resolve().parents[2] / "logs")
+
+
+def prune_old_games(keep: int = _MAX_GAMES, log_dir: Path | None = None) -> int:
+    """Apaga os logs de partida mais ANTIGOS, mantendo só os `keep` mais recentes.
+
+    Só mexe nos logs GRAVADOS (o dir configurável); nunca toca nas partidas
+    empacotadas com a solução (ex.: as mãos do Pluribus, que ficam em `_bundled_dir`).
+    Devolve quantos arquivos foram removidos. Falhas de I/O são ignoradas (best-effort).
+    """
+    d = log_dir or _log_dir()
+    if not d.exists():
+        return 0
+    files = sorted(d.glob("*.jsonl"), key=lambda f: f.stat().st_mtime, reverse=True)
+    removed = 0
+    for f in files[keep:]:  # do 11º mais recente em diante
+        try:
+            f.unlink()
+            removed += 1
+        except OSError:
+            pass
+    return removed
 
 
 def _now() -> str:
@@ -36,6 +60,7 @@ class MatchLogger:
         self.path = self._dir / f"{session_id}.jsonl"
         self._cur: dict | None = None
         self._append({"type": "meta", "id": session_id, "created": _now(), **meta})
+        prune_old_games(log_dir=self._dir)  # ao abrir uma nova partida, limpa as antigas
 
     def _append(self, obj: dict) -> None:
         with open(self.path, "a", encoding="utf-8") as f:

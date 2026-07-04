@@ -85,6 +85,51 @@
         }
       }
     },
+    "/copilot/from-image": {
+      "post": {
+        "tags": [
+          "Copiloto"
+        ],
+        "summary": "Copiloto: ler uma IMAGEM da mesa e decidir (visão computacional)",
+        "description": "VISÃO → estado → sanity → Copiloto. A imagem é lida (cartas + pote) pela\nvisão; o estado passa pelo sanity-check de regras (a rede de segurança); se\npassar, o Copiloto decide. Se a leitura for implausível, ABSTÉM (não decide\ncom lixo). Pós-jogo/estudo, offline — não lê tela de jogo ao vivo.",
+        "operationId": "from_image_copilot_from_image_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_from_image_copilot_from_image_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FromImageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Imagem inválida."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/copilot/review-hand": {
       "post": {
         "tags": [
@@ -739,6 +784,41 @@
           }
         ]
       },
+      "Body_from_image_copilot_from_image_post": {
+        "properties": {
+          "image": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Image",
+            "description": "Screenshot 2D da mesa de poker."
+          },
+          "to_call": {
+            "type": "integer",
+            "title": "To Call",
+            "default": 0
+          },
+          "my_stack": {
+            "type": "integer",
+            "title": "My Stack",
+            "default": 1000
+          },
+          "num_opponents": {
+            "type": "integer",
+            "title": "Num Opponents",
+            "default": 1
+          },
+          "in_position": {
+            "type": "boolean",
+            "title": "In Position",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "image"
+        ],
+        "title": "Body_from_image_copilot_from_image_post"
+      },
       "BotSpecSchema": {
         "properties": {
           "name": {
@@ -1334,6 +1414,87 @@
             }
           }
         ]
+      },
+      "DetectedStateSchema": {
+        "properties": {
+          "hole": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hole",
+            "description": "Suas 2 cartas detectadas."
+          },
+          "board": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Board",
+            "description": "Cartas comunitárias detectadas."
+          },
+          "pot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pot",
+            "description": "Pote lido (None se não leu)."
+          },
+          "n_cards": {
+            "type": "integer",
+            "title": "N Cards",
+            "description": "Quantas cartas foram localizadas."
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "description": "Confiança média da leitura, 0..1."
+          }
+        },
+        "type": "object",
+        "required": [
+          "hole",
+          "board",
+          "pot",
+          "n_cards",
+          "confidence"
+        ],
+        "title": "DetectedStateSchema",
+        "description": "O estado que a VISÃO extraiu da imagem (antes do sanity-check)."
+      },
+      "FromImageResponse": {
+        "properties": {
+          "detected": {
+            "$ref": "#/components/schemas/DetectedStateSchema"
+          },
+          "sanity": {
+            "$ref": "#/components/schemas/SanitySchema"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CopilotResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A decisão do Copiloto (null se o sanity-check abstém)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "detected",
+          "sanity",
+          "decision"
+        ],
+        "title": "FromImageResponse",
+        "description": "Pipeline VISÃO → estado → sanity → Copiloto: o que foi detectado e a decisão."
       },
       "HTTPValidationError": {
         "properties": {
@@ -2112,6 +2273,39 @@
         ],
         "title": "RosterSeatSchema",
         "description": "Uma cadeira do elenco atual da mesa (base para entrar/sair de jogadores)."
+      },
+      "SanitySchema": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "description": "Se o estado passou nas regras (senão, o Copiloto ABSTÉM)."
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems",
+            "description": "Violações que causam abstenção.",
+            "default": []
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "description": "Avisos (não bloqueiam).",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "title": "SanitySchema",
+        "description": "Resultado do sanity-check de regras de poker (a rede de segurança)."
       },
       "SeatSchema": {
         "properties": {

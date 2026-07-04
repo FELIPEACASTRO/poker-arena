@@ -57,6 +57,29 @@ def test_copilot_rejects_invalid_spot(client):
     assert r.status_code == 400
 
 
+def test_from_image_reads_a_synthetic_table(client):
+    import io
+
+    from poker_arena.vision.synth import CANONICAL, render_table
+
+    img, truth = render_table(seed=42, style=CANONICAL, n_board=5)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    r = client.post(
+        "/copilot/from-image",
+        files={"image": ("mesa.png", buf, "image/png")},
+        data={"to_call": "40", "my_stack": "1000", "num_opponents": "2"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    # a visão detectou as cartas certas (estilo canônico) e o pipeline decidiu
+    assert set(body["detected"]["hole"]) == set(truth["hole"])
+    assert body["sanity"]["ok"] is True
+    assert body["decision"] is not None
+    assert body["decision"]["recommendation"] in ("fold", "check", "call", "raise", "all_in")
+
+
 def test_levels_lists_available(client):
     from poker_arena.application.bot_factory import expert_model_path
 

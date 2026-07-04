@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
@@ -32,6 +32,7 @@ from .schemas import (
     CopilotRequest,
     CopilotResponse,
     CreateTableRequest,
+    FromImageResponse,
     HandReviewRequest,
     HandReviewResponse,
     TableStateResponse,
@@ -148,6 +149,57 @@ def create_app() -> FastAPI:
         from dataclasses import asdict
 
         return CopilotResponse(**asdict(view))
+
+    @app.post(
+        "/copilot/from-image",
+        response_model=FromImageResponse,
+        tags=["Copiloto"],
+        summary="Copiloto: ler uma IMAGEM da mesa e decidir (visão computacional)",
+        responses={400: {"description": "Imagem inválida."}},
+    )
+    async def from_image(
+        image: UploadFile = File(..., description="Screenshot 2D da mesa de poker."),
+        to_call: int = Form(0),
+        my_stack: int = Form(1000),
+        num_opponents: int = Form(1),
+        in_position: bool = Form(True),
+    ) -> FromImageResponse:
+        """VISÃO → estado → sanity → Copiloto. A imagem é lida (cartas + pote) pela
+        visão; o estado passa pelo sanity-check de regras (a rede de segurança); se
+        passar, o Copiloto decide. Se a leitura for implausível, ABSTÉM (não decide
+        com lixo). Pós-jogo/estudo, offline — não lê tela de jogo ao vivo."""
+        import io
+        from dataclasses import asdict
+
+        from PIL import Image as PILImage
+
+        from ..application.copilot import review_spot
+        from ..vision import check_state, recognize_table
+
+        try:
+            img = PILImage.open(io.BytesIO(await image.read())).convert("RGB")
+        except Exception as e:
+            raise HTTPException(400, f"imagem inválida: {e}") from e
+
+        st = recognize_table(img)
+        sanity = check_state(st)
+        decision = None
+        if sanity.ok:
+            try:
+                view = review_spot(
+                    st.hole, st.board, st.pot or 0, to_call, my_stack,
+                    num_opponents, in_position, list(available_levels()),
+                )
+                decision = CopilotResponse(**asdict(view))
+            except Exception:  # se o estado passa no sanity mas o copiloto recusa, abstém
+                sanity.ok = False
+                sanity.problems.append("estado detectado não formou um spot válido")
+        return FromImageResponse(
+            detected={"hole": st.hole, "board": st.board, "pot": st.pot,
+                      "n_cards": st.n_cards, "confidence": st.confidence},
+            sanity={"ok": sanity.ok, "problems": sanity.problems, "warnings": sanity.warnings},
+            decision=decision,
+        )
 
     @app.post(
         "/copilot/review-hand",

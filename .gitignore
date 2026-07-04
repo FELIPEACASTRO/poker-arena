@@ -53,3 +53,6 @@ build/
 .idea/
 .DS_Store
 Thumbs.db
+
+# evidência de visão gerada pelo script (regenerável)
+backend/scripts/vision_evidence/

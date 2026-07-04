@@ -386,6 +386,32 @@ class CopilotResponse(BaseModel):
     headline: str = Field(description="Resumo em linguagem simples do que fazer e por quê.")
 
 
+class DetectedStateSchema(BaseModel):
+    """O estado que a VISÃO extraiu da imagem (antes do sanity-check)."""
+
+    hole: list[str] = Field(description="Suas 2 cartas detectadas.")
+    board: list[str] = Field(description="Cartas comunitárias detectadas.")
+    pot: int | None = Field(description="Pote lido (None se não leu).")
+    n_cards: int = Field(description="Quantas cartas foram localizadas.")
+    confidence: float = Field(description="Confiança média da leitura, 0..1.")
+
+
+class SanitySchema(BaseModel):
+    """Resultado do sanity-check de regras de poker (a rede de segurança)."""
+
+    ok: bool = Field(description="Se o estado passou nas regras (senão, o Copiloto ABSTÉM).")
+    problems: list[str] = Field(default=[], description="Violações que causam abstenção.")
+    warnings: list[str] = Field(default=[], description="Avisos (não bloqueiam).")
+
+
+class FromImageResponse(BaseModel):
+    """Pipeline VISÃO → estado → sanity → Copiloto: o que foi detectado e a decisão."""
+
+    detected: DetectedStateSchema
+    sanity: SanitySchema
+    decision: CopilotResponse | None = Field(description="A decisão do Copiloto (null se o sanity-check abstém).")
+
+
 class HandReviewRequest(BaseModel):
     """Uma mão inteira (formato PHH, colada) para o Copiloto revisar decisão a decisão."""
 

@@ -794,16 +794,20 @@
           },
           "to_call": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "To Call",
             "default": 0
           },
           "my_stack": {
             "type": "integer",
+            "exclusiveMinimum": 0.0,
             "title": "My Stack",
             "default": 1000
           },
           "num_opponents": {
             "type": "integer",
+            "maximum": 9.0,
+            "minimum": 1.0,
             "title": "Num Opponents",
             "default": 1
           },

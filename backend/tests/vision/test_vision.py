@@ -61,6 +61,19 @@ def test_recognizer_is_resolution_agnostic():
         assert cok / ctot >= 0.85, f"{size}: {cok/ctot:.0%} (esperado >=85%)"
 
 
+def test_pote_com_board_nao_e_silenciosamente_errado():
+    # regressão do bug: o topo claro das cartas do board caía na faixa do pote e fundia
+    # aos dígitos -> pote errado em ~52% das mãos. Apagando as cartas antes de ler, o
+    # pote no estilo canônico com board volta a bater na grande maioria.
+    ok = tot = 0
+    for seed in range(60):
+        img, truth = render_table(seed=seed, style=CANONICAL, n_board=5)
+        st = recognize_table(img)
+        tot += 1
+        ok += st.pot == truth["pot"]
+    assert ok / tot >= 0.80, f"pote com board caiu para {ok/tot:.0%} (era ~48% com o bug)"
+
+
 def test_pipeline_produces_valid_state():
     img, truth = render_table(seed=42, style=CANONICAL, n_board=5)
     st = recognize_table(img)
@@ -105,17 +118,18 @@ def test_assentos_nao_derrubam_a_leitura_das_cartas():
     assert cok / ctot >= 0.95
 
 
-def test_abstem_de_jogadores_quando_a_cor_do_feltro_colide():
-    # feltro azul colide com o avatar azul -> ABSTÉM (0 jogadores), não conta errado
+def test_feltro_azul_detecta_jogadores_sem_confundir_com_o_feltro():
+    # regressão do bug: o seat_mask casava o feltro azul-esverdeado (blue-4color) e
+    # zerava a leitura. Com b>g+25 o avatar domina o azul MAIS que o feltro -> detecta.
     from poker_arena.vision.synth import STYLES
 
     blue = next(s for s in STYLES if s.name == "blue-4color")
-    abstidos = 0
+    ok = 0
     for seed in range(20):
-        img, _ = render_table(seed=seed, style=blue, with_seats=True, noise=0.1)
+        img, truth = render_table(seed=seed, style=blue, with_seats=True, noise=0.1)
         st = recognize_table(img)
-        abstidos += st.n_players == 0
-    assert abstidos >= 15  # abstém na grande maioria (F2 treinado é que generaliza)
+        ok += st.n_players == truth["n_players"]
+    assert ok >= 16  # conta certo na grande maioria (não abstém mais)
 
 
 def test_sanity_avisa_quando_nao_detecta_jogadores():

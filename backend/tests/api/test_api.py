@@ -57,11 +57,13 @@ def test_copilot_rejects_invalid_spot(client):
     assert r.status_code == 400
 
 
-def test_from_image_reads_a_synthetic_table(client):
+def test_from_image_reads_a_synthetic_table(client, tmp_path, monkeypatch):
     import io
 
     from poker_arena.vision.synth import CANONICAL, render_table
 
+    # força a F1 (baseline determinístico) mesmo se houver um modelo F2 instalado localmente
+    monkeypatch.setenv("POKER_VISION_MODEL", str(tmp_path / "sem_modelo.onnx"))
     img, truth = render_table(seed=42, style=CANONICAL, n_board=5)
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -78,6 +80,46 @@ def test_from_image_reads_a_synthetic_table(client):
     assert body["sanity"]["ok"] is True
     assert body["decision"] is not None
     assert body["decision"]["recommendation"] in ("fold", "check", "call", "raise", "all_in")
+    assert body["engine"] == "F1-template"  # sem .onnx instalado -> baseline
+
+
+def test_from_image_rejects_out_of_range_opponents(client):
+    import io
+
+    from poker_arena.vision.synth import CANONICAL, render_table
+
+    img, _ = render_table(seed=1, style=CANONICAL, n_board=3)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    # num_opponents=0 é inválido (mesa tem >=1 oponente) -> 422, não abstenção enganosa
+    r = client.post(
+        "/copilot/from-image",
+        files={"image": ("mesa.png", buf, "image/png")},
+        data={"num_opponents": "0"},
+    )
+    assert r.status_code == 422
+
+
+def test_from_image_falls_back_to_f1_when_model_is_invalid(client, tmp_path, monkeypatch):
+    import io
+
+    from poker_arena.vision.synth import CANONICAL, render_table
+
+    bad = tmp_path / "poker_vision.onnx"
+    bad.write_bytes(b"nao sou um onnx valido")  # arquivo existe, mas é lixo
+    monkeypatch.setenv("POKER_VISION_MODEL", str(bad))
+    img, truth = render_table(seed=42, style=CANONICAL, n_board=5)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    r = client.post(
+        "/copilot/from-image",
+        files={"image": ("mesa.png", buf, "image/png")},
+        data={"my_stack": "1000"},
+    )
+    assert r.status_code == 200  # NUNCA 500 por modelo inválido
+    assert r.json()["engine"] == "F1-template"  # caiu na F1 graciosamente
 
 
 def test_levels_lists_available(client):

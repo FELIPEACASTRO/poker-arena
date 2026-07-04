@@ -152,6 +152,25 @@ def test_nms_class_agnostic_mata_duplicata_na_mesma_carta(tmp_path):
     assert set(st.hole) == {"As", "Qd"}  # Ks sobreposto a As foi suprimido
 
 
+def test_assentos_sem_botao_nao_crasham_a_f2(tmp_path):
+    # regressão: com >=2 assentos mas SEM dealer button (disco pequeno abaixo do limiar),
+    # button ficava [] e derive_position estourava IndexError -> HTTP 500. Agora abstém.
+    import math
+    W, H = 900, 600
+    dets = [(404, 470, 62, 87, CARD_NAMES.index("Ah"), 0.9),
+            (496, 470, 62, 87, CARD_NAMES.index("Kd"), 0.9)]
+    for i in range(5):  # 5 assentos, NENHUM botão (classe 53 ausente)
+        ang = math.radians(90 + i * 72)
+        sx, sy = W / 2 + W * 0.40 * math.cos(ang), H / 2 + H * 0.44 * math.sin(ang)
+        dets.append((sx, sy, 48, 48, 52, 0.9))
+    out, *_ = _yolo_output(dets, W, H, nc=54)
+    p = tmp_path / "nobtn.onnx"
+    _const_onnx(out, p)
+    st = OnnxRecognizer(p).recognize(Image.new("RGB", (W, H), (20, 90, 60)))  # não pode crashar
+    assert st.n_players == 5
+    assert st.position == ""  # sem botão -> sem posição, mas conta os jogadores
+
+
 # ---------- disponibilidade / fallback ----------
 def test_ausencia_do_modelo_e_graciosa(monkeypatch, tmp_path):
     monkeypatch.setenv("POKER_VISION_MODEL", str(tmp_path / "nao_existe.onnx"))

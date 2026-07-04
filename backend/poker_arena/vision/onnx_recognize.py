@@ -146,11 +146,13 @@ class OnnxRecognizer:
         out = self._session.run(None, {self._input: blob})[0]
         dets = _decode(np.asarray(out), ratio, dw, dh, _CONF, _IOU)
 
-        hole, board, seats, button, confs = [], [], [], [], []
+        button = None  # None (não []): sem botão detectado -> derive_position abstém da posição
+        hole, board, seats, confs, card_boxes = [], [], [], [], []
         for c, cf, x1, y1, x2, y2 in dets:
             cxp, cyp = (x1 + x2) / 2, (y1 + y2) / 2
             if c < 52:
                 confs.append(cf)
+                card_boxes.append((int(x1), int(y1), int(x2 - x1), int(y2 - y1)))
                 (hole if cyp > H * 0.66 else board).append((cxp, cf, CARD_NAMES[c]))
             elif c == SEAT_CLS:
                 seats.append((cxp, cyp))
@@ -166,7 +168,7 @@ class OnnxRecognizer:
         hero = (hx, H * 0.82)
         n_players, position = derive_position(seats, hero, button) if len(seats) >= 2 else (0, "")
 
-        pot, potc = _read_pot(rgb, _gray(img))  # pote: OCR/dígitos (o YOLO não lê número)
+        pot, potc = _read_pot(_gray(img), card_boxes)  # apaga as cartas antes de ler o pote
         if pot is not None:
             confs.append(potc)
         return RecognizedState(

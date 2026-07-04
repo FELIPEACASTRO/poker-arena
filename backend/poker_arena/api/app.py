@@ -159,9 +159,9 @@ def create_app() -> FastAPI:
     )
     async def from_image(
         image: UploadFile = File(..., description="Screenshot 2D da mesa de poker."),
-        to_call: int = Form(0),
-        my_stack: int = Form(1000),
-        num_opponents: int = Form(1),
+        to_call: int = Form(0, ge=0),
+        my_stack: int = Form(1000, gt=0),
+        num_opponents: int = Form(1, ge=1, le=9),
         in_position: bool = Form(True),
         position: str | None = Form(None),
     ) -> FromImageResponse:
@@ -187,12 +187,17 @@ def create_app() -> FastAPI:
         except Exception as e:
             raise HTTPException(400, f"imagem inválida: {e}") from e
 
-        # F2 (modelo TREINADO, agnóstico) quando o .onnx está instalado; senão F1 (template)
+        # F2 (modelo TREINADO, agnóstico) quando o .onnx está instalado; senão F1 (template).
+        # Se a F2 falhar ao carregar/rodar (.onnx corrompido/incompatível), CAI na F1 —
+        # ausência graciosa, nunca um 500 por causa do modelo.
+        engine, st = "F1-template", None
         if vision_model_available():
-            engine = "F2-onnx"
-            st = recognize_table_onnx(img)
-        else:
-            engine = "F1-template"
+            try:
+                st = recognize_table_onnx(img)
+                engine = "F2-onnx"
+            except Exception:
+                st = None  # modelo inválido -> fallback F1
+        if st is None:
             st = recognize_table(img)
         sanity = check_state(st)
         # a VISÃO manda quando detecta os jogadores/posição; senão, cai no informado

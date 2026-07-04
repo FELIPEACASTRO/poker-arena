@@ -44,7 +44,7 @@ def derive_position(
     ordered = [seat_centers[i] for i in order]
 
     hero_idx = _nearest(hero_center, ordered)
-    if button_center is None:
+    if button_center is None or len(button_center) < 2:  # sem botão (ou vazio) -> sem posição
         return n, ""
     button_idx = _nearest(button_center, ordered)
     return n, _position_label(hero_idx, button_idx, n)

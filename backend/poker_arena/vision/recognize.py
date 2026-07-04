@@ -152,7 +152,9 @@ def _locate_seats(rgb: np.ndarray) -> tuple[list[tuple[float, float]], tuple[flo
     s16 = small.astype(np.int16)
     r, g, b = s16[..., 0], s16[..., 1], s16[..., 2]
     mx = small.max(2)
-    seat_mask = (b > r + 12) & (b >= g) & (b > 90) & (mx < 205)  # disco azulado (não claro)
+    # disco azulado (não claro). b>g+25 exige o azul dominar MAIS que o feltro azul-esverdeado
+    # (ex.: blue-4color (24,78,96): 96>103 falso -> excluído), mantendo os avatares (b-g >= ~40)
+    seat_mask = (b > r + 12) & (b > g + 25) & (b > 100) & (mx < 205)
     btn_mask = (r > 180) & (g > 140) & (b < 130)  # disco dourado
     unit = (W * 0.03) / scale  # ~diâmetro do avatar na imagem reduzida
     seats = _blob_centers(seat_mask, scale, int(unit * unit * 0.35), unit * 2.6, 0.55, 1.8)
@@ -251,10 +253,19 @@ def _read_card(rgb: np.ndarray, box: tuple[int, int, int, int]) -> tuple[str, fl
     return rank + suit, min(rscore, sscore)
 
 
-def _read_pot(rgb: np.ndarray, gray: np.ndarray) -> tuple[int | None, float]:
-    """Lê o pote: região de texto claro na faixa central-superior (heurística F1)."""
+def _read_pot(
+    gray: np.ndarray, card_boxes: list[tuple[int, int, int, int]] = ()
+) -> tuple[int | None, float]:
+    """Lê o pote: região de texto claro na faixa central-superior (heurística F1).
+
+    APAGA as cartas já detectadas antes de ler: o topo claro do board caía na faixa do
+    pote e se fundia aos dígitos, produzindo um pote silenciosamente ERRADO em mãos com
+    board. Sem as cartas contaminando, a segmentação de dígitos fica limpa."""
     H, W = gray.shape
-    band = gray[int(H * 0.18) : int(H * 0.42), int(W * 0.30) : int(W * 0.70)]
+    g = gray.copy()
+    for x, y, w, h in card_boxes:  # zera (escurece) cada carta detectada
+        g[max(0, int(y)) : int(y + h), max(0, int(x)) : int(x + w)] = 0
+    band = g[int(H * 0.18) : int(H * 0.40), int(W * 0.30) : int(W * 0.70)]
     mask = band > 170  # texto claro
     cols = np.where(mask.any(0))[0]
     rows = np.where(mask.any(1))[0]
@@ -307,7 +318,7 @@ def recognize_table(img: Image.Image) -> RecognizedState:
             board.append((x, card))
     hole = [c for _, c in sorted(hole)][:2]
     board = [c for _, c in sorted(board)][:5]
-    pot, potc = _read_pot(rgb, gray)
+    pot, potc = _read_pot(gray, boxes)  # passa as cartas p/ apagá-las na leitura do pote
     if pot is not None:
         confs.append(potc)
 

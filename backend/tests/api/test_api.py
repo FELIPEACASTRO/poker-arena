@@ -83,7 +83,25 @@ def test_from_image_reads_a_synthetic_table(client, tmp_path, monkeypatch):
     assert body["engine"] == "F1-template"  # sem .onnx instalado -> baseline
 
 
-def test_from_image_rejects_out_of_range_opponents(client):
+def test_from_image_strict_mode_is_accepted(client, tmp_path, monkeypatch):
+    import io
+
+    from poker_arena.vision.synth import CANONICAL, render_table
+
+    monkeypatch.setenv("POKER_VISION_MODEL", str(tmp_path / "sem_modelo.onnx"))  # força F1
+    img, _ = render_table(seed=42, style=CANONICAL, n_board=5)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    r = client.post(
+        "/copilot/from-image",
+        files={"image": ("mesa.png", buf, "image/png")},
+        data={"my_stack": "1000", "strict": "true"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    # em modo strict: ou decide (leitura confiável) ou abstém com motivo — nunca 500
+    assert body["decision"] is not None or not body["sanity"]["ok"]
     import io
 
     from poker_arena.vision.synth import CANONICAL, render_table

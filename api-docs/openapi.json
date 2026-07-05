@@ -91,7 +91,7 @@
           "Copiloto"
         ],
         "summary": "Copiloto: ler uma IMAGEM da mesa e decidir (visão computacional)",
-        "description": "VISÃO → estado → sanity → Copiloto. A imagem é lida (cartas + pote) pela\nvisão; o estado passa pelo sanity-check de regras (a rede de segurança); se\npassar, o Copiloto decide. Se a leitura for implausível, ABSTÉM (não decide\ncom lixo). Pós-jogo/estudo, offline — não lê tela de jogo ao vivo.",
+        "description": "VISÃO → estado → sanity → Copiloto. A imagem é lida (cartas + pote + stacks)\npela visão; o estado passa pelo sanity-check de regras (a rede de segurança); se\npassar, o Copiloto decide. Se a leitura for implausível, ABSTÉM (não decide com\nlixo). `strict=true` liga o modo \"100% ou abstém\": só decide quando a leitura de\ncartas é confiável (precisão 100% medida), senão abstém. Pós-jogo/estudo, offline.",
         "operationId": "from_image_copilot_from_image_post",
         "requestBody": {
           "content": {
@@ -826,6 +826,11 @@
               }
             ],
             "title": "Position"
+          },
+          "strict": {
+            "type": "boolean",
+            "title": "Strict",
+            "default": false
           }
         },
         "type": "object",

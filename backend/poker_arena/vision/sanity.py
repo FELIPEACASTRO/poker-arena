@@ -23,8 +23,14 @@ class SanityResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def check_state(st: RecognizedState, *, min_confidence: float = 0.35) -> SanityResult:
-    """Valida o estado reconhecido contra as regras do poker. ok=False => abster."""
+def check_state(
+    st: RecognizedState, *, min_confidence: float = 0.35, abstain_below: float | None = None
+) -> SanityResult:
+    """Valida o estado reconhecido contra as regras do poker. ok=False => abster.
+
+    `abstain_below`: modo "100% ou abstém". Quando definido, uma leitura de cartas com
+    confiança abaixo desse limiar vira PROBLEMA (abstém) em vez de aviso — o copiloto
+    nunca decide sobre uma leitura fraca, garantindo alta precisão no que ele decide."""
     problems: list[str] = []
     warnings: list[str] = []
     cards = list(st.hole) + list(st.board)
@@ -41,7 +47,12 @@ def check_state(st: RecognizedState, *, min_confidence: float = 0.35) -> SanityR
     if st.pot is not None and st.pot < 0:
         problems.append("pote negativo")
 
-    if st.confidence < min_confidence:
+    if abstain_below is not None and cards and st.confidence < abstain_below:
+        problems.append(
+            f"confiança da leitura ({st.confidence}) abaixo do limiar seguro "
+            f"({abstain_below}) — abstenho em vez de decidir sobre leitura incerta"
+        )
+    elif st.confidence < min_confidence:
         warnings.append(f"confiança baixa ({st.confidence}) — leitura incerta")
     if st.pot is None:
         warnings.append("não consegui ler o pote")

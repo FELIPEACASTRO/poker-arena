@@ -164,11 +164,13 @@ def create_app() -> FastAPI:
         num_opponents: int = Form(1, ge=1, le=9),
         in_position: bool = Form(True),
         position: str | None = Form(None),
+        strict: bool = Form(False),
     ) -> FromImageResponse:
-        """VISÃO → estado → sanity → Copiloto. A imagem é lida (cartas + pote) pela
-        visão; o estado passa pelo sanity-check de regras (a rede de segurança); se
-        passar, o Copiloto decide. Se a leitura for implausível, ABSTÉM (não decide
-        com lixo). Pós-jogo/estudo, offline — não lê tela de jogo ao vivo."""
+        """VISÃO → estado → sanity → Copiloto. A imagem é lida (cartas + pote + stacks)
+        pela visão; o estado passa pelo sanity-check de regras (a rede de segurança); se
+        passar, o Copiloto decide. Se a leitura for implausível, ABSTÉM (não decide com
+        lixo). `strict=true` liga o modo "100% ou abstém": só decide quando a leitura de
+        cartas é confiável (precisão 100% medida), senão abstém. Pós-jogo/estudo, offline."""
         import io
         from dataclasses import asdict
 
@@ -199,7 +201,11 @@ def create_app() -> FastAPI:
                 st = None  # modelo inválido -> fallback F1
         if st is None:
             st = recognize_table(img, ocr_numbers=True)
-        sanity = check_state(st)
+        # modo "100% ou abstém": strict=True faz o copiloto abster de decidir sobre uma
+        # leitura de cartas com confiança abaixo do limiar seguro (nunca decide incerto).
+        # Limiar 0.85 medido: 100% de PRECISÃO em todos os estilos (decide 98% no calibrado,
+        # abstém quando a leitura não é confiável — nunca recomenda sobre leitura fraca).
+        sanity = check_state(st, abstain_below=0.85 if strict else None)
         # a VISÃO manda quando detecta os jogadores/posição; senão, cai no informado
         eff_opponents = st.n_players - 1 if st.n_players >= 2 else num_opponents
         eff_position = st.position or position

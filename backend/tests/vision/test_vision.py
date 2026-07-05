@@ -165,3 +165,15 @@ def test_sanity_warns_on_low_confidence():
     r = check_state(st)
     assert r.ok  # estrutura válida
     assert r.warnings  # mas avisa (confiança baixa / pote não lido)
+
+
+def test_modo_strict_abstem_de_leitura_incerta():
+    # modo "100% ou abstém": leitura VÁLIDA mas de baixa confiança -> abstém (não decide)
+    fraca = RecognizedState(hole=["As", "Kd"], board=[], pot=10, n_cards=2, confidence=0.5)
+    r = check_state(fraca, abstain_below=0.85)
+    assert not r.ok and any("limiar seguro" in p for p in r.problems)
+    # a mesma leitura, com confiança alta -> decide normalmente
+    forte = RecognizedState(hole=["As", "Kd"], board=[], pot=10, n_cards=2, confidence=0.95)
+    assert check_state(forte, abstain_below=0.85).ok
+    # sem strict (padrão), a leitura fraca passa (só avisa)
+    assert check_state(fraca).ok

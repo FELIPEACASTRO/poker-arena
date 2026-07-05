@@ -138,7 +138,9 @@ class OnnxRecognizer:
         self._session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
         self._input = self._session.get_inputs()[0].name
 
-    def recognize(self, img: Image.Image, ocr_numbers: bool = False) -> RecognizedState:
+    def recognize(
+        self, img: Image.Image, ocr_numbers: bool = False, deep_stacks: bool = False
+    ) -> RecognizedState:
         rgb = np.asarray(img.convert("RGB"))
         H, W = rgb.shape[:2]
         canvas, ratio, dw, dh = _letterbox(rgb)
@@ -168,7 +170,8 @@ class OnnxRecognizer:
         hero = (hx, H * 0.82)
         n_players, position = derive_position(seats, hero, button) if len(seats) >= 2 else (0, "")
 
-        pot, potc, stacks, src = _read_numbers(rgb, _gray(img), card_boxes, seats, ocr_numbers)
+        pot, potc, stacks, src = _read_numbers(
+            rgb, _gray(img), card_boxes, seats, ocr_numbers, deep_stacks)
         if pot is not None:
             confs.append(potc)
         return RecognizedState(
@@ -184,7 +187,9 @@ def _cached_recognizer(path: str, mtime: float) -> OnnxRecognizer:
     return OnnxRecognizer(Path(path))
 
 
-def recognize_table_onnx(img: Image.Image, ocr_numbers: bool = False) -> RecognizedState:
+def recognize_table_onnx(
+    img: Image.Image, ocr_numbers: bool = False, deep_stacks: bool = False
+) -> RecognizedState:
     """Reconhece com o modelo TREINADO (F2). Requer o .onnx em models/ (ou POKER_VISION_MODEL).
     A sessão é cacheada por (caminho, mtime) — recarrega sozinha se você trocar o modelo."""
     path = vision_model_path()
@@ -193,4 +198,5 @@ def recognize_table_onnx(img: Image.Image, ocr_numbers: bool = False) -> Recogni
             f"detector treinado não encontrado em {path}; rode o notebook 08 e coloque o "
             "poker_vision.onnx lá (ou defina POKER_VISION_MODEL). Sem ele, use a F1."
         )
-    return _cached_recognizer(str(path), path.stat().st_mtime).recognize(img, ocr_numbers)
+    rec = _cached_recognizer(str(path), path.stat().st_mtime)
+    return rec.recognize(img, ocr_numbers, deep_stacks)

@@ -25,9 +25,18 @@ def test_le_o_pote_exato_por_ocr():
 
 
 def test_le_stacks_dos_jogadores():
+    # deep_stacks=True: caminho de análise (offline) lê as fichas por assento
     img, _ = render_table(seed=3, style=CANONICAL, with_seats=True, n_board=3)
-    st = recognize_table(img, ocr_numbers=True)
+    st = recognize_table(img, ocr_numbers=True, deep_stacks=True)
     assert st.stacks and len(st.stacks) >= 2  # leu fichas de vários assentos
+
+
+def test_caminho_rapido_nao_le_stacks_mas_le_pote():
+    # padrão (deep_stacks=False, <=4s): pote sim, stacks não (não críticos p/ decisão)
+    img, truth = render_table(seed=7, style=CANONICAL, with_seats=True, n_board=5)
+    st = recognize_table(img, ocr_numbers=True)
+    assert st.pot == truth["pot"] and st.pot_source == "ocr"
+    assert st.stacks is None
 
 
 def test_interpret_separa_pote_de_stack_por_geometria():

@@ -300,23 +300,27 @@ def _read_pot(
 
 
 def _read_numbers(
-    rgb: np.ndarray, gray: np.ndarray, card_boxes, seats, ocr_numbers: bool
+    rgb: np.ndarray, gray: np.ndarray, card_boxes, seats, ocr_numbers: bool,
+    deep_stacks: bool = False,
 ) -> tuple[int | None, float, dict[int, int] | None, str]:
-    """Lê pote (+ stacks por assento). OCR forte quando pedido e disponível; senão o
-    template (fraco, sem stacks). Devolve (pote, confiança, stacks, fonte_do_pote)."""
+    """Lê pote (+ stacks se `deep_stacks`). OCR forte quando pedido e disponível; senão o
+    template (fraco). `deep_stacks=False` (padrão) = caminho de BAIXA LATÊNCIA (<=4s): só o
+    pote; True lê também os stacks por assento (offline). Devolve (pote, conf, stacks, fonte)."""
     if ocr_numbers:
         from . import ocr  # import tardio: rapidocr só quando o OCR é usado
 
         if ocr.available():
             H, W = gray.shape
-            sn = ocr.read_screen(rgb, W, H, list(card_boxes), list(seats))
+            sn = ocr.read_screen(rgb, W, H, list(card_boxes), list(seats), deep_stacks=deep_stacks)
             if sn.pot is not None:
                 return sn.pot, sn.pot_conf, sn.stacks, "ocr"
     pot, potc = _read_pot(gray, card_boxes)
     return pot, potc, None, "template"
 
 
-def recognize_table(img: Image.Image, ocr_numbers: bool = False) -> RecognizedState:
+def recognize_table(
+    img: Image.Image, ocr_numbers: bool = False, deep_stacks: bool = False
+) -> RecognizedState:
     """Pipeline completo: imagem -> estado (hole/board/pot [+ stacks]).
 
     `ocr_numbers=True` lê pote e stacks por OCR (forte, ~100%) quando o RapidOCR está
@@ -350,7 +354,7 @@ def recognize_table(img: Image.Image, ocr_numbers: bool = False) -> RecognizedSt
         hero = (Wpx / 2, H * 0.9)
     n_players, position = (derive_position(seats, hero, button) if len(seats) >= 2 else (0, ""))
 
-    pot, potc, stacks, src = _read_numbers(rgb, gray, boxes, seats, ocr_numbers)
+    pot, potc, stacks, src = _read_numbers(rgb, gray, boxes, seats, ocr_numbers, deep_stacks)
     if pot is not None:
         confs.append(potc)
 

@@ -34,12 +34,27 @@ def available() -> bool:
     return _engine() is not None
 
 
+_MAX_OCR_W = 900  # teto de largura do passe global de OCR — a detecção do RapidOCR escala
+# com a resolução; telas grandes (1300px+) estouram o orçamento de 4s. O pote (texto grande)
+# sobrevive ao downscale; os stacks pequenos são relidos por ROI ampliada depois.
+
+
 def read_numbers(rgb: np.ndarray, min_conf: float = 0.5) -> list[Number]:
-    """Todos os números inteiros lidos na imagem: (valor, cx, cy, confiança)."""
+    """Todos os números inteiros lidos na imagem: (valor, cx, cy, confiança). Faz DOWNSCALE
+    de telas grandes antes do OCR (latência) e reescala as coordenadas de volta ao original."""
     eng = _engine()
     if eng is None:
         return []
-    result, _ = eng(rgb)
+    H, W = rgb.shape[:2]
+    scale = min(1.0, _MAX_OCR_W / W)  # <1 só quando a imagem é maior que o teto
+    if scale < 1.0:
+        from PIL import Image
+        small = np.asarray(Image.fromarray(rgb).resize((round(W * scale), round(H * scale)),
+                                                       Image.BILINEAR))
+    else:
+        small = rgb
+    result, _ = eng(small)
+    inv = 1.0 / scale
     out: list[Number] = []
     for box, txt, conf in result or []:
         if conf < min_conf:
@@ -47,8 +62,8 @@ def read_numbers(rgb: np.ndarray, min_conf: float = 0.5) -> list[Number]:
         digits = re.sub(r"[^0-9]", "", txt)
         if not digits or len(digits) > 9:  # ignora vazio / lixo gigante
             continue
-        cx = float(np.mean([p[0] for p in box]))
-        cy = float(np.mean([p[1] for p in box]))
+        cx = float(np.mean([p[0] for p in box])) * inv  # coords de volta ao ORIGINAL
+        cy = float(np.mean([p[1] for p in box])) * inv
         out.append((int(digits), cx, cy, float(conf)))
     return out
 
@@ -144,19 +159,38 @@ def read_screen(
     H: int,
     card_boxes: list[tuple[int, int, int, int]] = (),
     seat_centers: list[tuple[float, float]] = (),
+    deep_stacks: bool = False,
+    max_roi: int = 6,
 ) -> ScreenNumbers:
-    """Leitura COMPLETA dos números: um passe global + RELEITURA por ROI (upscale) do
-    que faltou. Empurra pote/stacks pro teto sem custo quando o passe já resolveu."""
+    """Lê os números da tela (pote [+ stacks]).
+
+    `deep_stacks=False` (padrão, caminho de BAIXA LATÊNCIA <=4s): OCR só a faixa central do
+    POTE (recorte pequeno + upscale) — latência LIMITADA e previsível, independente de quanto
+    texto a tela tem; stacks não são críticos p/ decisão. `deep_stacks=True` (benchmark de
+    acurácia): passe global na imagem + releitura por assento (stacks), com teto `max_roi`."""
+    if not deep_stacks:  # caminho RÁPIDO (<=4s): recorta a faixa do pote (acima do board),
+        # 1 passe de OCR (poucos boxes -> tempo bounded); pega o número mais central.
+        x0, x1 = int(0.24 * W), int(0.76 * W)
+        y0, y1 = int(0.10 * H), int(0.40 * H)
+        crop = rgb[y0:y1, x0:x1]
+        nums = read_numbers(crop)  # já faz downscale se o recorte for grande
+        if nums:
+            cw, ch = x1 - x0, y1 - y0
+            val, _cx, _cy, conf = min(
+                nums, key=lambda n: (n[1] - cw / 2) ** 2 + (n[2] - ch / 2) ** 2)
+            return ScreenNumbers(pot=val, pot_conf=conf, stacks=None)
+        return ScreenNumbers(pot=None, pot_conf=0.0, stacks=None)
+
     sn = interpret(read_numbers(rgb), W, H, list(card_boxes), list(seat_centers))
     stacks = dict(sn.stacks or {})
-    for si, (sx, sy) in enumerate(seat_centers):  # stack faltando -> relê o assento ampliado
-        if si in stacks:
+    done = 0
+    for si, (sx, sy) in enumerate(seat_centers):  # stack faltando -> relê ampliado
+        if si in stacks or done >= max_roi:
             continue
         hit = read_roi(rgb, sx, sy + 0.035 * H, 0.085 * W, 0.075 * H)
+        done += 1
         if hit is not None:
             stacks[si] = hit[0]
-    # POTE: o passe global (que exclui cartas e escolhe o número central) é o melhor
-    # seletor; a ROI ampliada só entra como fallback quando o passe não achou pote.
     pot, pot_conf = sn.pot, sn.pot_conf
     if pot is None:
         hit = read_roi(rgb, W / 2, H * 0.28, 0.18 * W, 0.14 * H)

@@ -12,6 +12,7 @@ Uso: uv run python scripts/real_eval.py [pasta_de_imagens]
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 from PIL import Image
@@ -23,10 +24,22 @@ from poker_arena.vision import (
     vision_model_available,
 )
 
+_BUDGET_S = 4.0  # requisito da banca: reconhecer + processar + decidir em <= 4s
+
 
 def evaluate_image(path: Path) -> None:
     img = Image.open(path).convert("RGB")
     print(f"\n{'=' * 70}\nTELA REAL: {path.name}  ({img.width}x{img.height})")
+
+    # LATÊNCIA ponta-a-ponta (visão + OCR + sanity) — o caminho do endpoint ao vivo
+    t0 = time.time()
+    if vision_model_available():
+        check_state(recognize_table_onnx(img, ocr_numbers=True))
+    else:
+        check_state(recognize_table(img, ocr_numbers=True))
+    dt = time.time() - t0
+    tag = "OK <=4s" if dt <= _BUDGET_S else "ESTOUROU o limite de 4s"
+    print(f"  [LATÊNCIA] visão+OCR+sanity: {dt:.2f}s  [{tag}]")
 
     # F1 (baseline por template/blob) + OCR
     f1 = recognize_table(img, ocr_numbers=True)

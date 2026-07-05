@@ -113,16 +113,18 @@ def _draw_seats(
     hero_seat = 0
     button_seat = rng.randrange(n)
 
+    stacks: list[int] = []
     for sx, sy in centers:
         r = rng.randint(22, 30)
         col = rng.choice(_SEAT_COLORS)
         d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=col, outline=(230, 230, 235), width=2)
-        pw, ph = int(r * 2.1), int(r * 0.7)  # plaqueta de stack (escura, não confunde c/ carta)
-        d.rounded_rectangle([sx - pw / 2, sy + r + 2, sx + pw / 2, sy + r + 2 + ph],
-                            radius=4, fill=(28, 30, 36))
-        sf = _font(style.font, max(11, int(ph * 0.7)))
-        stk = str(rng.randint(5, 300))
-        d.text((sx - pw / 2 + 6, sy + r + 3), stk, font=sf, fill=(225, 225, 210))
+        pw, ph = int(r * 2.4), int(r * 0.8)  # plaqueta de stack (escura, não confunde c/ carta)
+        py = min(sy + r + 2, H - 4 - ph)  # nunca deixa a plaqueta sair pela borda inferior
+        d.rounded_rectangle([sx - pw / 2, py, sx + pw / 2, py + ph], radius=4, fill=(28, 30, 36))
+        sf = _font(style.font, max(13, int(ph * 0.78)))
+        val = rng.randint(5, 300)
+        stacks.append(val)
+        d.text((sx - pw / 2 + 6, py), str(val), font=sf, fill=(230, 230, 215))
 
     sx, sy = centers[button_seat]  # botão AO LADO do assento (radial leve + tangencial),
     ux, uy = (cx - sx), (cy - sy)  # nunca em cima das cartas do herói
@@ -132,7 +134,8 @@ def _draw_seats(
     by = sy + uy * 16 + ux * 42
     n_players, position = derive_position(centers, centers[hero_seat], (bx, by))
     return {"seats": centers, "hero_seat": hero_seat, "button_seat": button_seat,
-            "n_players": n_players, "position": position, "button_xy": (bx, by)}
+            "n_players": n_players, "position": position, "button_xy": (bx, by),
+            "stacks": stacks}
 
 
 def _draw_button(d: ImageDraw.ImageDraw, style: Style, bx: float, by: float) -> None:

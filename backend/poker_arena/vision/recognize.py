@@ -309,8 +309,7 @@ def _read_numbers(
 
         if ocr.available():
             H, W = gray.shape
-            nums = ocr.read_numbers(rgb)
-            sn = ocr.interpret(nums, W, H, list(card_boxes), list(seats))
+            sn = ocr.read_screen(rgb, W, H, list(card_boxes), list(seats))
             if sn.pot is not None:
                 return sn.pot, sn.pot_conf, sn.stacks, "ocr"
     pot, potc = _read_pot(gray, card_boxes)

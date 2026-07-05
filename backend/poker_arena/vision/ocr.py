@@ -53,6 +53,32 @@ def read_numbers(rgb: np.ndarray, min_conf: float = 0.5) -> list[Number]:
     return out
 
 
+def read_roi(rgb: np.ndarray, cx: float, cy: float, hw: float, hh: float,
+             scale: float = 3.0) -> tuple[int, float] | None:
+    """Lê UM número num recorte pequeno, com UPSCALE (números de HUD pequenos ficam
+    legíveis). Devolve (valor, confiança) do número mais confiante, ou None."""
+    from PIL import Image
+
+    eng = _engine()
+    if eng is None:
+        return None
+    H, W = rgb.shape[:2]
+    x0, y0 = max(0, int(cx - hw)), max(0, int(cy - hh))
+    x1, y1 = min(W, int(cx + hw)), min(H, int(cy + hh))
+    if x1 - x0 < 6 or y1 - y0 < 6:
+        return None
+    crop = rgb[y0:y1, x0:x1]
+    im = Image.fromarray(crop)
+    big = im.resize((int(im.width * scale), int(im.height * scale)), Image.LANCZOS)
+    result, _ = eng(np.asarray(big))
+    best = None
+    for _box, txt, conf in result or []:
+        digits = re.sub(r"[^0-9]", "", txt)
+        if digits and 0 < len(digits) <= 9 and (best is None or conf > best[1]):
+            best = (int(digits), float(conf))
+    return best
+
+
 def _inside_any(cx: float, cy: float, boxes: list[tuple[int, int, int, int]]) -> bool:
     """O ponto cai dentro de alguma caixa de carta? (número = índice da carta, ignorar)."""
     return any(x <= cx <= x + w and y <= cy <= y + h for x, y, w, h in boxes)
@@ -109,4 +135,31 @@ def interpret(
             bestscore, best = score, i
     if best is not None:
         pot, _, _, pot_conf = nums[best]
+    return ScreenNumbers(pot=pot, pot_conf=pot_conf, stacks=stacks or None)
+
+
+def read_screen(
+    rgb: np.ndarray,
+    W: int,
+    H: int,
+    card_boxes: list[tuple[int, int, int, int]] = (),
+    seat_centers: list[tuple[float, float]] = (),
+) -> ScreenNumbers:
+    """Leitura COMPLETA dos números: um passe global + RELEITURA por ROI (upscale) do
+    que faltou. Empurra pote/stacks pro teto sem custo quando o passe já resolveu."""
+    sn = interpret(read_numbers(rgb), W, H, list(card_boxes), list(seat_centers))
+    stacks = dict(sn.stacks or {})
+    for si, (sx, sy) in enumerate(seat_centers):  # stack faltando -> relê o assento ampliado
+        if si in stacks:
+            continue
+        hit = read_roi(rgb, sx, sy + 0.035 * H, 0.085 * W, 0.075 * H)
+        if hit is not None:
+            stacks[si] = hit[0]
+    # POTE: o passe global (que exclui cartas e escolhe o número central) é o melhor
+    # seletor; a ROI ampliada só entra como fallback quando o passe não achou pote.
+    pot, pot_conf = sn.pot, sn.pot_conf
+    if pot is None:
+        hit = read_roi(rgb, W / 2, H * 0.28, 0.18 * W, 0.14 * H)
+        if hit is not None:
+            pot, pot_conf = hit
     return ScreenNumbers(pot=pot, pot_conf=pot_conf, stacks=stacks or None)

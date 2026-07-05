@@ -917,6 +917,7 @@ body {
 .cp-review { margin-top: 16px; }
 .cp-review-sum { font-size: 13.5px; color: var(--text); background: var(--accent-soft); border-radius: var(--r-md); padding: 10px 12px; margin-bottom: 12px; }
 .cp-engine { display: inline-block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 999px; background: var(--accent); color: #fff; vertical-align: middle; }
+.cp-ocr { font-size: 9px; font-weight: 700; color: var(--pos); letter-spacing: 0.03em; }
 .cp-dec { border-left: 3px solid var(--border); background: var(--surface-2); border-radius: var(--r-md); padding: 9px 12px; margin-bottom: 8px; }
 .cp-dec.is-ok { border-left-color: var(--pos); }
 .cp-dec.is-diff { border-left-color: var(--warn); }

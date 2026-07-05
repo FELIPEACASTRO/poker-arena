@@ -215,6 +215,8 @@ export interface FromImageResult {
     confidence: number
     n_players: number // participantes detectados na mesa (0 = não detectou)
     position: string // posição do herói derivada dos assentos + botão ('' se não detectou)
+    stacks: Record<string, number> // fichas por assento (índice -> fichas), via OCR
+    pot_source: string // 'ocr' (forte) ou 'template' (fraco)
   }
   sanity: { ok: boolean; problems: string[]; warnings: string[] }
   decision: CopilotResult | null

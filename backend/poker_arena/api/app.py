@@ -193,12 +193,12 @@ def create_app() -> FastAPI:
         engine, st = "F1-template", None
         if vision_model_available():
             try:
-                st = recognize_table_onnx(img)
+                st = recognize_table_onnx(img, ocr_numbers=True)  # OCR lê pote + stacks
                 engine = "F2-onnx"
             except Exception:
                 st = None  # modelo inválido -> fallback F1
         if st is None:
-            st = recognize_table(img)
+            st = recognize_table(img, ocr_numbers=True)
         sanity = check_state(st)
         # a VISÃO manda quando detecta os jogadores/posição; senão, cai no informado
         eff_opponents = st.n_players - 1 if st.n_players >= 2 else num_opponents
@@ -219,7 +219,8 @@ def create_app() -> FastAPI:
             engine=engine,
             detected={"hole": st.hole, "board": st.board, "pot": st.pot,
                       "n_cards": st.n_cards, "confidence": st.confidence,
-                      "n_players": st.n_players, "position": st.position},
+                      "n_players": st.n_players, "position": st.position,
+                      "stacks": st.stacks or {}, "pot_source": st.pot_source},
             sanity={"ok": sanity.ok, "problems": sanity.problems, "warnings": sanity.warnings},
             decision=decision,
         )

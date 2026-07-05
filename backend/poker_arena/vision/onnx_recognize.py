@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from .recognize import RecognizedState, _gray, _read_pot
+from .recognize import RecognizedState, _gray, _read_numbers
 from .seats import derive_position
 from .synth import RANKS, SUITS
 
@@ -138,7 +138,7 @@ class OnnxRecognizer:
         self._session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
         self._input = self._session.get_inputs()[0].name
 
-    def recognize(self, img: Image.Image) -> RecognizedState:
+    def recognize(self, img: Image.Image, ocr_numbers: bool = False) -> RecognizedState:
         rgb = np.asarray(img.convert("RGB"))
         H, W = rgb.shape[:2]
         canvas, ratio, dw, dh = _letterbox(rgb)
@@ -168,14 +168,14 @@ class OnnxRecognizer:
         hero = (hx, H * 0.82)
         n_players, position = derive_position(seats, hero, button) if len(seats) >= 2 else (0, "")
 
-        pot, potc = _read_pot(_gray(img), card_boxes)  # apaga as cartas antes de ler o pote
+        pot, potc, stacks, src = _read_numbers(rgb, _gray(img), card_boxes, seats, ocr_numbers)
         if pot is not None:
             confs.append(potc)
         return RecognizedState(
             hole=hole_sorted, board=board_sorted, pot=pot,
             n_cards=len(hole_sorted) + len(board_sorted),
             confidence=round(float(np.mean(confs)) if confs else 0.0, 3),
-            n_players=n_players, position=position,
+            n_players=n_players, position=position, stacks=stacks, pot_source=src,
         )
 
 
@@ -184,7 +184,7 @@ def _cached_recognizer(path: str, mtime: float) -> OnnxRecognizer:
     return OnnxRecognizer(Path(path))
 
 
-def recognize_table_onnx(img: Image.Image) -> RecognizedState:
+def recognize_table_onnx(img: Image.Image, ocr_numbers: bool = False) -> RecognizedState:
     """Reconhece com o modelo TREINADO (F2). Requer o .onnx em models/ (ou POKER_VISION_MODEL).
     A sessão é cacheada por (caminho, mtime) — recarrega sozinha se você trocar o modelo."""
     path = vision_model_path()
@@ -193,4 +193,4 @@ def recognize_table_onnx(img: Image.Image) -> RecognizedState:
             f"detector treinado não encontrado em {path}; rode o notebook 08 e coloque o "
             "poker_vision.onnx lá (ou defina POKER_VISION_MODEL). Sem ele, use a F1."
         )
-    return _cached_recognizer(str(path), path.stat().st_mtime).recognize(img)
+    return _cached_recognizer(str(path), path.stat().st_mtime).recognize(img, ocr_numbers)

@@ -399,6 +399,8 @@ class DetectedStateSchema(BaseModel):
     confidence: float = Field(description="Confiança média da leitura, 0..1.")
     n_players: int = Field(default=0, description="Participantes detectados na mesa (0 = não detectou; cai no valor informado).")
     position: str = Field(default="", description="Posição do herói derivada dos assentos + botão (BTN/SB/BB/UTG/...). Vazia se não detectou.")
+    stacks: dict[int, int] = Field(default={}, description="Fichas lidas por assento (índice do assento -> fichas), via OCR. Vazio se o OCR não estiver disponível.")
+    pot_source: str = Field(default="template", description="De onde veio o pote: `ocr` (RapidOCR, forte ~100%) ou `template` (dígitos por template, fraco).")
 
 
 class SanitySchema(BaseModel):

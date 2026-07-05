@@ -1511,6 +1511,21 @@
             "title": "Position",
             "description": "Posição do herói derivada dos assentos + botão (BTN/SB/BB/UTG/...). Vazia se não detectou.",
             "default": ""
+          },
+          "stacks": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Stacks",
+            "description": "Fichas lidas por assento (índice do assento -> fichas), via OCR. Vazio se o OCR não estiver disponível.",
+            "default": {}
+          },
+          "pot_source": {
+            "type": "string",
+            "title": "Pot Source",
+            "description": "De onde veio o pote: `ocr` (RapidOCR, forte ~100%) ou `template` (dígitos por template, fraco).",
+            "default": "template"
           }
         },
         "type": "object",

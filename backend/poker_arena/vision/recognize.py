@@ -39,6 +39,8 @@ class RecognizedState:
     confidence: float = 1.0  # menor quando algo ficou ambíguo
     n_players: int = 0  # participantes na mesa (0 = não detectado)
     position: str = ""  # posição do herói (BTN/SB/BB/UTG/...) — "" se indefinida
+    stacks: dict[int, int] | None = None  # fichas lidas por assento (OCR) — None se não leu
+    pot_source: str = "template"  # de onde veio o pote: "ocr" (forte) ou "template" (fraco)
 
 
 def _gray(img: Image.Image) -> np.ndarray:
@@ -297,8 +299,29 @@ def _read_pot(
         return None, 0.0
 
 
-def recognize_table(img: Image.Image) -> RecognizedState:
-    """Pipeline completo: imagem -> estado (hole/board/pot)."""
+def _read_numbers(
+    rgb: np.ndarray, gray: np.ndarray, card_boxes, seats, ocr_numbers: bool
+) -> tuple[int | None, float, dict[int, int] | None, str]:
+    """Lê pote (+ stacks por assento). OCR forte quando pedido e disponível; senão o
+    template (fraco, sem stacks). Devolve (pote, confiança, stacks, fonte_do_pote)."""
+    if ocr_numbers:
+        from . import ocr  # import tardio: rapidocr só quando o OCR é usado
+
+        if ocr.available():
+            H, W = gray.shape
+            nums = ocr.read_numbers(rgb)
+            sn = ocr.interpret(nums, W, H, list(card_boxes), list(seats))
+            if sn.pot is not None:
+                return sn.pot, sn.pot_conf, sn.stacks, "ocr"
+    pot, potc = _read_pot(gray, card_boxes)
+    return pot, potc, None, "template"
+
+
+def recognize_table(img: Image.Image, ocr_numbers: bool = False) -> RecognizedState:
+    """Pipeline completo: imagem -> estado (hole/board/pot [+ stacks]).
+
+    `ocr_numbers=True` lê pote e stacks por OCR (forte, ~100%) quando o RapidOCR está
+    instalado; senão cai no leitor por template (fraco). Padrão False = rápido (testes)."""
     rgb = np.asarray(img.convert("RGB"))
     gray = _gray(img)
     H = gray.shape[0]
@@ -318,9 +341,6 @@ def recognize_table(img: Image.Image) -> RecognizedState:
             board.append((x, card))
     hole = [c for _, c in sorted(hole)][:2]
     board = [c for _, c in sorted(board)][:5]
-    pot, potc = _read_pot(gray, boxes)  # passa as cartas p/ apagá-las na leitura do pote
-    if pot is not None:
-        confs.append(potc)
 
     # participantes + posição: assentos/botão por blob -> geometria (ordem de ação)
     seats, button = _locate_seats(rgb)
@@ -331,8 +351,12 @@ def recognize_table(img: Image.Image) -> RecognizedState:
         hero = (Wpx / 2, H * 0.9)
     n_players, position = (derive_position(seats, hero, button) if len(seats) >= 2 else (0, ""))
 
+    pot, potc, stacks, src = _read_numbers(rgb, gray, boxes, seats, ocr_numbers)
+    if pot is not None:
+        confs.append(potc)
+
     return RecognizedState(
         hole=hole, board=board, pot=pot, n_cards=len(reads),
         confidence=round(float(np.mean(confs)) if confs else 0.0, 3),
-        n_players=n_players, position=position,
+        n_players=n_players, position=position, stacks=stacks, pot_source=src,
     )

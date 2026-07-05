@@ -175,9 +175,15 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
                 <div className="cp-review-sum">
                   👁️ Detectado <span className="cp-engine">{vision.engine === 'F2-onnx' ? 'IA treinada' : 'baseline'}</span>: <b>{vision.detected.hole.join(' ') || '—'}</b>
                   {vision.detected.board.length > 0 && <> · board <b>{vision.detected.board.join(' ')}</b></>}
-                  {vision.detected.pot != null && <> · pote <b>{vision.detected.pot}</b></>}
+                  {vision.detected.pot != null && (
+                    <> · pote <b>{vision.detected.pot}</b>
+                    {vision.detected.pot_source === 'ocr' && <sup className="cp-ocr"> OCR</sup>}</>
+                  )}
                   {vision.detected.n_players > 0 && <> · <b>{vision.detected.n_players}</b> jogadores</>}
-                  {vision.detected.position && <> · posição <b>{vision.detected.position}</b></>}{' '}
+                  {vision.detected.position && <> · posição <b>{vision.detected.position}</b></>}
+                  {Object.keys(vision.detected.stacks ?? {}).length > 0 && (
+                    <> · stacks <b>{Object.values(vision.detected.stacks).join(', ')}</b></>
+                  )}{' '}
                   <small>(confiança {Math.round(vision.detected.confidence * 100)}%)</small>
                 </div>
                 {!vision.sanity.ok && (

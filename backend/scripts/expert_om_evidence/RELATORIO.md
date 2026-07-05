@@ -69,19 +69,32 @@ melhor é +4.5, IC cruza 0) e ainda **perde vs maniac**. Não cruza a barra de p
 
 ---
 
-## Mecanismo — POR QUE não ajuda
+## Mecanismo — POR QUE não ajuda (corrigido pela revisão adversarial)
 
-1. **Taxa de decisões alteradas pelo warp é BAIXA (1–23%; ~1–2% vs o espelho).** O piso
-   `min_prob_ratio` + a confiança da política treinada absorvem o desvio: na maioria dos
-   spots o overlay é um no-op. A política já é coerente; sobra pouca massa pra desviar.
-2. **V1 quebra o equilíbrio e é punida:** somar agressão uniforme com mão fraca = blefar
-   contra quem paga (station) e virar previsível pro espelho.
-3. **Nem a V2 corrigida ganha:** a exploração que sobrevive à política confiante é pequena,
-   e o read linear de `fold_to_bet` não captura o exploit certo vs um agressor (contra o
-   maniac o certo é PAGAR mais fino / trapar, não ajustar o próprio blefe).
+> Minha explicação inicial ("a taxa de alteração baixa PROVA que não há exploit a
+> extrair") foi **REFUTADA** pela revisão: ao estender a grade de k até 8, **há exploit
+> significativo vs um over-folder puro** (V1 overfolder k=8: **+60 [+23,+98] SIG**), e a
+> taxa baixa era **artefato do k capado** (em k=8 a alteração é 34–36%; em k=20, 65–90%),
+> não ausência de exploit. A justificativa mudou; o veredito não.
+
+O motivo REAL, mais fundamental:
+
+1. **O trade-off é INTRÍNSECO.** O mesmo botão (k) que faz o over-folder ganhar é
+   **monotonicamente acoplado ao desastre** nos outros: em k=8, V1 dá overfolder +60 SIG
+   **mas** station −550, maniac −412, robustos negativos. Subir a dose pra capturar o
+   exploit só vira o Expert num **maníaco stackeado pelos callers**. Não há k que passe o
+   critério (ganhar em ≥2 exploráveis E ser não-inferior nos robustos).
+2. **Raiz: 6-max multiway.** Enfrentando aposta há ~4,3 jogadores vivos em média (potes
+   4–6-way dominam). "Blefar pra fazer foldar" é um exploit **heads-up mal-aplicado a
+   multiway**, e o read **escalar agregado** (`fold_to_bet` do campo, sem contar vivos nem
+   por-assento) não distingue os dois casos.
+3. **V1 quebra o equilíbrio e é punida** (blefa contra quem paga; vira previsível pro
+   espelho). **A V2 corrigida** elimina o desastre da station mas não captura ganho
+   significativo em lugar nenhum — e o read linear não captura o exploit certo vs agressor
+   (contra o maniac o certo é PAGAR fino/trapar, não ajustar o próprio blefe).
 
 Mesma lição do *equity guard*: **remendo de inferência sobre a política treinada não a
-melhora.**
+melhora — e aqui, piora com implementação mais forte.**
 
 ---
 
@@ -95,4 +108,29 @@ melhora.**
 - **Veredito mecânico (pré-registrado, aceito como saiu):** REPROVA. Mantém o Expert puro
   (GTO) como default, exatamente como o equity guard ficou OFF.
 
-*(Veredito da revisão adversarial: ver seção abaixo.)*
+---
+
+## Revisão adversarial (3 lentes tentaram REFUTAR o REPROVA)
+
+Os três atacantes convergiram: **REPROVA confirmado** (nenhum conseguiu flipar pra
+"melhora"). O que sobreviveu e o que caiu:
+
+- **Caiu (justificativa):** "alteração baixa prova ausência de exploit" — FALSO. Estendendo
+  k até 8, há exploit SIG vs over-folder puro (+60). Corrigido acima.
+- **Sobreviveu (veredito):** nenhum k plausível (1–8, boundary estendido) passa o critério;
+  o botão que salva o explorável é acoplado ao desastre nos robustos. O melhor caso
+  exploravel (V2 overfolder +4.5) precisaria de **N~75.000 mãos** só pra virar
+  significativo mantendo o ponto (N=4000 está 10×+ disso) e, mesmo assim, +4.5 bb/100 é
+  trivial enquanto a mesma variante perde −90.7 SIG pro maniac. As PERDAS significativas
+  são robustas a N (o IC encolhe **em torno** do mesmo ponto; −249 não migra pra 0).
+
+**Caveat validada (o escopo honesto):** mediu-se **OVERLAY** de inferência sobre vilões
+**sintéticos e estáticos** em 6-max. Ficaram **fora do escopo**: (a) **RE-TREINO** com
+features de oponente (outra técnica, não um overlay), (b) um exploit **por-assento /
+ciente-de-vivos** (o overlay escalar não distingue multiway de heads-up), (c) vilões reais
+que re-adaptam — sendo que (c) só **reforça** REPROVA (estático é o cenário mais favorável
+ao exploit; humano puniria o desvio).
+
+**Conclusão acionável (juiz):** *não integrar o overlay de exploração ao Expert — não
+melhora e machuca vs agressivos; se retomar opponent-awareness, fazer por RE-TREINO com
+features por-assento/ciente-de-vivos, que é outra técnica e exige novo pré-registro.*

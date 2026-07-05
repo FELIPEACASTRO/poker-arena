@@ -203,15 +203,22 @@ def _run(villain: str, seeds: list[int], k: float, variant: str | None,
 
 
 # ----------------- estatística -----------------
-def bootstrap_ci(d: list[float], iters: int = 10000, seed: int = 1) -> tuple[float, float]:
-    """IC95% da média por BOOTSTRAP (numpy, vetorizado) — robusto à cauda pesada do poker."""
+def bootstrap_ci(d: list[float], iters: int = 10000, seed: int = 1,
+                 chunk: int = 500) -> tuple[float, float]:
+    """IC95% da média por BOOTSTRAP (numpy) — robusto à cauda pesada do poker. Processa
+    em BLOCOS pra não estourar memória (matriz (iters, n) inteira seria enorme com n grande)."""
     import numpy as np
 
     arr = np.asarray(d, dtype=np.float64)
     n = len(arr)
     rng = np.random.default_rng(seed)
-    idx = rng.integers(0, n, size=(iters, n))
-    means = arr[idx].mean(axis=1)
+    means = np.empty(iters)
+    done = 0
+    while done < iters:
+        c = min(chunk, iters - done)
+        idx = rng.integers(0, n, size=(c, n))
+        means[done:done + c] = arr[idx].mean(axis=1)
+        done += c
     return float(np.percentile(means, 2.5)), float(np.percentile(means, 97.5))
 
 
@@ -241,7 +248,10 @@ def main() -> None:
     print("# pareado por baralho, IC95% bootstrap. seeds calib!=teste. vil calib!=teste.\n")
 
     EXPLOITABLE = ["overfolder", "station", "maniac"]
-    ROBUST = ["montecarlo", "heuristic", "expert_mirror"]
+    # montecarlo dropado do pool: 5 bots simulando equity/decisão o tornam ~10x mais lento
+    # e inviabilizam o run. heuristic (benchmark canônico do equity guard) + expert_mirror
+    # (self-play) são juízes robustos suficientes pro teste de não-inferioridade.
+    ROBUST = ["heuristic", "expert_mirror"]
     CONTROL = ["random"]
     base_cache: dict[str, list[float]] = {}
 

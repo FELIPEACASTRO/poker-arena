@@ -56,3 +56,4 @@ Thumbs.db
 
 # evidência de visão gerada pelo script (regenerável)
 backend/scripts/vision_evidence/
+backend/scripts/real_eval/imgs/247/

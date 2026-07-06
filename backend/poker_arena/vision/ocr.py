@@ -12,6 +12,7 @@ reconhecedor cai no leitor por template. Carrega o modelo UMA vez (singleton).
 from __future__ import annotations
 
 import re
+import threading
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -19,15 +20,26 @@ import numpy as np
 
 Number = tuple[int, float, float, float]  # (valor, cx, cy, confiança) em pixels
 
+_engine_lock = threading.Lock()
+
 
 @lru_cache(maxsize=1)
-def _engine():
-    """Carrega o RapidOCR uma vez. Retorna None se a lib não está instalada."""
+def _engine_cached():
     try:
         from rapidocr_onnxruntime import RapidOCR
     except Exception:
         return None
     return RapidOCR()
+
+
+def _engine():
+    """Carrega o RapidOCR uma vez (singleton). Retorna None se a lib não está instalada.
+
+    O lock serializa a 1ª construção: se o warmup no boot e uma requisição concorrente
+    competem, um ESPERA o outro em vez de os dois carregarem o engine em duplicata
+    (o `lru_cache` do CPython não serializa misses concorrentes da mesma chave)."""
+    with _engine_lock:
+        return _engine_cached()
 
 
 def available() -> bool:

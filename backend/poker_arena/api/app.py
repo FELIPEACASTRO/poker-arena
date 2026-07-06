@@ -7,9 +7,21 @@ Dependência injetada via `Annotated[...]` (idioma moderno do FastAPI).
 
 from __future__ import annotations
 
+import os
+import threading
+from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
@@ -94,6 +106,44 @@ TAGS_METADATA = [
 ]
 
 
+def _warmup_vision() -> None:
+    """Carrega os modelos de visão (ONNX) + OCR (RapidOCR) rodando UMA inferência dummy.
+
+    O custo dominante da PRIMEIRA leitura é CARREGAR os modelos (sessão ONNX + engine
+    RapidOCR) — cold-start medido em ~4-6s (varia com o tamanho da imagem). Pagando esse
+    custo no boot, POUCOS SEGUNDOS depois de subir o servidor o /copilot/from-image já fica
+    no regime quente (~1.5-2.4s), dentro do orçamento de 4s da banca. Os singletons têm lock
+    (ocr._engine / onnx_recognize._cached_recognizer): uma requisição que chegue DURANTE o
+    warmup espera a MESMA carga (paga uma vez), nunca um cold-start duplicado — mas quem
+    chegar antes do warmup terminar ainda espera a carga. Best-effort: falha aqui não derruba
+    o servidor (roda em thread daemon, tudo sob try/except)."""
+    try:
+        import numpy as np
+        from PIL import Image as PILImage
+
+        from ..vision import recognize_table, recognize_table_onnx, vision_model_available
+
+        dummy = PILImage.fromarray(np.full((400, 640, 3), 60, np.uint8))  # cinza: força o load
+        if vision_model_available():
+            try:
+                recognize_table_onnx(dummy, ocr_numbers=True)
+            except Exception:
+                recognize_table(dummy, ocr_numbers=True)
+        else:
+            recognize_table(dummy, ocr_numbers=True)
+    except Exception:  # noqa: BLE001 — aquecimento é opcional, nunca fatal
+        pass
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """Aquece a visão num thread daemon ao subir (não bloqueia o boot; some com o processo).
+    Desligável com POKER_WARMUP=0 (ex.: testes que não tocam na visão)."""
+    if os.environ.get("POKER_WARMUP", "1") != "0":
+        threading.Thread(target=_warmup_vision, name="vision-warmup", daemon=True).start()
+    yield
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Poker Arena API",
@@ -103,6 +153,7 @@ def create_app() -> FastAPI:
         openapi_tags=TAGS_METADATA,
         contact={"name": "Poker Arena", "url": "http://localhost:5173"},
         license_info={"name": "Uso educacional (feira de ciências)"},
+        lifespan=_lifespan,
     )
     app.add_middleware(
         CORSMiddleware,
@@ -179,9 +230,11 @@ def create_app() -> FastAPI:
         from ..application.copilot import review_spot
         from ..vision import (
             check_state,
+            read_table_vlm,
             recognize_table,
             recognize_table_onnx,
             vision_model_available,
+            vlm_available,
         )
 
         try:
@@ -206,6 +259,18 @@ def create_app() -> FastAPI:
         # Limiar 0.85 medido: 100% de PRECISÃO em todos os estilos (decide 98% no calibrado,
         # abstém quando a leitura não é confiável — nunca recomenda sobre leitura fraca).
         sanity = check_state(st, abstain_below=0.85 if strict else None)
+        # FALLBACK AGNÓSTICO (F3-VLM): quando o caminho rápido (F1/F2) ABSTÉM — sinal de UI
+        # inédita que o detector keyed-a-pixels não leu — e há um VLM configurado, o VLM lê
+        # SEMANTICAMENTE (funciona em layout nunca visto). A saída passa pela MESMA rede de
+        # abstenção; erro/indisponibilidade do VLM mantém o abstain do caminho rápido.
+        if not sanity.ok and vlm_available():
+            try:
+                vst = read_table_vlm(img)
+                vsan = check_state(vst, abstain_below=0.85 if strict else None)
+                if vsan.ok:
+                    st, sanity, engine = vst, vsan, "F3-vlm"
+            except Exception:
+                pass  # VLM off/erro -> preserva o abstain do caminho rápido
         # a VISÃO manda quando detecta os jogadores/posição; senão, cai no informado
         eff_opponents = st.n_players - 1 if st.n_players >= 2 else num_opponents
         eff_position = st.position or position

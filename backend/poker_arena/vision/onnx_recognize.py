@@ -14,6 +14,7 @@ também conta participantes e deriva a posição, como a F1 faz por geometria.
 from __future__ import annotations
 
 import os
+import threading
 from functools import lru_cache
 from pathlib import Path
 
@@ -182,9 +183,20 @@ class OnnxRecognizer:
         )
 
 
+_recognizer_lock = threading.Lock()
+
+
 @lru_cache(maxsize=2)
-def _cached_recognizer(path: str, mtime: float) -> OnnxRecognizer:
+def _cached_recognizer_impl(path: str, mtime: float) -> OnnxRecognizer:
     return OnnxRecognizer(Path(path))
+
+
+def _cached_recognizer(path: str, mtime: float) -> OnnxRecognizer:
+    """Sessão ONNX cacheada por (caminho, mtime). O lock serializa a 1ª construção pra que
+    o warmup no boot e uma requisição concorrente NÃO carreguem a sessão em duplicata (a que
+    chegar durante a carga espera a MESMA sessão, em vez de refazer o cold-start)."""
+    with _recognizer_lock:
+        return _cached_recognizer_impl(path, mtime)
 
 
 def recognize_table_onnx(

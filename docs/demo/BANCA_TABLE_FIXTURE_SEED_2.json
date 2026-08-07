@@ -1,0 +1,23 @@
+{
+  "external_validation": false,
+  "fixture": "synthetic-canonical-seed-2",
+  "png_sha256": "fe775400fe6a268ad792dc72d26e44779eb7fb2cd5e3d1f6a1ec8d3e4d353beb",
+  "schema_version": 1,
+  "scope": "local-defense-pipeline-demonstration-only",
+  "truth": {
+    "board": [
+      "4h",
+      "7h",
+      "3s",
+      "3d",
+      "Ac"
+    ],
+    "hole": [
+      "5c",
+      "9h"
+    ],
+    "n_players": 5,
+    "position": "CO",
+    "pot": 25988
+  }
+}

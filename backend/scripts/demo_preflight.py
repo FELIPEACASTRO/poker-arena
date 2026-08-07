@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import io
+import hashlib
 import json
 import os
 import time
@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any
 
 from poker_arena.api.app import create_app
-from poker_arena.vision.synth import CANONICAL, render_table
 from scripts.scan_secrets import scan
 from scripts.validate_distribution import validate_distribution
 
@@ -19,6 +18,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 WORKSPACE_ROOT = PROJECT_ROOT.parent
 DEMO_SEED = 2
 MAX_WARM_REQUEST_SECONDS = 4.0
+DEMO_IMAGE = PROJECT_ROOT / "docs" / "demo" / "BANCA_TABLE_FIXTURE_SEED_2.png"
+DEMO_RECEIPT = PROJECT_ROOT / "docs" / "demo" / "BANCA_TABLE_FIXTURE_SEED_2.json"
 
 
 class DemoPreflightError(RuntimeError):
@@ -44,6 +45,8 @@ def _require_local_dependencies() -> None:
         PROJECT_ROOT / "frontend" / "dist" / "index.html",
         PROJECT_ROOT / "api-docs" / "openapi.json",
         PROJECT_ROOT / "docs" / "GUIA_DE_NAVEGACAO_POKER_ARENA.pdf",
+        DEMO_IMAGE,
+        DEMO_RECEIPT,
     )
     missing = [path.relative_to(PROJECT_ROOT).as_posix() for path in required if not path.is_file()]
     if missing:
@@ -58,22 +61,66 @@ def _exercise_real_image_route() -> dict[str, Any]:
         )
         from fastapi.testclient import TestClient
 
-    image, truth = render_table(
-        seed=DEMO_SEED,
-        style=CANONICAL,
-        n_board=5,
-        noise=0.0,
-        with_seats=True,
-    )
-    payload = io.BytesIO()
-    image.save(payload, format="PNG")
+    image_bytes = DEMO_IMAGE.read_bytes()
+    if len(image_bytes) > 16 * 1024 * 1024:
+        raise DemoPreflightError("fixture da banca excede o perfil de tamanho")
+    receipt = json.loads(DEMO_RECEIPT.read_text(encoding="utf-8"))
+    receipt_keys = {
+        "schema_version",
+        "fixture",
+        "scope",
+        "external_validation",
+        "png_sha256",
+        "truth",
+    }
+    if not isinstance(receipt, dict) or set(receipt) != receipt_keys:
+        raise DemoPreflightError("receipt da fixture da banca é inválido")
+    if receipt["schema_version"] != 1:
+        raise DemoPreflightError("versão do receipt da fixture da banca é inválida")
+    if receipt["scope"] != "local-defense-pipeline-demonstration-only":
+        raise DemoPreflightError("escopo da fixture da banca é inválido")
+    if receipt["external_validation"] is not False:
+        raise DemoPreflightError("fixture sintética não pode declarar validação externa")
+    if receipt.get("png_sha256") != hashlib.sha256(image_bytes).hexdigest():
+        raise DemoPreflightError("fixture da banca divergiu de seu SHA-256")
+    if receipt.get("fixture") != f"synthetic-canonical-seed-{DEMO_SEED}":
+        raise DemoPreflightError("identidade da fixture da banca é inválida")
+    truth = receipt.get("truth")
+    if not isinstance(truth, dict) or set(truth) != {
+        "hole",
+        "board",
+        "pot",
+        "n_players",
+        "position",
+    }:
+        raise DemoPreflightError("gabarito da fixture da banca é inválido")
+    hole = truth["hole"]
+    board = truth["board"]
+    if not isinstance(hole, list) or not isinstance(board, list):
+        raise DemoPreflightError("cartas do gabarito da fixture da banca são inválidas")
+    cards = hole + board
+    if (
+        len(hole) != 2
+        or len(board) != 5
+        or len(cards) != len(set(cards))
+        or not all(isinstance(card, str) and len(card) in (2, 3) for card in cards)
+        or not isinstance(truth["pot"], int)
+        or isinstance(truth["pot"], bool)
+        or truth["pot"] < 0
+        or not isinstance(truth["n_players"], int)
+        or isinstance(truth["n_players"], bool)
+        or not 2 <= truth["n_players"] <= 10
+        or not isinstance(truth["position"], str)
+        or not truth["position"]
+    ):
+        raise DemoPreflightError("conteúdo do gabarito da fixture da banca é inválido")
     client = TestClient(create_app())
 
     def request() -> tuple[dict[str, Any], float]:
         started = time.perf_counter()
         response = client.post(
             "/copilot/from-image",
-            files={"image": ("banca-sintetica.png", payload.getvalue(), "image/png")},
+            files={"image": (DEMO_IMAGE.name, image_bytes, "image/png")},
             data={"strict": "true", "my_stack": "1000"},
         )
         elapsed = time.perf_counter() - started

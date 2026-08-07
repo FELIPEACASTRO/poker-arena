@@ -5,7 +5,8 @@
 1. Reinicie a máquina e não configure tokens, VLM remoto, proxy ou credenciais no terminal.
 2. Execute `POKER.bat` e escolha **Preflight banca**. Continue somente com
    `READY_FOR_LOCAL_DEFENSE`.
-3. Escolha **Iniciar**, permita compartilhamento apenas de uma **janela** e mantenha o PDF
+3. Abra `docs/demo/BANCA_TABLE_FIXTURE_SEED_2.png` no visualizador de imagens. Escolha
+   **Iniciar** e compartilhe apenas essa **janela**. Mantenha o PDF
    `docs/GUIA_DE_NAVEGACAO_POKER_ARENA.pdf` aberto como fallback visual.
 4. Não dependa de internet. Backend, frontend, Swagger e baseline F1 são locais.
 
@@ -13,8 +14,9 @@
 
 1. **Problema e arquitetura:** monólito modular local; captura → visão → sanity → decisão.
 2. **Motor verificável:** crie uma mesa, mostre posições, side pots e caixa de vidro dos bots.
-3. **Processamento de imagem:** selecione somente a janela autorizada, confirme a prévia e
-   mostre cartas, pote, jogadores, posição, confiança interna e latência.
+3. **Processamento de imagem:** selecione a janela da fixture, confirme a prévia e mostre
+   cartas, pote, jogadores, posição, confiança interna e latência. O JSON ao lado da imagem
+   contém o SHA-256 e o gabarito auditável.
 4. **Rigor científico:** destaque que F1 é um baseline sintético e, por isso, a decisão fica
    bloqueada mesmo quando a fixture é lida corretamente. Mostre o receipt obrigatório do F2.
 5. **Falha segura:** tente uma fonte não comprovada/guia ou imagem inválida e mostre a abstenção.

@@ -297,6 +297,8 @@ checkout é [`assets/validar.ps1`](assets/validar.ps1); uma contagem histórica 
 substitui a saída da execução atual. A execução consolidada, o escopo E2E, as correções
 verificadas e os limites que ainda impedem alegações científicas mais fortes estão no
 [`relatório de evidências de QA de 2026-07-18`](docs/QA_EVIDENCE_20260718.md).
+O parecer consolidado da distribuição preparada para apresentação está no
+[`relatório final de auditoria de 2026-08-07`](docs/RELATORIO_FINAL_AUDITORIA_20260807.md).
 
 ---
 

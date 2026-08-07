@@ -1,4 +1,5 @@
 import { chromium } from '@playwright/test'
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -21,8 +22,27 @@ try {
 
   await page.goto(pathToFileURL(guidePath).href, { waitUntil: 'networkidle' })
   assert(await page.title() === 'Como o Poker Arena funciona — guia pedagógico visual', 'Título inesperado.')
+  assert(await page.locator('html').getAttribute('lang') === 'pt-BR', 'Idioma do documento está ausente ou incorreto.')
   assert(await page.locator('main .chapter').count() === 16, 'O guia deve conter 16 capítulos.')
   assert(await page.getByRole('heading', { level: 1 }).count() === 1, 'O guia deve ter um único H1.')
+  assert(await page.locator('.learning-goals li').count() === 4, 'O contrato deve declarar quatro objetivos observáveis.')
+  assert(await page.locator('.quiz').count() === 6, 'O guia deve conter seis checkpoints de recuperação.')
+  assert(await page.locator('.exercise').count() >= 2, 'O guia deve exigir produção ativa, não apenas reconhecimento.')
+  assert(
+    (await page.locator('#checkpointStatus').textContent())?.includes('0 de 6'),
+    'O progresso inicial dos checkpoints está incorreto.',
+  )
+
+  const duplicateIds = await page.locator('[id]').evaluateAll((elements) => {
+    const counts = new Map()
+    elements.forEach((element) => counts.set(element.id, (counts.get(element.id) || 0) + 1))
+    return [...counts.entries()].filter(([, count]) => count > 1).map(([id]) => id)
+  })
+  assert(duplicateIds.length === 0, `IDs duplicados: ${duplicateIds.join(', ')}`)
+  const unnamedButtons = await page.locator('button').evaluateAll((buttons) => buttons
+    .filter((button) => !button.textContent.trim() && !button.getAttribute('aria-label') && !button.title)
+    .map((button) => button.outerHTML))
+  assert(unnamedButtons.length === 0, `Botões sem nome acessível: ${unnamedButtons.join(' | ')}`)
 
   const assetReport = await page.locator('img').evaluateAll((images) => images.map((image) => ({
     alt: image.getAttribute('alt'),
@@ -40,6 +60,16 @@ try {
       .filter((href) => href && !document.querySelector(href)),
   )
   assert(brokenAnchors.length === 0, `Âncoras quebradas: ${brokenAnchors.join(', ')}`)
+  const localReferences = await page.locator('[href], [src]').evaluateAll((elements) => elements
+    .flatMap((element) => [element.getAttribute('href'), element.getAttribute('src')])
+    .filter((reference) => reference && !reference.startsWith('#') && !/^[a-z]+:/i.test(reference)))
+  const missingLocalReferences = localReferences
+    .map((reference) => ({ reference, target: path.resolve(path.dirname(guidePath), decodeURIComponent(reference.split('#')[0])) }))
+    .filter(({ target }) => !existsSync(target))
+  assert(
+    missingLocalReferences.length === 0,
+    `Referências locais ausentes: ${JSON.stringify(missingLocalReferences)}`,
+  )
 
   const pathExpectations = [
     { button: 'Quero operar a demo', chapters: 11, target: 'captura', title: 'Operação da demonstração' },
@@ -65,7 +95,10 @@ try {
       `A trilha "${expectation.button}" não mostrou confirmação visível.`,
     )
     await page.waitForFunction((target) => location.hash === `#${target}`, expectation.target)
-    await page.waitForTimeout(900)
+    await page.waitForFunction((target) => {
+      const rect = document.getElementById(target)?.getBoundingClientRect()
+      return rect && rect.top >= -2 && rect.top < 500 && rect.bottom > 0
+    }, expectation.target, { timeout: 5000 })
     const destination = await page.evaluate((target) => {
       const rect = document.getElementById(target).getBoundingClientRect()
       return { bottom: rect.bottom, hash: location.hash, scrollY: window.scrollY, top: rect.top }
@@ -78,7 +111,10 @@ try {
   assert(await page.locator('#pathStart').getAttribute('href') === '#visao-geral', 'O início da trilha completa está incorreto.')
   await page.locator('.path-picker').scrollIntoViewIfNeeded()
   await page.locator('#pathStart').click()
-  await page.waitForTimeout(900)
+  await page.waitForFunction(() => {
+    const rect = document.getElementById('visao-geral')?.getBoundingClientRect()
+    return rect && rect.top >= -2 && rect.top < 500 && rect.bottom > 0
+  }, undefined, { timeout: 5000 })
   assert(
     await page.locator('#visao-geral').evaluate((element) => {
       const rect = element.getBoundingClientRect()
@@ -92,23 +128,46 @@ try {
   assert(await page.locator('.chapter:not(.search-hidden)').count() >= 2, 'A busca por idempotência deveria encontrar capítulos.')
   await search.fill('')
 
-  const firstQuiz = page.locator('.quiz').first()
-  await firstQuiz.getByRole('button', { name: /Depois de selecionar/ }).click()
-  assert((await firstQuiz.locator('.quiz-feedback').textContent())?.startsWith('Correto'), 'Quiz não forneceu feedback correto.')
+  const scopeQuiz = page.locator('[data-checkpoint="scope"]')
+  await scopeQuiz.getByRole('button', { name: /São decisões de escopos diferentes/ }).click()
+  assert((await scopeQuiz.locator('.quiz-feedback').textContent())?.startsWith('Correto:'), 'Quiz não forneceu feedback causal.')
+  assert(await scopeQuiz.getAttribute('data-complete') === 'true', 'Quiz correto não marcou conclusão.')
+
+  const captureQuiz = page.locator('[data-checkpoint="capture"]')
+  const wrongCaptureAnswer = captureQuiz.getByRole('button', { name: /caixa de autorização/ })
+  await wrongCaptureAnswer.click()
+  assert(await wrongCaptureAnswer.getAttribute('aria-pressed') === 'true', 'Resposta escolhida não foi exposta à tecnologia assistiva.')
+  assert((await captureQuiz.locator('.quiz-feedback').textContent())?.startsWith('Ainda não:'), 'Resposta errada não explicou a causa.')
+  await captureQuiz.getByRole('button', { name: /Depois de selecionar/ }).click()
+  assert(
+    (await page.locator('#checkpointStatus').textContent())?.includes('2 de 6'),
+    'O progresso não acompanhou os checkpoints corretos.',
+  )
+
+  await page.getByRole('button', { name: 'Reiniciar prática' }).click()
+  assert((await page.locator('#checkpointStatus').textContent())?.includes('0 de 6'), 'Reinício não limpou o progresso.')
+  assert(await page.locator('.quiz[data-complete="true"]').count() === 0, 'Reinício deixou checkpoint concluído.')
 
   const firstFlashcard = page.locator('.flashcard').first()
-  await firstFlashcard.getByRole('button', { name: 'Revelar' }).click()
+  const revealButton = firstFlashcard.locator('button.reveal-button')
+  assert((await revealButton.textContent()) === 'Revelar', 'Flashcard não começou com a ação esperada.')
+  assert(await revealButton.getAttribute('aria-expanded') === 'false', 'Flashcard começou com estado acessível incorreto.')
+  await revealButton.click()
   assert(await firstFlashcard.locator('.answer').isVisible(), 'Flashcard não revelou a resposta.')
+  assert(await revealButton.getAttribute('aria-expanded') === 'true', 'Flashcard não anunciou a expansão.')
 
   const previousTheme = await page.locator('html').getAttribute('data-theme')
   await page.getByRole('button', { name: 'Alternar tema' }).click()
   assert(await page.locator('html').getAttribute('data-theme') !== previousTheme, 'Tema não foi alternado.')
 
+  await page.goto(pathToFileURL(guidePath).href, { waitUntil: 'networkidle' })
+  await page.getByRole('button', { name: 'Alternar tema' }).click()
   await page.evaluate(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
     document.querySelector('.sidebar')?.scrollTo({ top: 0, behavior: 'instant' })
   })
   await page.waitForTimeout(250)
+  assert(await page.evaluate(() => window.scrollY) === 0, 'Captura canônica não começou no topo da página.')
   await page.screenshot({ path: screenshotPath, fullPage: false })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.reload({ waitUntil: 'networkidle' })
@@ -133,7 +192,9 @@ try {
   process.stdout.write(JSON.stringify({
     anchors: await page.locator('a[href^="#"]').count(),
     chapters: await page.locator('main .chapter').count(),
+    checkpoints: await page.locator('.quiz').count(),
     images: assetReport.length,
+    localReferences: localReferences.length,
     mobileOverflow: overflow,
     overflowSources: overflowSources.length,
     runtimeErrors: runtimeErrors.length,

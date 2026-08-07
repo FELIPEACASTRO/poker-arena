@@ -123,7 +123,7 @@
       box-shadow: var(--shadow);
       backdrop-filter: blur(14px);
     }
-    .icon-button, .primary-button, .path-button, .quiz-option, .reveal-button {
+    .icon-button, .primary-button, .path-button, .quiz-option, .reveal-button, .reset-learning {
       border: 1px solid var(--line);
       border-radius: 11px;
       background: var(--panel-2);
@@ -131,7 +131,7 @@
       transition: transform .18s ease, border-color .18s ease, background .18s ease;
     }
     .icon-button { min-width: 42px; min-height: 42px; padding: 8px 11px; }
-    .icon-button:hover, .path-button:hover, .quiz-option:hover, .reveal-button:hover {
+    .icon-button:hover, .path-button:hover, .quiz-option:hover, .reveal-button:hover, .reset-learning:hover {
       transform: translateY(-2px);
       border-color: var(--accent);
       background: var(--accent-soft);
@@ -200,6 +200,18 @@
       color: var(--muted);
       font-size: 10.5px;
     }
+    .learning-status {
+      margin-top: 16px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--panel);
+    }
+    .learning-status small { display: block; color: var(--muted); font-size: 9px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+    .learning-status strong { display: block; margin-top: 5px; color: var(--accent-2); font-size: 11px; }
+    .checkpoint-track { height: 6px; margin: 10px 0; overflow: hidden; border-radius: 999px; background: var(--panel-3); }
+    .checkpoint-meter { display: block; width: 0; height: 100%; background: linear-gradient(90deg, var(--accent), var(--gold)); transition: width .25s ease; }
+    .reset-learning { width: 100%; padding: 7px 9px; color: var(--muted); font-size: 10px; }
 
     main { min-width: 0; padding: 0 52px 100px; }
     .hero {
@@ -322,6 +334,22 @@
       font-weight: 850;
       text-decoration: none;
     }
+    .learning-contract {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
+      gap: 18px;
+      margin-top: 18px;
+      padding: 20px;
+      border: 1px dashed var(--gold);
+      border-radius: 17px;
+      background: var(--gold-soft);
+    }
+    .learning-contract .label { color: var(--gold); font-size: 10px; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
+    .learning-contract h3 { margin: 6px 0 8px; font-size: 21px; }
+    .learning-contract p { margin: 0; font-size: 12px; }
+    .learning-goals { margin: 0; padding: 0; list-style: none; counter-reset: objective; }
+    .learning-goals li { position: relative; margin: 0 0 8px; padding: 8px 10px 8px 35px; border-radius: 11px; background: var(--panel); color: var(--muted); font-size: 11px; }
+    .learning-goals li::before { counter-increment: objective; content: counter(objective); position: absolute; left: 9px; top: 8px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #041a16; font-size: 9px; font-weight: 900; }
 
     .chapter {
       max-width: var(--reading);
@@ -357,7 +385,7 @@
     h4 { margin: 0 0 7px; font-size: 16px; }
     p { margin: 0 0 16px; }
 
-    .brain-hook, .remember, .caution, .evidence, .scenario, .question-box {
+    .brain-hook, .remember, .caution, .evidence, .scenario, .question-box, .exercise {
       position: relative;
       margin: 24px 0;
       padding: 20px 22px;
@@ -365,7 +393,7 @@
       border-radius: 18px;
       background: var(--panel-2);
     }
-    .brain-hook::before, .remember::before, .caution::before, .evidence::before, .scenario::before {
+    .brain-hook::before, .remember::before, .caution::before, .evidence::before, .scenario::before, .exercise::before {
       display: block;
       margin-bottom: 8px;
       font-size: 10px;
@@ -384,6 +412,16 @@
     .scenario { border-left: 5px solid var(--gold); background: var(--gold-soft); }
     .scenario::before { content: "Situação do dia a dia"; color: var(--gold); }
     .scenario strong, .question-box strong { color: var(--gold); }
+    .exercise { border-left: 5px solid var(--purple); background: color-mix(in srgb, var(--panel-2) 82%, var(--purple) 18%); }
+    .exercise::before { content: "Faça você mesmo — sem olhar a resposta"; color: var(--purple); }
+    .exercise ol, .exercise ul { margin-bottom: 0; }
+
+    .confusion-grid, .evidence-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 22px 0; }
+    .confusion-card, .evidence-metric { padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+    .confusion-card code { display: block; margin-bottom: 7px; color: var(--accent-2); font-size: 12px; }
+    .confusion-card strong, .evidence-metric strong { display: block; margin-bottom: 5px; }
+    .confusion-card p, .evidence-metric p { margin: 0; color: var(--muted); font-size: 12px; }
+    .evidence-metric b { display: block; color: var(--accent-2); font-size: 22px; line-height: 1.1; }
 
     .grid-2, .grid-3, .grid-4 { display: grid; gap: 16px; margin: 22px 0; }
     .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -501,6 +539,9 @@
     .quiz-option.correct { border-color: var(--accent); background: var(--accent-soft); }
     .quiz-option.incorrect { border-color: var(--red); background: var(--red-soft); }
     .quiz-feedback { min-height: 28px; color: var(--muted); font-size: 12px; }
+    .quiz-feedback.correct { color: var(--accent-2); }
+    .quiz-feedback.incorrect { color: var(--red); }
+    .quiz[data-complete="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-soft); }
 
     .flashcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0; }
     .flashcard {
@@ -553,9 +594,10 @@
       .toolbar { top: 10px; right: 10px; }
       .hero { min-height: auto; padding-top: 92px; }
       .grid-3, .grid-4, .flashcards { grid-template-columns: repeat(2, 1fr); }
+      .learning-contract { grid-template-columns: 1fr; }
     }
     @media (max-width: 580px) {
-      .toc, .grid-2, .grid-3, .grid-4, .flashcards, .final-map, .pipeline { grid-template-columns: 1fr; }
+      .toc, .grid-2, .grid-3, .grid-4, .flashcards, .final-map, .pipeline, .confusion-grid, .evidence-strip { grid-template-columns: 1fr; }
       .path-result { align-items: stretch; flex-direction: column; }
       .path-start { text-align: center; }
       .chapter-head { grid-template-columns: 50px 1fr; }
@@ -584,7 +626,8 @@
       main { padding: 0; }
       .hero { min-height: 0; page-break-after: always; }
       .chapter { max-width: none; page-break-before: always; padding-top: 14mm; }
-      .concept-card, .brain-hook, .remember, .caution, .evidence, .scenario, table, .visual-frame { break-inside: avoid; }
+      .concept-card, .brain-hook, .remember, .caution, .evidence, .scenario, .exercise, .learning-contract, table, .visual-frame { break-inside: avoid; }
+      .flashcard .answer { display: block !important; }
       body { background: #fff; }
       a { color: inherit; text-decoration: none; }
     }
@@ -630,6 +673,12 @@
         <a href="#apresentacao"><span>15</span><span>Roteiro de apresentação</span></a>
         <a href="#glossario"><span>16</span><span>Glossário e revisão</span></a>
       </nav>
+      <div class="learning-status" aria-label="Progresso nos checkpoints">
+        <small>Prática de recuperação</small>
+        <strong id="checkpointStatus" aria-live="polite">0 de 6 checkpoints concluídos</strong>
+        <div class="checkpoint-track" aria-hidden="true"><span class="checkpoint-meter" id="checkpointMeter"></span></div>
+        <button class="reset-learning" id="resetLearning" type="button">Reiniciar prática</button>
+      </div>
       <div class="sidebar-note">
         Material original inspirado em princípios de aprendizagem ativa: histórias, perguntas, imagens, repetição e feedback. Não é reprodução nem edição oficial de qualquer livro.
       </div>
@@ -675,6 +724,22 @@
           </div>
           <a class="path-start" id="pathStart" href="#visao-geral">Começar esta trilha →</a>
         </div>
+        <div class="learning-contract">
+          <div>
+            <span class="label">Sua missão narrativa</span>
+            <h3>A banca mostra uma mesa difícil. O sistema deve saber quando não sabe.</h3>
+            <p>
+              Ao longo do guia, você seguirá a mesma imagem da autorização até a auditoria. Primeiro
+              tente prever o comportamento; depois confronte sua hipótese com o mecanismo e a evidência.
+            </p>
+          </div>
+          <ol class="learning-goals" aria-label="Objetivos de aprendizagem">
+            <li>Reconstruir o pipeline sem consultar o diagrama.</li>
+            <li>Distinguir proposta visual, gate, abstenção e GO da release.</li>
+            <li>Diagnosticar uma falha usando sintomas e contratos.</li>
+            <li>Defender o que foi provado sem extrapolar o escopo.</li>
+          </ol>
+        </div>
       </section>
 
       <section class="chapter" id="visao-geral" data-paths="all operator jury technical five">
@@ -708,6 +773,15 @@
         <div class="remember">
           <strong>Não é um “robô que olha e sempre responde”.</strong> É um laboratório que prefere
           dizer “evidência insuficiente” a transformar uma leitura fraca em recomendação confiante.
+        </div>
+        <div class="quiz" data-answer="b" data-checkpoint="scope">
+          <h4>Checkpoint 1: o preflight retorna GO, mas a visão mostra <span class="mono">decision_blocked=true</span>. Há contradição?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" type="button" data-option="a" data-feedback="Não. Você misturou a prontidão da release com a autoridade estratégica da leitura visual.">Sim. Um sistema aprovado nunca pode bloquear uma recomendação.</button>
+            <button class="quiz-option" type="button" data-option="b" data-feedback="Correto: GO aprova a demonstração local; decision_blocked confirma que o F1 se absteve como deveria.">Não. São decisões de escopos diferentes, e a abstenção é o resultado seguro esperado.</button>
+            <button class="quiz-option" type="button" data-option="c" data-feedback="Ainda não. O frontend exibe o estado, mas não redefine nem o gate visual nem o gate de release.">Depende apenas do texto escolhido pelo frontend.</button>
+          </div>
+          <div class="quiz-feedback" aria-live="polite"></div>
         </div>
       </section>
 
@@ -784,12 +858,12 @@
           O teste E2E aguarda mais de um intervalo após selecionar a fonte e exige <strong>zero uploads</strong>.
           Só depois do clique de confirmação ele aceita o primeiro <span class="mono">POST /copilot/from-image</span>.
         </div>
-        <div class="quiz" data-answer="b">
-          <h4>Teste rápido: quando o primeiro quadro pode sair?</h4>
+        <div class="quiz" data-answer="b" data-checkpoint="capture">
+          <h4>Checkpoint 2: quando o primeiro quadro pode sair?</h4>
           <div class="quiz-options">
-            <button class="quiz-option" type="button" data-option="a">Assim que a caixa de autorização é marcada.</button>
-            <button class="quiz-option" type="button" data-option="b">Depois de selecionar a janela e confirmar a prévia.</button>
-            <button class="quiz-option" type="button" data-option="c">Quando o navegador abre o seletor.</button>
+            <button class="quiz-option" type="button" data-option="a" data-feedback="Ainda não: autorização é necessária, mas não identifica nem confirma a fonte capturada.">Assim que a caixa de autorização é marcada.</button>
+            <button class="quiz-option" type="button" data-option="b" data-feedback="Correto: seleção e confirmação explícita vêm antes de qualquer upload.">Depois de selecionar a janela e confirmar a prévia.</button>
+            <button class="quiz-option" type="button" data-option="c" data-feedback="Ainda não: abrir o seletor não autoriza o envio de nenhum quadro.">Quando o navegador abre o seletor.</button>
           </div>
           <div class="quiz-feedback" aria-live="polite"></div>
         </div>
@@ -835,6 +909,15 @@
           nunca validado. Só um dataset externo rotulado, split sem vazamento e métricas definidas
           permite falar em desempenho científico.
         </div>
+        <div class="quiz" data-answer="c" data-checkpoint="vision">
+          <h4>Checkpoint 3: uma screenshot retornou HTTP 200 e score interno 0,91. O que isso prova?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" type="button" data-option="a" data-feedback="Não: um score interno isolado não mede acurácia nem calibração em uma população externa.">Que a visão tem 91% de acurácia em mesas reais.</button>
+            <button class="quiz-option" type="button" data-option="b" data-feedback="Não: uma chamada bem-sucedida não demonstra superioridade nem generalização.">Que o F1 supera detectores treinados.</button>
+            <button class="quiz-option" type="button" data-option="c" data-feedback="Correto: a chamada prova execução naquele caso; qualidade externa exige corpus, gabarito e protocolo.">Que o pipeline executou naquele caso, sem provar generalização.</button>
+          </div>
+          <div class="quiz-feedback" aria-live="polite"></div>
+        </div>
       </section>
 
       <section class="chapter" id="gate" data-paths="all operator jury technical five">
@@ -852,6 +935,22 @@
           <strong>proteção aprovada com recomendação suprimida</strong>, motivos e avisos. Isso é
           o resultado seguro esperado do sistema, não um travamento ou reprovação da release.
         </p>
+        <h3>Duas decisões parecidas — e completamente diferentes</h3>
+        <div class="confusion-grid">
+          <article class="confusion-card">
+            <code>release_decision=GO</code>
+            <strong>O pacote está pronto para a demonstração local.</strong>
+            <p>Depende de árvore limpa, gates, preflight, configuração offline, segurança e evidências do escopo.</p>
+          </article>
+          <article class="confusion-card">
+            <code>vision.decision_blocked=true</code>
+            <strong>Esta leitura não tem autoridade estratégica.</strong>
+            <p>O F1 pode mostrar percepção e diagnóstico, mas suprime a recomendação quando a evidência é insuficiente.</p>
+          </article>
+        </div>
+        <div class="remember">
+          Os dois valores podem — e nesta demo devem — coexistir: <strong>release aprovada, recomendação suprimida</strong>.
+        </div>
         <div class="visual-frame">
           <img src="assets/navigation-guide/03-diagnostico-ativo.png" alt="Diagnóstico real com motor F1, confiança zero, recomendação estratégica suprimida por segurança, motivos e avisos de leitura." />
           <div class="visual-caption"><b>Tela real — proteção aprovada.</b> O motor respondeu, mas o gate não emitiu recomendação porque o estado era insuficiente e incoerente.</div>
@@ -936,12 +1035,12 @@
           O painel “como o bot pensou” mostra sinais e critérios implementados. Ele <strong>não é prova
           de interpretabilidade causal</strong> de uma rede neural e não demonstra optimalidade GTO.
         </div>
-        <div class="quiz" data-answer="c">
-          <h4>Qual nível é o melhor comparador para saber se “qualquer lógica” supera o acaso?</h4>
+        <div class="quiz" data-answer="c" data-checkpoint="bots">
+          <h4>Checkpoint 4: qual nível é o melhor comparador para saber se “qualquer lógica” supera o acaso?</h4>
           <div class="quiz-options">
-            <button class="quiz-option" type="button" data-option="a">Expert</button>
-            <button class="quiz-option" type="button" data-option="b">Adaptativo</button>
-            <button class="quiz-option" type="button" data-option="c">Iniciante aleatório</button>
+            <button class="quiz-option" type="button" data-option="a" data-feedback="Ainda não: Expert é um candidato mais complexo, não o controle mínimo contra o acaso.">Expert</button>
+            <button class="quiz-option" type="button" data-option="b" data-feedback="Ainda não: Adaptativo testa ajuste ao adversário, mas não isola o ganho sobre aleatoriedade.">Adaptativo</button>
+            <button class="quiz-option" type="button" data-option="c" data-feedback="Correto: o bot aleatório funciona como controle mínimo para medir se uma política acrescenta sinal.">Iniciante aleatório</button>
           </div>
           <div class="quiz-feedback" aria-live="polite"></div>
         </div>
@@ -1044,7 +1143,8 @@
         </div>
         <div class="remember">
           HTTP 400 = ação de domínio ilegal. 404 = recurso inexistente. 409 = versão/idempotência.
-          413/415 = upload grande/tipo inválido. 422 = contrato do corpo. 503 = dependência ou sessão indisponível.
+          413 = upload acima do teto. 415 = MIME inválido ou divergente dos bytes. Imagem multiframe
+          retorna 400. 422 = contrato do corpo. 503 = dependência ou sessão indisponível.
         </div>
       </section>
 
@@ -1067,6 +1167,16 @@
           <strong>Cozinha profissional.</strong> O salão recebe o pedido, a coordenação organiza, a cozinha
           executa a receita. O cliente não entra na despensa para mudar ingredientes no meio do prato.
           Clean Architecture protege o domínio do detalhe externo.
+        </div>
+        <div class="exercise">
+          <strong>Desenhe em 90 segundos.</strong> Feche o diagrama e trace quatro caixas:
+          <ol>
+            <li>frontend;</li>
+            <li>API e mapeadores;</li>
+            <li>casos de uso da aplicação;</li>
+            <li>motor de domínio.</li>
+          </ol>
+          Depois desenhe as setas. Se uma regra de poker apontar para React, sua arquitetura mental está invertida.
         </div>
         <h3>Padrões usados</h3>
         <table>
@@ -1119,6 +1229,28 @@
         <div class="caution">
           Screenshot pública sem gabarito demonstra que o pipeline executou; não mede acurácia.
           Resultado sintético não prova generalização para mesas reais.
+        </div>
+        <h3>O que a evidência local realmente sustenta</h3>
+        <div class="evidence-strip">
+          <article class="evidence-metric"><b>16/16</b><strong>gates do pacote</strong><p>Testes, tipos, contratos, segurança, dependências, frontend e E2E no snapshot auditado.</p></article>
+          <article class="evidence-metric"><b>5 × 7</b><strong>amostras de latência</strong><p>Receipt v5 recalculável, P95 máximo 902,198 ms para orçamento local de 2.500 ms.</p></article>
+          <article class="evidence-metric"><b>GO local</b><strong>preflight da banca</strong><p>Árvore limpa, rede desnecessária, VLM remoto desligado e fixture canônica exata.</p></article>
+          <article class="evidence-metric"><b>N/A externo</b><strong>limite científico</strong><p>Generalização visual real, GTO, produção multi-tenant e dinheiro real não são alegados.</p></article>
+        </div>
+        <div class="evidence">
+          Os números são um snapshot versionado, não decoração da página. Consulte a cadeia completa de
+          achado → correção → regressão → limite no
+          <a href="RELATORIO_OMEGA_AUDITORIA_20260807.md">Relatório Omega de auditoria</a> e repita o
+          preflight antes da apresentação.
+        </div>
+        <div class="quiz" data-answer="b" data-checkpoint="evidence">
+          <h4>Checkpoint 5: o receipt v5 com P95 abaixo do orçamento prova o quê?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" type="button" data-option="a" data-feedback="Não: latência não mede acurácia visual, qualidade estratégica ou generalização.">Que a recomendação é correta e generaliza para qualquer mesa.</button>
+            <button class="quiz-option" type="button" data-option="b" data-feedback="Correto: o receipt sustenta somente latência no código, ambiente, cenários e janela temporal vinculados.">Que os cinco cenários atenderam ao orçamento no ambiente auditado.</button>
+            <button class="quiz-option" type="button" data-option="c" data-feedback="Não: sete amostras por cenário não autorizam extrapolação para qualquer host ou carga.">Que qualquer computador terá o mesmo P95.</button>
+          </div>
+          <div class="quiz-feedback" aria-live="polite"></div>
         </div>
       </section>
 
@@ -1223,6 +1355,16 @@
           Feche a demonstração encerrando o compartilhamento diante da banca. Isso torna privacidade e
           ciclo de vida parte visível do experimento, não uma promessa escondida.
         </div>
+        <div class="exercise">
+          <strong>Ensine de volta em 90 segundos.</strong> Sem olhar para cima, explique para uma pessoa:
+          <ol>
+            <li>por que a captura exige confirmação;</li>
+            <li>por que a visão produz hipótese, não verdade;</li>
+            <li>por que abstenção pode coexistir com GO;</li>
+            <li>qual evidência ainda falta para falar de generalização.</li>
+          </ol>
+          Se uma das quatro respostas depender da frase “porque a IA decidiu”, volte ao capítulo correspondente.
+        </div>
       </section>
 
       <section class="chapter" id="glossario" data-paths="all operator jury technical five">
@@ -1240,17 +1382,19 @@
           <article class="flashcard"><h4>Holdout</h4><button class="reveal-button" type="button">Revelar</button><p class="answer">Conjunto separado que não participa da escolha/treino e estima generalização.</p></article>
           <article class="flashcard"><h4>Risco seletivo</h4><button class="reveal-button" type="button">Revelar</button><p class="answer">Erro entre os casos que o sistema decidiu aceitar.</p></article>
           <article class="flashcard"><h4>WebSocket</h4><button class="reveal-button" type="button">Revelar</button><p class="answer">Canal persistente usado para empurrar estado da mesa em tempo real.</p></article>
+          <article class="flashcard"><h4>GO da release</h4><button class="reveal-button" type="button">Revelar</button><p class="answer">Aprovação do pacote para o escopo local supervisionado; não concede autoridade estratégica à visão.</p></article>
+          <article class="flashcard"><h4>Receipt</h4><button class="reveal-button" type="button">Revelar</button><p class="answer">Evidência versionada ligada a código, cenário, ambiente, amostras e prazo; prova somente o claim declarado.</p></article>
         </div>
         <div class="final-map">
           <section><h4>Se lembrar de quatro verbos…</h4><ul><li>Autorizar</li><li>Propor</li><li>Verificar</li><li>Registrar</li></ul></section>
-          <section><h4>Se lembrar de quatro limites…</h4><ul><li>Confiança não é acurácia</li><li>Screenshot não é benchmark</li><li>Modelo encontrado não é promovido</li><li>Frontend não é autoridade de regra</li></ul></section>
+          <section><h4>Se lembrar de quatro limites…</h4><ul><li>Confiança não é acurácia</li><li>Screenshot não é benchmark</li><li>GO local não é generalização visual</li><li>Frontend não é autoridade de regra</li></ul></section>
         </div>
-        <div class="quiz" data-answer="a">
-          <h4>Desafio final: qual sequência representa melhor a solução?</h4>
+        <div class="quiz" data-answer="a" data-checkpoint="final">
+          <h4>Checkpoint 6 — desafio final: qual sequência representa melhor a solução?</h4>
           <div class="quiz-options">
-            <button class="quiz-option" type="button" data-option="a">Captura autorizada → estado proposto → gate → resultado/abstenção → auditoria.</button>
-            <button class="quiz-option" type="button" data-option="b">Captura automática → recomendação → confiança → armazenamento.</button>
-            <button class="quiz-option" type="button" data-option="c">Frontend → modelo → regra do poker → banco.</button>
+            <button class="quiz-option" type="button" data-option="a" data-feedback="Correto: você reconstruiu o fluxo autorizado, verificável e fail-closed.">Captura autorizada → estado proposto → gate → resultado/abstenção → auditoria.</button>
+            <button class="quiz-option" type="button" data-option="b" data-feedback="Ainda não: não há captura automática nem recomendação anterior ao gate.">Captura automática → recomendação → confiança → armazenamento.</button>
+            <button class="quiz-option" type="button" data-option="c" data-feedback="Ainda não: o frontend não é autoridade de regra e a solução local não depende de banco externo.">Frontend → modelo → regra do poker → banco.</button>
           </div>
           <div class="quiz-feedback" aria-live="polite"></div>
         </div>
@@ -1260,8 +1404,10 @@
         </div>
         <p class="copyright-note">
           Página educacional original do projeto Poker Arena. Metodologia baseada em aprendizagem ativa,
-          recuperação, analogias, contraste, feedback e múltiplas representações. “Use a Cabeça” é referência
-          bibliográfica do pedido, não afiliação, reprodução textual ou imitação oficial.
+          recuperação, analogias, contraste, feedback e múltiplas representações, inspirada no formato
+          visual, orientado a tarefas, histórias, perguntas e exercícios descrito pela
+          <a href="https://www.oreilly.com/pub/pr/2330">série Head First da O’Reilly</a>.
+          “Use a Cabeça” é referência metodológica, não afiliação, reprodução textual ou edição oficial.
         </p>
       </section>
     </main>
@@ -1280,6 +1426,10 @@
     const pathResultTitle = document.getElementById('pathResultTitle');
     const pathResultText = document.getElementById('pathResultText');
     const pathStart = document.getElementById('pathStart');
+    const quizzes = [...document.querySelectorAll('.quiz')];
+    const checkpointStatus = document.getElementById('checkpointStatus');
+    const checkpointMeter = document.getElementById('checkpointMeter');
+    const resetLearning = document.getElementById('resetLearning');
     const pathNames = {
       all: 'Trilha completa',
       operator: 'Operação da demonstração',
@@ -1298,8 +1448,10 @@
     const navigateToChapter = (chapterId) => {
       const target = document.getElementById(chapterId);
       if (!target || target.hidden) return;
-      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+      const previousScrollBehavior = doc.style.scrollBehavior;
+      doc.style.scrollBehavior = 'auto';
+      target.scrollIntoView({ behavior: 'auto', block: 'start' });
+      doc.style.scrollBehavior = previousScrollBehavior;
       if (history.replaceState) {
         history.replaceState(null, '', `#${chapterId}`);
       } else {
@@ -1308,7 +1460,7 @@
       const heading = target.querySelector('h2');
       if (heading) {
         heading.setAttribute('tabindex', '-1');
-        window.setTimeout(() => heading.focus({ preventScroll: true }), reducedMotion ? 0 : 450);
+        window.setTimeout(() => heading.focus({ preventScroll: true }), 0);
       }
     };
 
@@ -1389,25 +1541,60 @@
       });
     });
 
-    document.querySelectorAll('.quiz').forEach((quiz) => {
+    const updateCheckpointStatus = () => {
+      const completed = quizzes.filter((quiz) => quiz.dataset.complete === 'true').length;
+      checkpointStatus.textContent = `${completed} de ${quizzes.length} checkpoints concluídos`;
+      checkpointMeter.style.width = `${quizzes.length ? (completed / quizzes.length) * 100 : 0}%`;
+    };
+
+    quizzes.forEach((quiz) => {
       const feedback = quiz.querySelector('.quiz-feedback');
       quiz.querySelectorAll('.quiz-option').forEach((option) => {
+        option.setAttribute('aria-pressed', 'false');
         option.addEventListener('click', () => {
-          quiz.querySelectorAll('.quiz-option').forEach((item) => item.classList.remove('correct', 'incorrect'));
+          quiz.querySelectorAll('.quiz-option').forEach((item) => {
+            item.classList.remove('correct', 'incorrect');
+            item.setAttribute('aria-pressed', String(item === option));
+          });
           const correct = option.dataset.option === quiz.dataset.answer;
           option.classList.add(correct ? 'correct' : 'incorrect');
-          feedback.textContent = correct
+          feedback.classList.remove('correct', 'incorrect');
+          feedback.classList.add(correct ? 'correct' : 'incorrect');
+          feedback.textContent = option.dataset.feedback || (correct
             ? 'Correto. Você conectou o mecanismo ao objetivo.'
-            : 'Ainda não. Releia a analogia imediatamente acima e tente outra vez.';
+            : 'Ainda não. Releia a explicação e tente outra vez.');
+          if (correct) quiz.dataset.complete = 'true';
+          updateCheckpointStatus();
         });
       });
     });
 
-    document.querySelectorAll('.flashcard .reveal-button').forEach((button) => {
+    resetLearning.addEventListener('click', () => {
+      quizzes.forEach((quiz) => {
+        delete quiz.dataset.complete;
+        quiz.querySelectorAll('.quiz-option').forEach((option) => {
+          option.classList.remove('correct', 'incorrect');
+          option.setAttribute('aria-pressed', 'false');
+        });
+        const feedback = quiz.querySelector('.quiz-feedback');
+        feedback.classList.remove('correct', 'incorrect');
+        feedback.textContent = '';
+      });
+      updateCheckpointStatus();
+    });
+    updateCheckpointStatus();
+
+    document.querySelectorAll('.flashcard .reveal-button').forEach((button, index) => {
+      const answer = button.closest('.flashcard').querySelector('.answer');
+      answer.id = answer.id || `flashcard-answer-${index + 1}`;
+      button.setAttribute('aria-controls', answer.id);
+      button.setAttribute('aria-expanded', 'false');
       button.addEventListener('click', () => {
         const card = button.closest('.flashcard');
         card.classList.toggle('revealed');
-        button.textContent = card.classList.contains('revealed') ? 'Ocultar' : 'Revelar';
+        const revealed = card.classList.contains('revealed');
+        button.textContent = revealed ? 'Ocultar' : 'Revelar';
+        button.setAttribute('aria-expanded', String(revealed));
       });
     });
   </script>

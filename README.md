@@ -109,8 +109,10 @@ As opções **Iniciar** e **Abrir no navegador** usam
 
 Guia visual para operação e apresentação: [`GUIA_DE_NAVEGACAO_POKER_ARENA.pdf`](docs/GUIA_DE_NAVEGACAO_POKER_ARENA.pdf).
 
-Guia pedagógico, visual e interativo sobre toda a solução:
+Guia pedagógico, visual e interativo sobre toda a solução, com trilhas por público,
+missão narrativa, exercícios de recuperação, flashcards e feedback explicativo:
 [`GUIA_PEDAGOGICO_POKER_ARENA.html`](docs/GUIA_PEDAGOGICO_POKER_ARENA.html).
+Validação reproduzível: `cd frontend; npm.cmd run docs:pedagogical-guide`.
 
 **Manual:** em dois terminais abertos na raiz do projeto:
 

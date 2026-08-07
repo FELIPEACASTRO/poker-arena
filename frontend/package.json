@@ -13,6 +13,7 @@
     "test:e2e": "..\\backend\\.venv\\Scripts\\python.exe e2e\\run_e2e.py",
     "test:e2e:headed": "..\\backend\\.venv\\Scripts\\python.exe e2e\\run_e2e.py --headed",
     "docs:navigation-guide": "..\\backend\\.venv\\Scripts\\python.exe e2e\\run_e2e.py --update-navigation-guide",
+    "docs:pedagogical-guide": "node e2e/validate_pedagogical_guide.mjs",
     "lint": "eslint ."
   },
   "dependencies": {

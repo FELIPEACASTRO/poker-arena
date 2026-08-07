@@ -1,6 +1,12 @@
 import random
 
-from poker_arena.bots.monte_carlo_bot import MonteCarloBot, estimate_equity
+import pytest
+
+from poker_arena.bots.monte_carlo_bot import (
+    MonteCarloBot,
+    estimate_equity,
+    estimate_equity_with_uncertainty,
+)
 from poker_arena.bots.observation import as_strategy, observation_for
 from poker_arena.engine.evaluator import card_from_str
 from poker_arena.engine.game import Hand
@@ -52,6 +58,59 @@ def test_three_way_board_tie_splits_equity_three_ways():
         rng=random.Random(9),
     )
     assert eq == 1 / 3
+
+
+def test_heads_up_river_is_exact_and_independent_of_sampling_budget():
+    hole = [_c("As"), _c("Kh")]
+    board = [_c("2c"), _c("7d"), _c("Jh"), _c("9s"), _c("3c")]
+
+    first = estimate_equity_with_uncertainty(hole, board, 1, 1, random.Random(1))
+    second = estimate_equity_with_uncertainty(hole, board, 1, 10_000, random.Random(999))
+
+    assert first == second
+    assert first.method == "exact-river-heads-up"
+    assert first.trials == 990
+    assert first.standard_error == 0.0
+    assert first.equity == pytest.approx(0.37626262626262624)
+    assert first.ci95_lower == first.ci95_upper == first.equity
+
+
+def test_sampled_equity_discloses_sampling_uncertainty():
+    estimate = estimate_equity_with_uncertainty(
+        [_c("As"), _c("Kh")],
+        [_c("2c"), _c("7d"), _c("Jh")],
+        2,
+        5_000,
+        random.Random(42),
+    )
+
+    assert estimate.method == "monte-carlo-uniform-range"
+    assert estimate.trials == 5_000
+    assert 0.0 < estimate.standard_error < 0.02
+    assert estimate.ci95_lower < estimate.equity < estimate.ci95_upper
+
+
+def test_sampled_edge_equity_does_not_claim_zero_uncertainty():
+    estimate = estimate_equity_with_uncertainty(
+        [_c("As"), _c("Ks")],
+        [_c("Qs"), _c("Js"), _c("Ts")],
+        1,
+        20,
+        random.Random(1),
+        exact_when_possible=False,
+    )
+
+    assert estimate.equity == 1.0
+    assert estimate.standard_error > 0
+    assert estimate.ci95_lower < 1.0
+    assert estimate.ci95_upper == 1.0
+
+
+def test_equity_rejects_duplicate_or_incomplete_card_state():
+    with pytest.raises(ValueError, match="repetidas"):
+        estimate_equity([_c("As"), _c("As")], [], 1, 10, random.Random(1))
+    with pytest.raises(ValueError, match="exatamente duas"):
+        estimate_equity([_c("As")], [], 1, 10, random.Random(1))
 
 
 def test_monte_carlo_bot_returns_legal_action():

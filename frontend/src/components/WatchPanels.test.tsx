@@ -12,7 +12,7 @@ beforeEach(() => {
         hands: 3, showdowns: 0, biggest_pot: 0, biggest_pot_winner: null, series: [],
         series_total_points: 3, series_start_hand: 1, series_truncated: false,
         bots: [{
-          seat: 0, player_id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', name: 'Luna', level: 'montecarlo', stack: 1000, delta: 0,
+          seat: 0, player_id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', name: 'Luna', level: 'montecarlo', stack: 1000, delta: 0, buy_in_total: 1000,
           hands_won: 0, hands_dealt: 3, vpip: 0, pfr: 0, aggression: 0, wtsd: 0, wsd: 0,
           positions: [{ bucket: 'early', hands: 3, vpip: 0, pfr: 0 }],
         }],

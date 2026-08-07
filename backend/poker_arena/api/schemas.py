@@ -8,7 +8,15 @@ from __future__ import annotations
 
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    StrictInt,
+    field_validator,
+    model_validator,
+)
 
 MAX_SEATS = 9
 MAX_CHIPS = 1_000_000_000
@@ -119,20 +127,20 @@ class CreateTableRequest(StrictRequest):
             "(humano + bots = no máximo 9 assentos); em `watch`, de 2 a 9 bots."
         ),
     )
-    starting_stack: int = Field(
+    starting_stack: StrictInt = Field(
         default=1000,
         gt=0,
         le=MAX_CHIPS,
         description="Fichas iniciais de cada jogador.",
         examples=[1000],
     )
-    small_blind: int = Field(
+    small_blind: StrictInt = Field(
         default=10, gt=0, le=MAX_CHIPS, description="Valor do small blind.", examples=[10]
     )
-    big_blind: int = Field(
+    big_blind: StrictInt = Field(
         default=20, gt=0, le=MAX_CHIPS, description="Valor do big blind.", examples=[20]
     )
-    rebuy: bool = Field(
+    rebuy: StrictBool = Field(
         default=True,
         description=(
             "`true` = cash game: quem zera as fichas recompra automaticamente, a mesa "
@@ -148,14 +156,14 @@ class CreateTableRequest(StrictRequest):
         ),
         examples=["play"],
     )
-    hand_limit: int | None = Field(
+    hand_limit: StrictInt | None = Field(
         default=None,
         gt=0,
         le=MAX_HAND_LIMIT,
         description="Encerra a partida após N mãos (`null` = sem limite). Vence quem tiver mais fichas.",
         examples=[None],
     )
-    seed: int | None = Field(
+    seed: StrictInt | None = Field(
         default=None,
         description=(
             "Semente do gerador de cartas. `null` = aleatoriedade criptográfica "
@@ -204,7 +212,7 @@ class ActionRequest(StrictRequest):
         ),
         examples=["call"],
     )
-    amount: int = Field(
+    amount: StrictInt = Field(
         default=0,
         ge=0,
         le=MAX_CHIPS,
@@ -247,7 +255,7 @@ class AddPlayerRequest(StrictRequest):
         description="Nome do bot. Se omitido, um nome único é gerado automaticamente.",
         examples=["Ana"],
     )
-    buy_in: int | None = Field(
+    buy_in: StrictInt | None = Field(
         default=None,
         gt=0,
         le=MAX_CHIPS,
@@ -349,10 +357,10 @@ class OpponentReadSchema(BaseModel):
 
 
 class WinProbSchema(BaseModel):
-    """Probabilidade real de vitória de uma cadeira (via simulação de showdown)."""
+    """Equity modelada de uma cadeira via simulação contra ranges uniformes."""
 
     seat: int = Field(description="Cadeira.")
-    prob: float = Field(description="Probabilidade de ganhar a mão, em [0,1].")
+    prob: float = Field(description="Equity de showdown modelada, em [0,1].")
 
 
 class CouncilEntrySchema(BaseModel):
@@ -369,13 +377,30 @@ class CouncilEntrySchema(BaseModel):
 class HumanAnalysisSchema(BaseModel):
     """Análise completa da SUA jogada (todos os painéis), calculada de verdade no turno do humano."""
 
-    equity: float = Field(description="Sua equity (chance de ganhar) na mão, em [0,1].")
-    win_probs: list[WinProbSchema] = Field(description="Probabilidade de vitória de cada cadeira.")
+    equity: float = Field(description="Equity modelada contra ranges uniformes, em [0,1].")
+    equity_method: str = Field(description="Método numérico usado para a equity.")
+    equity_trials: int = Field(ge=1, description="Número de amostras de showdown.")
+    equity_standard_error: float = Field(ge=0, description="Erro-padrão amostral aproximado.")
+    equity_ci95_lower: float = Field(ge=0, le=1)
+    equity_ci95_upper: float = Field(ge=0, le=1)
+    recommendation_stable: bool = Field(
+        description="Se o IC95% não cruza as pot odds usadas no sinal pagar/desistir."
+    )
+    equity_note: str = Field(description="Limite amostral e de modelagem da equity.")
+    win_probs: list[WinProbSchema] = Field(description="Equity modelada de cada cadeira.")
     hand_name: str | None = Field(description="Nome da sua melhor mão atual (ex.: 'Par de Reis').")
-    outs: int = Field(description="Cartas que melhoram sua mão (outs).")
+    outs: int = Field(
+        description=(
+            "Outs estruturais brutos de sequência/flush que usam carta privada; "
+            "não descontam dominação, redraws ou range adversário."
+        )
+    )
     draws: list[str] = Field(description="Projetos em aberto (ex.: flush draw, straight draw).")
     pot_odds: float = Field(description="Pot odds: razão entre o que você paga e o pote, em [0,1].")
-    ev_call: float = Field(description="Valor esperado (EV) de pagar, em fichas.")
+    call_cost: int = Field(ge=0, description="Custo efetivo do call, limitado ao stack.")
+    ev_call: float = Field(
+        description="EV simplificado do call em fichas, assumindo checkdown e sem apostas futuras."
+    )
     nut: str | None = Field(description="A melhor mão possível ('the nuts') para o board atual.")
     texture: str | None = Field(description="Textura do board (ex.: 'molhado', 'seco').")
     spr: float | None = Field(description="Stack-to-Pot Ratio.")
@@ -428,7 +453,12 @@ class BotStatSchema(BaseModel):
     name: str = Field(description="Nome do bot.")
     level: str = Field(description="Nível de IA.")
     stack: int = Field(description="Fichas atuais.")
-    delta: int = Field(description="Lucro/prejuízo desde o início (fichas).")
+    delta: int = Field(
+        description="Resultado líquido: stack atual menos todos os buy-ins/recompras (fichas)."
+    )
+    buy_in_total: int = Field(
+        ge=0, description="Capital total colocado na sessão, incluindo recompras."
+    )
     hands_won: int = Field(description="Mãos vencidas.")
     hands_dealt: int = Field(description="Mãos jogadas.")
     vpip: float = Field(
@@ -437,7 +467,7 @@ class BotStatSchema(BaseModel):
     aggression: float = Field(description="% de ações agressivas (agressivo x passivo), em [0,1].")
     pfr: float = Field(
         default=0.0,
-        description="Preflop Raise: % de mãos que abriu aumentando no pré-flop, em [0,1]. O gap VPIP−PFR separa o agressivo do passivo.",
+        description="Preflop Raise: % de mãos em que aumentou no pré-flop, em [0,1]. O gap VPIP−PFR separa o agressivo do passivo.",
     )
     wtsd: float = Field(
         default=0.0,
@@ -535,6 +565,10 @@ class GameSummarySchema(BaseModel):
 class GameListResponse(BaseModel):
     games: list[GameSummarySchema]
     page: PageSchema
+    unreadable_logs: int = Field(
+        ge=0,
+        description="Logs corrompidos/inacessíveis omitidos da lista; valor >0 torna a trilha incompleta.",
+    )
 
 
 class GameLogPageResponse(BaseModel):
@@ -566,32 +600,72 @@ class CopilotRequest(StrictRequest):
         max_length=5,
         description="Cartas comunitárias: 0 (pré-flop), 3 (flop), 4 (turn) ou 5 (river).",
     )
-    pot: int = Field(ge=0, le=MAX_CHIPS, description="Fichas no pote (antes de você pagar).")
-    to_call: int = Field(
+    pot: StrictInt = Field(
+        ge=0,
+        le=MAX_CHIPS,
+        description=(
+            "Parcela do pote já elegível ao herói, antes do call. Exclua excesso não pago "
+            "e side pots que o stack do herói não pode disputar."
+        ),
+    )
+    to_call: StrictInt = Field(
         ge=0,
         le=MAX_CHIPS,
         default=0,
         description="Quanto custa pagar (0 se você pode passar).",
     )
-    my_stack: int = Field(gt=0, le=MAX_CHIPS, description="Suas fichas.")
-    num_opponents: int = Field(
+    my_stack: StrictInt = Field(gt=0, le=MAX_CHIPS, description="Suas fichas.")
+    effective_stack: StrictInt = Field(
+        ge=0,
+        le=MAX_CHIPS,
+        description=(
+            "Stack efetivo restante contra o oponente relevante; 0 quando todos os rivais já estão all-in."
+        ),
+    )
+    num_opponents: StrictInt = Field(
         ge=1,
         le=MAX_SEATS - 1,
         default=1,
         description="Quantos oponentes ativos na mão.",
     )
-    in_position: bool = Field(
+    in_position: StrictBool = Field(
         default=True, description="Você age por último (em posição)? Afeta a realização da equity."
     )
     position: PositionName | None = Field(
         default=None,
         description="Posição na mesa: SB/BB/UTG/UTG+1/MP/LJ/HJ/CO/BTN.",
     )
-    big_blind: int = Field(
+    table_size: StrictInt = Field(
+        ge=2,
+        le=MAX_SEATS,
+        description=(
+            "Jogadores originalmente distribuídos na mão; separa posição da "
+            "quantidade de oponentes que ainda estão ativos."
+        ),
+    )
+    big_blind: StrictInt = Field(
         gt=0,
         le=MAX_CHIPS,
         default=20,
         description="Big blind (só para dimensionar o aumento mínimo).",
+    )
+    hero_current_bet: StrictInt = Field(
+        ge=0,
+        le=MAX_CHIPS,
+        description="Fichas que o herói já colocou na rodada de apostas atual.",
+    )
+    current_bet: StrictInt = Field(
+        ge=0,
+        le=MAX_CHIPS,
+        description="Maior aposta-alvo atual; current_bet - hero_current_bet = to_call.",
+    )
+    min_raise_increment: StrictInt = Field(
+        gt=0,
+        le=MAX_CHIPS,
+        description="Tamanho do último aumento completo; define o incremento mínimo legal.",
+    )
+    raise_reopened: StrictBool = Field(
+        description="Se a ação do herói foi reaberta por um aumento completo.",
     )
 
     @field_validator("board")
@@ -601,6 +675,21 @@ class CopilotRequest(StrictRequest):
             raise ValueError("board deve conter 0, 3, 4 ou 5 cartas")
         return board
 
+    @model_validator(mode="after")
+    def validate_position_for_table_size(self) -> Self:
+        if self.table_size < self.num_opponents + 1:
+            raise ValueError("table_size não pode ser menor que os participantes ainda ativos")
+        if self.position is not None:
+            from poker_arena.position_rules import position_is_compatible
+
+            if not position_is_compatible(self.position, self.table_size):
+                raise ValueError("position é impossível para table_size")
+        if self.current_bet < self.hero_current_bet:
+            raise ValueError("current_bet não pode ser menor que hero_current_bet")
+        if self.current_bet - self.hero_current_bet != self.to_call:
+            raise ValueError("current_bet - hero_current_bet precisa ser igual a to_call")
+        return self
+
 
 class CopilotResponse(BaseModel):
     """A leitura do Copiloto: o mesmo painel 'Sua jogada' para qualquer spot."""
@@ -609,16 +698,36 @@ class CopilotResponse(BaseModel):
         description="Melhor mão atual ou as cartas (ex.: 'Par de Reis', 'A-K')."
     )
     equity_pct: int = Field(
-        description="Chance real de ganhar (simulação Monte Carlo vs oponentes desconhecidos), 0..100."
+        description=(
+            "Equity de showdown contra ranges uniformes desconhecidos, 0..100; "
+            "exata no river heads-up e estimada por Monte Carlo nos demais estados."
+        )
     )
+    equity_method: str = Field(description="Método: exato HU river ou Monte Carlo uniforme.")
+    equity_trials: int = Field(ge=1, description="Combinações enumeradas ou amostras simuladas.")
+    equity_standard_error_pct: float = Field(
+        ge=0, description="Erro-padrão amostral em pontos percentuais; zero no cálculo exato."
+    )
+    equity_ci95_lower_pct: float = Field(ge=0, le=100)
+    equity_ci95_upper_pct: float = Field(ge=0, le=100)
     pot: int
     to_call: int
+    call_cost: int = Field(
+        ge=0, description="Custo efetivo do call, limitado ao stack quando ele não cobre to_call."
+    )
     pot_odds_pct: int = Field(description="Preço relativo (pot odds), 0..100.")
-    ev_call: float = Field(description="Valor esperado de pagar, em fichas (positivo = lucrativo).")
+    ev_call: float = Field(
+        description="EV simplificado do call em fichas, assumindo checkdown e sem apostas futuras."
+    )
     mdf_pct: int | None = Field(
         description="Frequência mínima de defesa diante da aposta, 0..100. `null` sem aposta."
     )
-    outs: int = Field(description="Cartas que melhoram sua mão para a melhor.")
+    outs: int = Field(
+        description=(
+            "Outs estruturais brutos de sequência/flush; são explicativos e não "
+            "substituem a equity contra ranges."
+        )
+    )
     draws: list[str] = Field(description="Projetos ativos (flush, sequência).")
     nut: str | None = Field(description="A melhor mão possível no board (a 'nut').")
     texture: str | None = Field(description="Textura do board (seco/molhado).")
@@ -636,6 +745,15 @@ class CopilotResponse(BaseModel):
     )
     recommendation: str = Field(description="Ação recomendada (fold/check/call/raise/all_in).")
     recommendation_label: str = Field(description="Rótulo da recomendação (ex.: 'Pagar 40').")
+    recommendation_amount: int | None = Field(
+        description="Alvo total exato quando a recomendação é raise; nulo nas demais ações."
+    )
+    recommendation_stable: bool = Field(
+        description="Se o IC95% amostral não cruza os limiares usados pela heurística."
+    )
+    decision_note: str = Field(
+        description=("Nota sobre incerteza, ranges, hipótese de checkdown e elegibilidade do pote.")
+    )
     headline: str = Field(description="Resumo em linguagem simples do que fazer e por quê.")
     position: str | None = Field(
         default=None, description="Posição considerada (SB/BB/UTG/.../BTN)."
@@ -658,6 +776,15 @@ class DetectedStateSchema(BaseModel):
     position: str = Field(
         default="",
         description="Posição do herói derivada dos assentos + botão (BTN/SB/BB/UTG/...). Vazia se não detectou.",
+    )
+    player_count_confidence: float | None = Field(
+        default=None, ge=0, le=1, description="Confiança crítica da contagem de assentos."
+    )
+    position_confidence: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        description="Confiança crítica da posição (assentos, botão e herói).",
     )
     stacks: dict[int, int] = Field(
         default={},
@@ -703,9 +830,7 @@ class FromImageResponse(BaseModel):
 class RemoteVlmConsentCreateRequest(StrictRequest):
     """Explicit opt-in for one ephemeral remote-fallback capture session."""
 
-    consent: Literal[True] = Field(
-        description="Must be true; the API never infers remote consent."
-    )
+    consent: Literal[True] = Field(description="Must be true; the API never infers remote consent.")
 
 
 class RemoteVlmConsentSessionResponse(BaseModel):
@@ -739,14 +864,19 @@ class RemoteVlmConsentRevokeResponse(BaseModel):
 
 
 class HandReviewRequest(StrictRequest):
-    """Uma mão inteira (formato PHH, colada) para o Copiloto revisar decisão a decisão."""
+    """Histórico no subconjunto PHH-NLHE inteiro aceito pelo revisor local."""
 
     phh: str = Field(
         min_length=1,
         max_length=1_000_000,
-        description="O histórico da mão no formato PHH.",
+        description=(
+            "Histórico PHH variant='NT' completo até um estado terminal, com antes, "
+            "blinds_or_straddles, min_bet, starting_stacks e actions explícitos. PHH "
+            "permite fragmentos, mas este produto os recusa para não emitir revisão parcial "
+            "com aparência de mão inteira. Não é um parser universal do padrão PHH."
+        ),
     )
-    player: int = Field(
+    player: StrictInt = Field(
         default=1,
         ge=1,
         le=MAX_SEATS,
@@ -765,9 +895,15 @@ class HandReviewDecisionSchema(BaseModel):
     equity_pct: int
     recommendation: str = Field(description="Ação recomendada (fold/check/call/raise).")
     recommendation_label: str
+    recommendation_amount: int | None = Field(
+        description="Alvo total exato quando a recomendação é raise."
+    )
     headline: str
     your_action: str = Field(description="O que você REALMENTE fez, segundo o histórico.")
-    matched: bool = Field(description="Sua jogada bateu com a recomendação do copiloto?")
+    your_amount: int | None = Field(description="Alvo total da sua ação quando ela foi raise.")
+    matched: bool = Field(
+        description="A categoria e, para raise, o alvo total bateram exatamente com a recomendação?"
+    )
 
 
 class HandReviewResponse(BaseModel):
@@ -795,7 +931,7 @@ class ReasoningSchema(BaseModel):
     hand_label: str | None = Field(
         description="Melhor mão atual ou as cartas (ex.: 'Par de Reis')."
     )
-    equity_pct: int = Field(description="Chance real de ganhar (simulação), 0..100.")
+    equity_pct: int = Field(description="Equity modelada por simulação, 0..100.")
     pot: int = Field(description="Fichas no pote.")
     to_call: int = Field(description="Quanto custa pagar.")
     pot_odds_pct: int = Field(description="Preço relativo (pot odds), 0..100.")

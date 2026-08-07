@@ -1,0 +1,49 @@
+{
+  "acceptance": {
+    "candidate_p95_budget_ms": 250.0,
+    "candidate_within_latency_budget": true,
+    "exact_enumeration": true,
+    "passed": true
+  },
+  "baseline": {
+    "decision_mismatch_rate": 0.01,
+    "latency_median_ms": 11.034,
+    "latency_p95_ms": 14.004,
+    "mae_percentage_points": 1.449179,
+    "max_absolute_error_percentage_points": 5.926768,
+    "method": "monte-carlo-uniform-range",
+    "p95_absolute_error_percentage_points": 3.443182,
+    "samples": 400
+  },
+  "candidate": {
+    "decision_mismatch_rate": 0.0,
+    "enumerated_opponent_hands": [
+      990
+    ],
+    "latency_median_ms": 12.569,
+    "latency_p95_ms": 15.977,
+    "mae_percentage_points": 0.0,
+    "max_absolute_error_percentage_points": 0.0,
+    "method": "exact-river-heads-up",
+    "p95_absolute_error_percentage_points": 0.0
+  },
+  "environment": {
+    "os": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 165 Stepping 2, GenuineIntel",
+    "python": "3.11.15"
+  },
+  "implementation_binding": {
+    "files": {
+      "poker_arena/bots/monte_carlo_bot.py": "5f51d6f2c6723a4d3d8b20677888e21cb534570f74addeb5b338d3b5c3b5942c",
+      "poker_arena/engine/evaluator.py": "e977ef5ee538ff0a57077808001f0445552e70aabbd92050e9f3a51d571802bf",
+      "scripts/equity_precision_benchmark.py": "ad165a8c8469e18a0d1813fcb238e7b70158bb72a80971154884134bb5e7b7a4",
+      "uv.lock": "b77cf93e64ab03f1d9872f3d54a18c33e3d428959ff3307dbaff9bbc17d02e50"
+    },
+    "sha256": "af6b0c78ad99b221d2f6a3b5aee4402005e1bdfc62534fad498a02ba3757944b"
+  },
+  "scenarios": 100,
+  "schema_version": 2,
+  "scope": "heads-up-river-uniform-range-equity-only",
+  "seed": 20260807,
+  "strategy_optimality": false
+}

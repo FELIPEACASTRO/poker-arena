@@ -1,6 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { API_BASE, HttpError, api, setApiToken } from './api'
 
+const bettingContext = {
+  to_call: 0,
+  my_stack: 1000,
+  effective_stack: 1000,
+  num_opponents: 1,
+  in_position: true,
+  hero_current_bet: 0,
+  current_bet: 0,
+  min_raise_increment: 20,
+  raise_reopened: true,
+}
+
 afterEach(() => {
   setApiToken(null)
   vi.restoreAllMocks()
@@ -15,10 +27,7 @@ describe('cliente HTTP', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await api.fromImage(new File(['x'], 'mesa.png', { type: 'image/png' }), {
-      to_call: 0,
-      my_stack: 1000,
-      num_opponents: 1,
-      in_position: true,
+      ...bettingContext,
     })
 
     const body = fetchMock.mock.calls[0][1]?.body as FormData
@@ -35,10 +44,7 @@ describe('cliente HTTP', () => {
     const sessionId = '123e4567-e89b-42d3-a456-426614174000'
 
     await api.fromImage(new File(['x'], 'mesa.png', { type: 'image/png' }), {
-      to_call: 0,
-      my_stack: 1000,
-      num_opponents: 1,
-      in_position: true,
+      ...bettingContext,
       remoteVlmConsent: { granted: true, sessionId },
     })
 
@@ -60,7 +66,9 @@ describe('cliente HTTP', () => {
 
     await expect(api.copilot({
       hole: ['As', 'Ks'], board: [], pot: 0, to_call: 0, my_stack: 0,
-      num_opponents: 1, in_position: true,
+      effective_stack: 1000, num_opponents: 1, in_position: true,
+      table_size: 2, hero_current_bet: 0, current_bet: 0,
+      min_raise_increment: 20, raise_reopened: true,
     })).rejects.toThrow('HTTP 422: my_stack: Input should be greater than 0')
   })
 
@@ -191,10 +199,7 @@ describe('cliente HTTP', () => {
     setApiToken(token)
 
     await api.fromImage(new File(['x'], 'mesa.png', { type: 'image/png' }), {
-      to_call: 0,
-      my_stack: 1000,
-      num_opponents: 1,
-      in_position: true,
+      ...bettingContext,
     })
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]

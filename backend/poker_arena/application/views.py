@@ -68,7 +68,7 @@ class OpponentReadView:
 @dataclass(frozen=True)
 class WinProbView:
     seat: int
-    prob: float  # % de vitória real (showdown sim) em [0,1]
+    prob: float  # equity modelada por showdown MC contra ranges uniformes, em [0,1]
 
 
 @dataclass(frozen=True)
@@ -86,12 +86,20 @@ class HumanAnalysisView:
     """Análise completa da jogada do humano (todos os painéis), calculada de verdade."""
 
     equity: float
+    equity_method: str
+    equity_trials: int
+    equity_standard_error: float
+    equity_ci95_lower: float
+    equity_ci95_upper: float
+    recommendation_stable: bool
+    equity_note: str
     win_probs: list[WinProbView]
     hand_name: str | None
     outs: int
     draws: list[str]
     pot_odds: float
-    ev_call: float
+    call_cost: int  # custo efetivo do call, limitado ao stack
+    ev_call: float  # EV simplificado, assumindo checkdown sem apostas futuras
     nut: str | None
     texture: str | None
     spr: float | None
@@ -148,7 +156,7 @@ class ReasoningView:
     signal_label: str | None  # o número que o próprio bot usou (ex.: "Equity 37%")
     signal_value: float | None  # [0,1] para a barra
     hand_label: str | None  # melhor mão atual / cartas (ex.: "Par de Reis", "A-K")
-    equity_pct: int  # chance real de ganhar (simulação), 0..100
+    equity_pct: int  # equity modelada por simulação, 0..100
     pot: int
     to_call: int  # quanto custa pagar
     pot_odds_pct: int  # preço relativo (pot odds), 0..100
@@ -168,11 +176,17 @@ class CopilotView:
     tocar em site nenhum. A análise deste fluxo é executada localmente."""
 
     hand_label: str | None  # melhor mão atual / cartas (ex.: "Par de Reis", "A-K")
-    equity_pct: int  # equity estimada por Monte Carlo contra oponentes aleatórios
+    equity_pct: int  # exata no river HU; senão Monte Carlo contra ranges uniformes
+    equity_method: str  # exact-river-heads-up | monte-carlo-uniform-range
+    equity_trials: int
+    equity_standard_error_pct: float
+    equity_ci95_lower_pct: float
+    equity_ci95_upper_pct: float
     pot: int
     to_call: int
+    call_cost: int  # custo efetivo; pode ser menor que to_call quando o stack não cobre
     pot_odds_pct: int
-    ev_call: float  # valor esperado de pagar (em fichas)
+    ev_call: float  # EV simplificado de checkdown (em fichas)
     mdf_pct: int | None
     outs: int
     draws: list[str]
@@ -186,6 +200,9 @@ class CopilotView:
     council: list[CouncilEntryView]  # níveis disponíveis que responderam neste spot
     recommendation: str  # a ação recomendada (ex.: "call")
     recommendation_label: str  # ex.: "Pagar 40"
+    recommendation_amount: int | None  # alvo total quando a recomendação é raise
+    recommendation_stable: bool  # IC95% não cruza os limiares da heurística
+    decision_note: str  # limite estatístico/modelagem em linguagem explícita
     headline: str  # resumo em linguagem simples do que fazer e por quê
     position: str | None = None  # posição na mesa (SB/BB/UTG/.../BTN), se informada
     num_players: int = 0  # participantes na mesa (você + oponentes)
@@ -203,8 +220,10 @@ class HandReviewDecisionView:
     equity_pct: int
     recommendation: str  # ação recomendada (fold/check/call/raise)
     recommendation_label: str
+    recommendation_amount: int | None
     headline: str
     your_action: str  # o que você REALMENTE fez, segundo o histórico
+    your_amount: int | None  # alvo total quando a ação real é raise
     matched: bool  # sua jogada bateu com a recomendação do copiloto?
 
 
@@ -237,12 +256,13 @@ class BotStatView:
     name: str
     level: str
     stack: int
-    delta: int  # lucro/prejuízo desde o início
+    delta: int  # resultado líquido: stack atual - total de buy-ins/recompras
+    buy_in_total: int
     hands_won: int
     hands_dealt: int
     vpip: float  # % de mãos que entrou voluntariamente (solto x apertado)
     aggression: float  # % de ações agressivas (agressivo x passivo)
-    pfr: float = 0.0  # % de mãos que ABRIU aumentando no pré-flop
+    pfr: float = 0.0  # % de mãos em que aumentou no pré-flop
     wtsd: float = 0.0  # % das mãos com flop visto em que chegou ao showdown
     wsd: float = 0.0  # % dos showdowns que venceu
     positions: list[PosStatView] = field(default_factory=list)  # VPIP/PFR por região

@@ -302,6 +302,56 @@ def test_watch_stats_appear_immediately_not_after_first_hand():
     assert all(b.stack == 500 and b.delta == 0 and b.hands_won == 0 for b in ws.bots)
 
 
+def test_watch_session_emits_flop_event_for_all_survivors(monkeypatch):
+    session = _watch(seed=7, stack=500)
+    stats = session._stats
+    assert stats is not None
+    original = stats.street_started
+    observed: list[tuple[str, list[str]]] = []
+
+    def capture(street: str, contenders: list[str]) -> None:
+        observed.append((street, list(contenders)))
+        original(street, contenders)
+
+    monkeypatch.setattr(stats, "street_started", capture)
+    for _ in range(1_000):
+        if any(street == "flop" for street, _ in observed):
+            break
+        phase = session.view().phase
+        if phase == "bot_turn":
+            session.step()
+        elif phase == "hand_over":
+            session.next_hand()
+        else:
+            break
+
+    flop_events = [ids for street, ids in observed if street == "flop"]
+    assert flop_events
+    assert len(flop_events[0]) >= 2
+
+
+def test_finish_hand_reports_settled_pot_after_uncalled_refund(monkeypatch):
+    session = _watch(n=3, stack=500)
+    captured: dict[str, object] = {}
+    winner = session._hand.players[0]
+
+    def settle():
+        session._hand.pot = 110
+        return [winner]
+
+    class StatsSpy:
+        def finish_hand(self, winners, pot, result, showdown, contenders=None):
+            captured.update(pot=pot, winners=winners, result=result)
+
+    session._hand.pot = 260
+    monkeypatch.setattr(session._hand, "resolve", settle)
+    monkeypatch.setattr(session, "_stats", StatsSpy())
+    session._finish_hand()
+
+    assert captured["pot"] == 110
+    assert [item["name"] for item in captured["winners"]] == [winner.name]
+
+
 def test_watch_mode_accumulates_live_stats():
     s = _watch(stack=500)
     for _ in range(400):

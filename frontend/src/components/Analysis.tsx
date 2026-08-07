@@ -58,8 +58,11 @@ export function EquityPanel() {
   return (
     <div className="apanel">
       <div className="apanel-h">
-        <Target size={15} /> Equity & vitória
+        <Target size={15} /> Equity modelada
       </div>
+      <p className="hand-gto">
+        MC {a.equity_trials} · IC95% {pctOf(a.equity_ci95_lower)}–{pctOf(a.equity_ci95_upper)} · ranges uniformes
+      </p>
       <div className="equity-row">
         <Donut pct={a.equity} />
         <div className="winprobs">
@@ -84,6 +87,7 @@ export function HandPanel() {
   if (!a) return null
   const need = a.pot_odds
   const good = a.equity >= need
+  const stable = a.recommendation_stable
   return (
     <div className="apanel">
       <div className="apanel-h">
@@ -95,7 +99,12 @@ export function HandPanel() {
           <span className="hv">{pt(a.hand_name)}</span>
         </div>
         <div>
-          <span className="hk">Outs</span>
+          <span
+            className="hk"
+            title="Outs estruturais brutos; podem estar sujos contra o range adversário"
+          >
+            Outs estruturais
+          </span>
           <span className="hv mono">{a.outs}</span>
         </div>
         <div>
@@ -121,17 +130,18 @@ export function HandPanel() {
           🧱 {b}
         </p>
       ))}
-      <div className={'potodds ' + (good ? 'is-good' : 'is-bad')}>
+      <div className={'potodds ' + (stable ? (good ? 'is-good' : 'is-bad') : '')}>
         Pot odds: precisa de <b className="mono">{pctOf(need)}</b>, você tem{' '}
-        <b className="mono">{pctOf(a.equity)}</b> → {good ? 'pagar é +EV ✅' : 'pagar é −EV ⚠️'}
+        <b className="mono">{pctOf(a.equity)}</b> →{' '}
+        {!stable ? 'limiar incerto pelo IC95% ⚠️' : good ? '+EV no modelo ✅' : '−EV no modelo ⚠️'}
       </div>
+      <p className="hand-gto">{a.equity_note}</p>
       {a.mdf != null && (
         <p
           className="hand-gto"
-          title="MDF (frequência mínima de defesa): pela teoria GTO, contra essa aposta você precisa continuar (pagar/aumentar) pelo menos essa fração das vezes — desistir mais que isso te deixa explorável por blefes. Referência teórica (heads-up/river)."
+          title="MDF simplificada: referência teórica de heads-up/river para esse tamanho. Não é frequência ótima em estados multiway ou fora desse modelo."
         >
-          🛡️ Defesa mínima (MDF): continue <b className="mono">{pctOf(a.mdf)}</b> das vezes
-          contra esse tamanho de aposta.
+          🛡️ Referência MDF: <b className="mono">{pctOf(a.mdf)}</b> (modelo simplificado HU/river).
         </p>
       )}
       {a.realization && (
@@ -165,11 +175,15 @@ export function EVPanel() {
         </span>
       </div>
       <div className="ev-best">
-        <span className="ev-k">EV de pagar</span>
+        <span className="ev-k" title="Assume checkdown: sem apostas futuras nem realização imperfeita da equity.">EV simplificado (checkdown)</span>
         <span className={'ev-v mono ' + (a.ev_call >= 0 ? 'pos' : 'neg')}>
           {a.ev_call >= 0 ? '+' : ''}
           {a.ev_call} fichas
         </span>
+      </div>
+      <div className="ev-best">
+        <span className="ev-k">Custo efetivo do call</span>
+        <span className="ev-v mono">{a.call_cost} fichas</span>
       </div>
       {a.confidence != null && (
         <div className="ev-conf">

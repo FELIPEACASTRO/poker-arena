@@ -230,6 +230,45 @@
       },
       "Body_from_image_copilot_from_image_post": {
         "properties": {
+          "current_bet": {
+            "anyOf": [
+              {
+                "maximum": 1000000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Bet"
+          },
+          "effective_stack": {
+            "anyOf": [
+              {
+                "maximum": 1000000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Stack"
+          },
+          "hero_current_bet": {
+            "anyOf": [
+              {
+                "maximum": 1000000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hero Current Bet"
+          },
           "image": {
             "contentMediaType": "application/octet-stream",
             "description": "Screenshot 2D da mesa de poker.",
@@ -237,23 +276,54 @@
             "type": "string"
           },
           "in_position": {
-            "default": true,
-            "title": "In Position",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Position"
+          },
+          "min_raise_increment": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1000000000.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Raise Increment"
           },
           "my_stack": {
-            "default": 1000,
-            "exclusiveMinimum": 0.0,
-            "maximum": 1000000000.0,
-            "title": "My Stack",
-            "type": "integer"
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1000000000.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Stack"
           },
           "num_opponents": {
-            "default": 1,
-            "maximum": 8.0,
-            "minimum": 1.0,
-            "title": "Num Opponents",
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 8.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Opponents"
           },
           "position": {
             "anyOf": [
@@ -265,6 +335,17 @@
               }
             ],
             "title": "Position"
+          },
+          "raise_reopened": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raise Reopened"
           },
           "remote_vlm_consent": {
             "default": false,
@@ -294,11 +375,17 @@
             "type": "boolean"
           },
           "to_call": {
-            "default": 0,
-            "maximum": 1000000000.0,
-            "minimum": 0.0,
-            "title": "To Call",
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 1000000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Call"
           }
         },
         "required": [
@@ -353,8 +440,14 @@
             "title": "Aggression",
             "type": "number"
           },
+          "buy_in_total": {
+            "description": "Capital total colocado na sessão, incluindo recompras.",
+            "minimum": 0.0,
+            "title": "Buy In Total",
+            "type": "integer"
+          },
           "delta": {
-            "description": "Lucro/prejuízo desde o início (fichas).",
+            "description": "Resultado líquido: stack atual menos todos os buy-ins/recompras (fichas).",
             "title": "Delta",
             "type": "integer"
           },
@@ -380,7 +473,7 @@
           },
           "pfr": {
             "default": 0.0,
-            "description": "Preflop Raise: % de mãos que abriu aumentando no pré-flop, em [0,1]. O gap VPIP−PFR separa o agressivo do passivo.",
+            "description": "Preflop Raise: % de mãos em que aumentou no pré-flop, em [0,1]. O gap VPIP−PFR separa o agressivo do passivo.",
             "title": "Pfr",
             "type": "number"
           },
@@ -436,6 +529,7 @@
           "level",
           "stack",
           "delta",
+          "buy_in_total",
           "hands_won",
           "hands_dealt",
           "vpip",
@@ -517,6 +611,27 @@
             "title": "Board",
             "type": "array"
           },
+          "current_bet": {
+            "description": "Maior aposta-alvo atual; current_bet - hero_current_bet = to_call.",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "Current Bet",
+            "type": "integer"
+          },
+          "effective_stack": {
+            "description": "Stack efetivo restante contra o oponente relevante; 0 quando todos os rivais já estão all-in.",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "Effective Stack",
+            "type": "integer"
+          },
+          "hero_current_bet": {
+            "description": "Fichas que o herói já colocou na rodada de apostas atual.",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "Hero Current Bet",
+            "type": "integer"
+          },
           "hole": {
             "description": "Suas 2 cartas (ex.: ['As','Kh']).",
             "items": {
@@ -532,6 +647,13 @@
             "description": "Você age por último (em posição)? Afeta a realização da equity.",
             "title": "In Position",
             "type": "boolean"
+          },
+          "min_raise_increment": {
+            "description": "Tamanho do último aumento completo; define o incremento mínimo legal.",
+            "exclusiveMinimum": 0.0,
+            "maximum": 1000000000.0,
+            "title": "Min Raise Increment",
+            "type": "integer"
           },
           "my_stack": {
             "description": "Suas fichas.",
@@ -572,10 +694,22 @@
             "title": "Position"
           },
           "pot": {
-            "description": "Fichas no pote (antes de você pagar).",
+            "description": "Parcela do pote já elegível ao herói, antes do call. Exclua excesso não pago e side pots que o stack do herói não pode disputar.",
             "maximum": 1000000000.0,
             "minimum": 0.0,
             "title": "Pot",
+            "type": "integer"
+          },
+          "raise_reopened": {
+            "description": "Se a ação do herói foi reaberta por um aumento completo.",
+            "title": "Raise Reopened",
+            "type": "boolean"
+          },
+          "table_size": {
+            "description": "Jogadores originalmente distribuídos na mão; separa posição da quantidade de oponentes que ainda estão ativos.",
+            "maximum": 9.0,
+            "minimum": 2.0,
+            "title": "Table Size",
             "type": "integer"
           },
           "to_call": {
@@ -590,7 +724,13 @@
         "required": [
           "hole",
           "pot",
-          "my_stack"
+          "my_stack",
+          "effective_stack",
+          "table_size",
+          "hero_current_bet",
+          "current_bet",
+          "min_raise_increment",
+          "raise_reopened"
         ],
         "title": "CopilotRequest",
         "type": "object"
@@ -606,6 +746,12 @@
             "title": "Blockers",
             "type": "array"
           },
+          "call_cost": {
+            "description": "Custo efetivo do call, limitado ao stack quando ele não cobre to_call.",
+            "minimum": 0.0,
+            "title": "Call Cost",
+            "type": "integer"
+          },
           "council": {
             "description": "O que cada nível de IA disponível faria neste spot.",
             "items": {
@@ -613,6 +759,11 @@
             },
             "title": "Council",
             "type": "array"
+          },
+          "decision_note": {
+            "description": "Nota sobre incerteza, ranges, hipótese de checkdown e elegibilidade do pote.",
+            "title": "Decision Note",
+            "type": "string"
           },
           "draws": {
             "description": "Projetos ativos (flush, sequência).",
@@ -622,13 +773,42 @@
             "title": "Draws",
             "type": "array"
           },
+          "equity_ci95_lower_pct": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Equity Ci95 Lower Pct",
+            "type": "number"
+          },
+          "equity_ci95_upper_pct": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Equity Ci95 Upper Pct",
+            "type": "number"
+          },
+          "equity_method": {
+            "description": "Método: exato HU river ou Monte Carlo uniforme.",
+            "title": "Equity Method",
+            "type": "string"
+          },
           "equity_pct": {
-            "description": "Chance real de ganhar (simulação Monte Carlo vs oponentes desconhecidos), 0..100.",
+            "description": "Equity de showdown contra ranges uniformes desconhecidos, 0..100; exata no river heads-up e estimada por Monte Carlo nos demais estados.",
             "title": "Equity Pct",
             "type": "integer"
           },
+          "equity_standard_error_pct": {
+            "description": "Erro-padrão amostral em pontos percentuais; zero no cálculo exato.",
+            "minimum": 0.0,
+            "title": "Equity Standard Error Pct",
+            "type": "number"
+          },
+          "equity_trials": {
+            "description": "Combinações enumeradas ou amostras simuladas.",
+            "minimum": 1.0,
+            "title": "Equity Trials",
+            "type": "integer"
+          },
           "ev_call": {
-            "description": "Valor esperado de pagar, em fichas (positivo = lucrativo).",
+            "description": "EV simplificado do call em fichas, assumindo checkdown e sem apostas futuras.",
             "title": "Ev Call",
             "type": "number"
           },
@@ -688,7 +868,7 @@
             "type": "array"
           },
           "outs": {
-            "description": "Cartas que melhoram sua mão para a melhor.",
+            "description": "Outs estruturais brutos de sequência/flush; são explicativos e não substituem a equity contra ranges.",
             "title": "Outs",
             "type": "integer"
           },
@@ -727,10 +907,27 @@
             "title": "Recommendation",
             "type": "string"
           },
+          "recommendation_amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Alvo total exato quando a recomendação é raise; nulo nas demais ações.",
+            "title": "Recommendation Amount"
+          },
           "recommendation_label": {
             "description": "Rótulo da recomendação (ex.: 'Pagar 40').",
             "title": "Recommendation Label",
             "type": "string"
+          },
+          "recommendation_stable": {
+            "description": "Se o IC95% amostral não cruza os limiares usados pela heurística.",
+            "title": "Recommendation Stable",
+            "type": "boolean"
           },
           "spr": {
             "anyOf": [
@@ -764,8 +961,14 @@
         "required": [
           "hand_label",
           "equity_pct",
+          "equity_method",
+          "equity_trials",
+          "equity_standard_error_pct",
+          "equity_ci95_lower_pct",
+          "equity_ci95_upper_pct",
           "pot",
           "to_call",
+          "call_cost",
           "pot_odds_pct",
           "ev_call",
           "mdf_pct",
@@ -781,6 +984,9 @@
           "council",
           "recommendation",
           "recommendation_label",
+          "recommendation_amount",
+          "recommendation_stable",
+          "decision_note",
           "headline"
         ],
         "title": "CopilotResponse",
@@ -1028,11 +1234,39 @@
             "title": "N Players",
             "type": "integer"
           },
+          "player_count_confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Confiança crítica da contagem de assentos.",
+            "title": "Player Count Confidence"
+          },
           "position": {
             "default": "",
             "description": "Posição do herói derivada dos assentos + botão (BTN/SB/BB/UTG/...). Vazia se não detectou.",
             "title": "Position",
             "type": "string"
+          },
+          "position_confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Confiança crítica da posição (assentos, botão e herói).",
+            "title": "Position Confidence"
           },
           "pot": {
             "anyOf": [
@@ -1118,11 +1352,18 @@
           },
           "page": {
             "$ref": "#/components/schemas/PageSchema"
+          },
+          "unreadable_logs": {
+            "description": "Logs corrompidos/inacessíveis omitidos da lista; valor >0 torna a trilha incompleta.",
+            "minimum": 0.0,
+            "title": "Unreadable Logs",
+            "type": "integer"
           }
         },
         "required": [
           "games",
-          "page"
+          "page",
+          "unreadable_logs"
         ],
         "title": "GameListResponse",
         "type": "object"
@@ -1254,7 +1495,7 @@
             "type": "array"
           },
           "matched": {
-            "description": "Sua jogada bateu com a recomendação do copiloto?",
+            "description": "A categoria e, para raise, o alvo total bateram exatamente com a recomendação?",
             "title": "Matched",
             "type": "boolean"
           },
@@ -1266,6 +1507,18 @@
             "description": "Ação recomendada (fold/check/call/raise).",
             "title": "Recommendation",
             "type": "string"
+          },
+          "recommendation_amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Alvo total exato quando a recomendação é raise.",
+            "title": "Recommendation Amount"
           },
           "recommendation_label": {
             "title": "Recommendation Label",
@@ -1284,6 +1537,18 @@
             "description": "O que você REALMENTE fez, segundo o histórico.",
             "title": "Your Action",
             "type": "string"
+          },
+          "your_amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Alvo total da sua ação quando ela foi raise.",
+            "title": "Your Amount"
           }
         },
         "required": [
@@ -1295,8 +1560,10 @@
           "equity_pct",
           "recommendation",
           "recommendation_label",
+          "recommendation_amount",
           "headline",
           "your_action",
+          "your_amount",
           "matched"
         ],
         "title": "HandReviewDecisionSchema",
@@ -1304,10 +1571,10 @@
       },
       "HandReviewRequest": {
         "additionalProperties": false,
-        "description": "Uma mão inteira (formato PHH, colada) para o Copiloto revisar decisão a decisão.",
+        "description": "Histórico no subconjunto PHH-NLHE inteiro aceito pelo revisor local.",
         "properties": {
           "phh": {
-            "description": "O histórico da mão no formato PHH.",
+            "description": "Histórico PHH variant='NT' completo até um estado terminal, com antes, blinds_or_straddles, min_bet, starting_stacks e actions explícitos. PHH permite fragmentos, mas este produto os recusa para não emitir revisão parcial com aparência de mão inteira. Não é um parser universal do padrão PHH.",
             "maxLength": 1000000,
             "minLength": 1,
             "title": "Phh",
@@ -1414,6 +1681,12 @@
             "title": "Blockers",
             "type": "array"
           },
+          "call_cost": {
+            "description": "Custo efetivo do call, limitado ao stack.",
+            "minimum": 0.0,
+            "title": "Call Cost",
+            "type": "integer"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -1443,12 +1716,46 @@
             "type": "array"
           },
           "equity": {
-            "description": "Sua equity (chance de ganhar) na mão, em [0,1].",
+            "description": "Equity modelada contra ranges uniformes, em [0,1].",
             "title": "Equity",
             "type": "number"
           },
+          "equity_ci95_lower": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Equity Ci95 Lower",
+            "type": "number"
+          },
+          "equity_ci95_upper": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Equity Ci95 Upper",
+            "type": "number"
+          },
+          "equity_method": {
+            "description": "Método numérico usado para a equity.",
+            "title": "Equity Method",
+            "type": "string"
+          },
+          "equity_note": {
+            "description": "Limite amostral e de modelagem da equity.",
+            "title": "Equity Note",
+            "type": "string"
+          },
+          "equity_standard_error": {
+            "description": "Erro-padrão amostral aproximado.",
+            "minimum": 0.0,
+            "title": "Equity Standard Error",
+            "type": "number"
+          },
+          "equity_trials": {
+            "description": "Número de amostras de showdown.",
+            "minimum": 1.0,
+            "title": "Equity Trials",
+            "type": "integer"
+          },
           "ev_call": {
-            "description": "Valor esperado (EV) de pagar, em fichas.",
+            "description": "EV simplificado do call em fichas, assumindo checkdown e sem apostas futuras.",
             "title": "Ev Call",
             "type": "number"
           },
@@ -1489,7 +1796,7 @@
             "title": "Nut"
           },
           "outs": {
-            "description": "Cartas que melhoram sua mão (outs).",
+            "description": "Outs estruturais brutos de sequência/flush que usam carta privada; não descontam dominação, redraws ou range adversário.",
             "title": "Outs",
             "type": "integer"
           },
@@ -1527,6 +1834,11 @@
             "description": "Por que a realização é essa (ordem de ação pós-flop).",
             "title": "Realization Why"
           },
+          "recommendation_stable": {
+            "description": "Se o IC95% não cruza as pot odds usadas no sinal pagar/desistir.",
+            "title": "Recommendation Stable",
+            "type": "boolean"
+          },
           "spr": {
             "anyOf": [
               {
@@ -1552,7 +1864,7 @@
             "title": "Texture"
           },
           "win_probs": {
-            "description": "Probabilidade de vitória de cada cadeira.",
+            "description": "Equity modelada de cada cadeira.",
             "items": {
               "$ref": "#/components/schemas/WinProbSchema"
             },
@@ -1577,11 +1889,19 @@
         },
         "required": [
           "equity",
+          "equity_method",
+          "equity_trials",
+          "equity_standard_error",
+          "equity_ci95_lower",
+          "equity_ci95_upper",
+          "recommendation_stable",
+          "equity_note",
           "win_probs",
           "hand_name",
           "outs",
           "draws",
           "pot_odds",
+          "call_cost",
           "ev_call",
           "nut",
           "texture",
@@ -1891,7 +2211,7 @@
             "title": "Bluff Alpha Pct"
           },
           "equity_pct": {
-            "description": "Chance real de ganhar (simulação), 0..100.",
+            "description": "Equity modelada por simulação, 0..100.",
             "title": "Equity Pct",
             "type": "integer"
           },
@@ -2539,10 +2859,10 @@
         "type": "object"
       },
       "WinProbSchema": {
-        "description": "Probabilidade real de vitória de uma cadeira (via simulação de showdown).",
+        "description": "Equity modelada de uma cadeira via simulação contra ranges uniformes.",
         "properties": {
           "prob": {
-            "description": "Probabilidade de ganhar a mão, em [0,1].",
+            "description": "Equity de showdown modelada, em [0,1].",
             "title": "Prob",
             "type": "number"
           },
@@ -2580,7 +2900,7 @@
       "name": "Poker Arena",
       "url": "http://localhost:5173/"
     },
-    "description": "\nAPI do **Poker Arena** — um **Texas Hold'em No-Limit de 2 a 9 jogadores** em que um humano joga\ncontra bots de IA de níveis configuráveis, ou assiste os bots se enfrentarem no\n**Modo Laboratório** (comparando os paradigmas de IA ao vivo, com as cartas abertas).\n\n### Como funciona\n1. **Crie uma mesa** com `POST /tables` (escolha os bots, blinds, formato e modo).\n   A resposta traz o `table_id` — use-o em todas as próximas chamadas.\n2. **Acompanhe o estado** pela `TableStateResponse`. O campo `phase` diz o que fazer:\n   - `human_turn` → é a sua vez: envie uma jogada em `POST /tables/{id}/actions`\n     (as jogadas válidas vêm em `legal.actions`).\n   - `bot_turn` → vez de um bot. No modo `watch`, avance com `POST /tables/{id}/step`.\n   - `hand_over` → a mão acabou: comece a próxima com `POST /tables/{id}/next-hand`.\n   - `game_over` → a partida terminou (torneio/limite de mãos).\n3. **Gerencie a mesa ao vivo**: sente novos bots (`POST .../players`) ou remova\n   jogadores (`DELETE .../players/{seat}`) entre as mãos.\n4. **Revise depois**: toda partida é gravada — liste em `GET /games` e veja o replay\n   mão a mão em `GET /games/{id}`.\n\n### Caixa de vidro (glass-box AI)\nCada bot expõe o **raciocínio real** da última jogada no campo `seats[].insight`\n(ex.: *\"Equity 37% (200 simulações)\"*). No seu turno, o campo `analysis` traz uma\nanálise completa da sua mão (equity, outs, pot odds, EV, e o que cada IA faria).\n\n### Níveis de IA\n`random` (Iniciante), `heuristic` (Amador), `montecarlo` (Intermediário),\n`adaptive` (Adaptativo) e `expert` (Expert — IA treinada, aparece em `GET /levels`\nsó quando o modelo está disponível).\n",
+    "description": "\nAPI do **Poker Arena** — um **Texas Hold'em No-Limit de 2 a 9 jogadores** em que um humano joga\ncontra bots de IA de níveis configuráveis, ou assiste os bots se enfrentarem no\n**Modo Laboratório** (comparando os paradigmas de IA ao vivo, com as cartas abertas).\n\n### Como funciona\n1. **Crie uma mesa** com `POST /tables` (escolha os bots, blinds, formato e modo).\n   A resposta traz o `table_id` — use-o em todas as próximas chamadas.\n2. **Acompanhe o estado** pela `TableStateResponse`. O campo `phase` diz o que fazer:\n   - `human_turn` → é a sua vez: envie uma jogada em `POST /tables/{id}/actions`\n     (as jogadas válidas vêm em `legal.actions`).\n   - `bot_turn` → vez de um bot. No modo `watch`, avance com `POST /tables/{id}/step`.\n   - `hand_over` → a mão acabou: comece a próxima com `POST /tables/{id}/next-hand`.\n   - `game_over` → a partida terminou (torneio/limite de mãos).\n3. **Gerencie a mesa ao vivo**: sente novos bots (`POST .../players`) ou remova\n   jogadores (`DELETE .../players/{seat}`) entre as mãos.\n4. **Revise depois**: toda partida é gravada — liste em `GET /games` e veja o replay\n   mão a mão em `GET /games/{id}`.\n\n### Caixa de vidro (glass-box AI)\nCada bot expõe o **raciocínio real** da última jogada no campo `seats[].insight`\n(ex.: *\"Equity 37% (200 simulações)\"*). No seu turno, o campo `analysis` traz uma\nanálise completa da sua mão (equity, outs, pot odds, EV simplificado de checkdown e o que cada IA faria).\n\n### Níveis de IA\n`random` (Iniciante), `heuristic` (Amador), `montecarlo` (Intermediário),\n`adaptive` (Adaptativo) e `expert` (Expert — IA treinada, aparece em `GET /levels`\nsó quando o modelo está disponível).\n",
     "summary": "Texas Hold'em No-Limit de 2 a 9 jogadores contra IAs configuráveis.",
     "title": "Poker Arena API",
     "version": "0.2.0",
@@ -2590,7 +2910,7 @@
   "paths": {
     "/copilot": {
       "post": {
-        "description": "Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)\ne devolve a leitura completa: equity real, pot odds, EV, MDF, outs, a nut,\ntextura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o\nconselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos\nlocais e não acessa sites de poker. É destinado a estudo e revisão pós-jogo.",
+        "description": "Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)\ne devolve a leitura completa: equity modelada, pot odds, EV simplificado de checkdown,\nMDF, outs, a nut,\ntextura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o\nconselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos\nlocais e não acessa sites de poker. É destinado a estudo e revisão pós-jogo.",
         "operationId": "copilot_copilot_post",
         "parameters": [
           {
@@ -3506,7 +3826,7 @@
     },
     "/copilot/review-hand": {
       "post": {
-        "description": "Cole o histórico da mão (formato PHH — o texto que o jogo exporta ao FIM da\nmão) e escolha qual jogador é você. O copiloto reproduz a mão e revisa CADA\ndecisão sua, comparando com a recomendação. É estudo pós-jogo (como rever um\nPGN de xadrez), executado localmente — não lê tela de jogo ao vivo.",
+        "description": "Cole o histórico da mão (subconjunto PHH variant='NT', valores inteiros —\no texto que o jogo exporta ao FIM da\nmão) e escolha qual jogador é você. O copiloto reproduz a mão e revisa CADA\ndecisão sua, comparando com a recomendação. É estudo pós-jogo (como rever um\nPGN de xadrez), executado localmente — não lê tela de jogo ao vivo.",
         "operationId": "review_hand_endpoint_copilot_review_hand_post",
         "parameters": [
           {
@@ -3699,7 +4019,7 @@
             "PokerBearer": []
           }
         ],
-        "summary": "Copiloto: revisar uma MÃO inteira (cole o histórico PHH)",
+        "summary": "Copiloto: revisar uma mão do subconjunto PHH-NLHE inteiro",
         "tags": [
           "Copiloto"
         ]

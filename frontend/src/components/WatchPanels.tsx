@@ -35,7 +35,7 @@ function styleTag(b: BotStat): string {
   return 'Equilibrado'
 }
 
-/** Placar — fichas, lucro e mãos ganhas de cada IA (ranqueado). */
+/** Placar — fichas, resultado líquido e mãos ganhas de cada IA (ranqueado). */
 export function LeaderboardPanel() {
   const ws = useWatch()
   const colors = useColors()
@@ -61,7 +61,10 @@ export function LeaderboardPanel() {
               <span style={{ width: pct(b.stack / max), background: colors[b.name] ?? DIM }} />
             </div>
             <span className="lb-stack">{num(b.stack)}</span>
-            <span className={'lb-delta ' + (b.delta >= 0 ? 'pos' : 'neg')}>
+            <span
+              className={'lb-delta ' + (b.delta >= 0 ? 'pos' : 'neg')}
+              title={`Resultado líquido após ${num(b.buy_in_total)} fichas em buy-ins/recompras`}
+            >
               {b.delta >= 0 ? '+' : ''}
               {num(b.delta)}
             </span>
@@ -108,9 +111,9 @@ export function StylePanel() {
             <div className="style-metric">
               <span
                 className="sm-k"
-                title="PFR: % de mãos que ABRIU aumentando no pré-flop. Gap grande entre VPIP e PFR = entra muito mas só pagando (passivo)"
+                title="PFR: % de mãos em que aumentou no pré-flop. Gap grande entre VPIP e PFR = entra muito mas só pagando (passivo)"
               >
-                abre aumentando <b>{pct(b.pfr)}</b>
+                aumenta pré-flop <b>{pct(b.pfr)}</b>
               </span>
               <div className="sm-bar">
                 <span style={{ width: pct(b.pfr), background: 'var(--lvl-heuristic)' }} />

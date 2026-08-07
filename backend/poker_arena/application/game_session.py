@@ -253,6 +253,8 @@ class GameSession:
         if self._rebuy:  # cash game: recompra quem zerou antes de distribuir
             for p in self._table.players:
                 if p.stack <= 0:
+                    if self._stats is not None:
+                        self._stats.record_rebuy(self._player_id(p), self._starting_stack)
                     p.stack = self._starting_stack
         self._hand_starts = {id(p): p.stack for p in self._table.players}  # antes das blinds
         self._hand: Hand = self._table.start_hand()
@@ -371,9 +373,7 @@ class GameSession:
             hand=hand,
             human=human,
             bot_by_player={remap_key(key): value for key, value in self._bot_by_player.items()},
-            level_by_player={
-                remap_key(key): value for key, value in self._level_by_player.items()
-            },
+            level_by_player={remap_key(key): value for key, value in self._level_by_player.items()},
             player_id_by_player={
                 remap_key(key): value for key, value in self._player_id_by_player.items()
             },
@@ -687,7 +687,8 @@ class GameSession:
                 name=info["name"],
                 level=info["level"],
                 stack=p["stack"],
-                delta=p["stack"] - p["start"],
+                delta=p["stack"] - p["buy_in_total"],
+                buy_in_total=p["buy_in_total"],
                 hands_won=p["hands_won"],
                 hands_dealt=dealt,
                 vpip=(p["vpip"] / dealt) if dealt else 0.0,
@@ -780,6 +781,12 @@ class GameSession:
                 self._finish_hand()
                 return
             hand.advance_street()
+            if self._stats is not None:
+                street = _STREET.get(len(hand.board), str(len(hand.board)))
+                self._stats.street_started(
+                    street,
+                    [self._player_id(player) for player in contesting],
+                )
 
     def _play_bot(self, seat: int) -> None:
         hand = self._hand
@@ -825,9 +832,7 @@ class GameSession:
         p = self._hand.players[seat]
         street = _STREET.get(len(self._hand.board), str(len(self._hand.board)))
         if self._stats is not None:
-            self._stats.action(
-                self._player_id(p), action.type.value, street, aggressive=aggressive
-            )
+            self._stats.action(self._player_id(p), action.type.value, street, aggressive=aggressive)
         if self._logger is not None:
             self._logger.action(
                 seat,
@@ -842,8 +847,8 @@ class GameSession:
             )
 
     def _finish_hand(self) -> None:
-        pot = self._hand.pot  # antes de distribuir
         winners = self._hand.resolve()
+        pot = self._hand.pot  # normalizado: exclui qualquer devolução uncalled
         self._winners = [self._hand.players.index(w) for w in winners]
         contesting = [p for p in self._hand.players if p.status != PlayerStatus.FOLDED]
         showdown = len(self._hand.board) >= 5 and len(contesting) >= 2

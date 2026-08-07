@@ -206,8 +206,7 @@ def test_paginated_replay_reports_total_and_next_offset(tmp_path):
     path = tmp_path / "paged.jsonl"
     rows = [{"type": "meta", "id": "paged", "created": "2026-01-01"}]
     rows.extend(
-        {"type": "hand", "hand": index, "ts": f"2026-01-01T00:00:0{index}"}
-        for index in range(1, 6)
+        {"type": "hand", "hand": index, "ts": f"2026-01-01T00:00:0{index}"} for index in range(1, 6)
     )
     path.write_text("".join(f"{json.dumps(row)}\n" for row in rows), encoding="utf-8")
 
@@ -224,9 +223,7 @@ def test_paginated_replay_reports_total_and_next_offset(tmp_path):
     }
 
 
-def test_corrupt_json_object_is_explicit_and_does_not_hide_healthy_game(
-    tmp_path, caplog
-):
+def test_corrupt_json_object_is_explicit_and_does_not_hide_healthy_game(tmp_path, caplog):
     _game_file(tmp_path, "healthy", mtime=2_000)
     corrupt = tmp_path / "corrupt.jsonl"
     corrupt.write_text("[]\n", encoding="utf-8")
@@ -237,7 +234,22 @@ def test_corrupt_json_object_is_explicit_and_does_not_hide_healthy_game(
     listing = list_games_page(offset=0, limit=50, log_dir=tmp_path)
     assert "healthy" in {game["id"] for game in listing["games"]}
     assert "corrupt" not in {game["id"] for game in listing["games"]}
+    assert listing["unreadable_logs"] == 1
     assert "corrupção" in caplog.text
+
+
+def test_writer_refuses_append_before_file_crosses_reader_quota(tmp_path, monkeypatch):
+    import poker_arena.application.match_log as module
+
+    monkeypatch.setattr(module, "_MAX_LOG_FILE_BYTES", 240)
+    logger = MatchLogger("bounded", {"mode": "watch"}, log_dir=tmp_path)
+    size_before = logger.path.stat().st_size
+    logger.begin_hand(1, 0, [])
+
+    with pytest.raises(MatchLogCorruptionError, match="cota antes da escrita"):
+        logger.finish_hand([], 0, [], [{"payload": "x" * 300}])
+
+    assert logger.path.stat().st_size == size_before
 
 
 def test_summary_cache_invalidates_when_append_changes_file(tmp_path, monkeypatch):
@@ -267,9 +279,7 @@ def test_summary_cache_invalidates_when_append_changes_file(tmp_path, monkeypatc
     assert calls == 2
 
 
-def test_prune_failure_is_observable_without_failing_availability(
-    tmp_path, monkeypatch, caplog
-):
+def test_prune_failure_is_observable_without_failing_availability(tmp_path, monkeypatch, caplog):
     _game_file(tmp_path, "new", mtime=2_000)
     old = _game_file(tmp_path, "old", mtime=1_000)
     original_unlink = Path.unlink

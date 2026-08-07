@@ -198,15 +198,19 @@ class MLBot:
     def _guarded_fold(self, obs: Observation) -> tuple[bool, str]:
         """Veta um fold dominado: defesa barata de pote pequeno com equity de sobra."""
         me = next(p for p in obs.players if p.seat == obs.seat)
-        price = obs.to_call / (obs.pot + obs.to_call)
+        call_cost = min(obs.to_call, me.stack)
+        price = call_cost / (obs.pot + call_cost)
         # pré-filtro barato ANTES de simular (fora do escopo, nem gasta equity)
-        if price > GUARD_MAX_PRICE or obs.to_call > GUARD_MAX_STACK_FRAC * max(me.stack, 1):
+        if price > GUARD_MAX_PRICE or call_cost > GUARD_MAX_STACK_FRAC * max(me.stack, 1):
             return False, ""
         from .monte_carlo_bot import estimate_equity  # lazy: reusa o motor de equity
 
-        n_opp = max(sum(1 for p in obs.players if p.status == "active" and p.seat != obs.seat), 1)
+        n_opp = max(
+            sum(1 for p in obs.players if p.status != "folded" and p.seat != obs.seat),
+            1,
+        )
         equity = estimate_equity(obs.hole, obs.board, n_opp, GUARD_SAMPLES, self._rng)
-        if should_defend(equity, price, obs.to_call, me.stack):
+        if should_defend(equity, price, call_cost, me.stack):
             note = (
                 f" · veto matemático: equity {round(equity * 100)}% ≫ preço "
                 f"{round(price * 100)}% → paga em vez de desistir"
@@ -222,10 +226,17 @@ class MLBot:
         chosen = sample_action(probs, self._rng, self._temperature, self._min_prob_ratio)
         guard_note = ""
         # guarda anti-over-fold: só quando a política quer DESISTIR diante de aposta
-        if self._equity_guard and chosen == 0 and obs.to_call > 0 and legal_mask(obs)[1]:
+        me = next(p for p in obs.players if p.seat == obs.seat)
+        short_call_all_in = me.stack <= obs.to_call and ActionType.ALL_IN in obs.legal_actions
+        if (
+            self._equity_guard
+            and chosen == 0
+            and obs.to_call > 0
+            and (legal_mask(obs)[1] or short_call_all_in)
+        ):
             defend, guard_note = self._guarded_fold(obs)
             if defend:
-                chosen = 1  # check_call
+                chosen = 4 if short_call_all_in else 1
         if chosen == top:
             label = f"Rede neural: {_PT[ACTIONS[top]]} ({round(probs[top] * 100)}%)"
         elif guard_note:

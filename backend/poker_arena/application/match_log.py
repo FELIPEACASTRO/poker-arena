@@ -80,9 +80,7 @@ def _assert_no_reparse_components(path: Path) -> Path:
                 "componente do caminho de auditoria nao pode ser inspecionado"
             ) from exc
         if _is_reparse_or_link(component_stat):
-            raise MatchLogCorruptionError(
-                "links e reparse points nao sao permitidos na auditoria"
-            )
+            raise MatchLogCorruptionError("links e reparse points nao sao permitidos na auditoria")
     return absolute
 
 
@@ -92,16 +90,12 @@ def _validated_directory(path: Path, *, create: bool) -> Path:
         try:
             absolute.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
-            raise MatchLogCorruptionError(
-                "diretorio de auditoria nao pode ser criado"
-            ) from exc
+            raise MatchLogCorruptionError("diretorio de auditoria nao pode ser criado") from exc
     absolute = _assert_no_reparse_components(absolute)
     try:
         directory_stat = os.lstat(absolute)
     except OSError as exc:
-        raise MatchLogCorruptionError(
-            "diretorio de auditoria nao pode ser inspecionado"
-        ) from exc
+        raise MatchLogCorruptionError("diretorio de auditoria nao pode ser inspecionado") from exc
     if not stat.S_ISDIR(directory_stat.st_mode) or _is_reparse_or_link(directory_stat):
         raise MatchLogCorruptionError("diretorio de auditoria precisa ser regular")
     return absolute
@@ -125,11 +119,7 @@ def _open_verified_regular(
         before = os.lstat(absolute)
     except OSError as exc:
         raise MatchLogCorruptionError("arquivo de auditoria nao pode ser inspecionado") from exc
-    if (
-        not stat.S_ISREG(before.st_mode)
-        or _is_reparse_or_link(before)
-        or before.st_nlink != 1
-    ):
+    if not stat.S_ISREG(before.st_mode) or _is_reparse_or_link(before) or before.st_nlink != 1:
         raise MatchLogCorruptionError("arquivo de auditoria precisa ser regular")
     if expected_identity is not None and _identity(before) != expected_identity:
         raise MatchLogCorruptionError("identidade do arquivo de auditoria mudou")
@@ -172,12 +162,7 @@ def _create_regular_file(path: Path) -> tuple[int, int]:
     try:
         descriptor = os.open(
             absolute,
-            os.O_WRONLY
-            | os.O_CREAT
-            | os.O_EXCL
-            | _OPEN_BINARY
-            | _OPEN_NOINHERIT
-            | _OPEN_NOFOLLOW,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | _OPEN_BINARY | _OPEN_NOINHERIT | _OPEN_NOFOLLOW,
             0o600,
         )
         opened = os.fstat(descriptor)
@@ -300,6 +285,10 @@ class MatchLogger:
                 expected_identity=self._file_identity,
             )
             try:
+                if os.fstat(descriptor).st_size + len(payload) > _MAX_LOG_FILE_BYTES:
+                    raise MatchLogCorruptionError(
+                        "arquivo de auditoria atingiu a cota antes da escrita"
+                    )
                 _write_all(descriptor, payload)
                 os.fsync(descriptor)
             finally:
@@ -420,9 +409,7 @@ def _iter_records(path: Path) -> Iterator[dict]:
                         f"linha {line_number} não contém JSON UTF-8 válido"
                     ) from exc
                 if not isinstance(record, dict):
-                    raise MatchLogCorruptionError(
-                        f"linha {line_number} precisa ser um objeto JSON"
-                    )
+                    raise MatchLogCorruptionError(f"linha {line_number} precisa ser um objeto JSON")
                 if record.get("type") not in {"meta", "hand"}:
                     raise MatchLogCorruptionError(
                         f"linha {line_number} possui tipo de registro inválido"
@@ -496,9 +483,10 @@ def _cached_summary(path: Path) -> dict | None:
     return deepcopy(summary)
 
 
-def _all_game_summaries(log_dir: Path | None = None) -> list[dict]:
+def _collect_game_summaries(log_dir: Path | None = None) -> tuple[list[dict], int]:
     d = log_dir or _log_dir()
     games: list[dict] = []
+    unreadable = 0
     if d.exists():
         d = _validated_directory(d, create=False)
         for path in d.glob("*.jsonl"):
@@ -506,6 +494,7 @@ def _all_game_summaries(log_dir: Path | None = None) -> list[dict]:
                 summary = _cached_summary(path)
             except MatchLogCorruptionError as exc:
                 LOGGER.error("log de auditoria ignorado por corrupção: %s (%s)", path, exc)
+                unreadable += 1
                 continue
             if summary:
                 games.append(summary)
@@ -518,10 +507,22 @@ def _all_game_summaries(log_dir: Path | None = None) -> list[dict]:
                 summary = _cached_summary(path)
             except MatchLogCorruptionError as exc:
                 LOGGER.error("log empacotado ignorado por corrupção: %s (%s)", path, exc)
+                unreadable += 1
                 continue
             if summary:
                 games.append(summary)
-    return games
+    return games, unreadable
+
+
+def _all_game_summaries(log_dir: Path | None = None) -> list[dict]:
+    return _collect_game_summaries(log_dir)[0]
+
+
+def audit_log_health(log_dir: Path | None = None) -> dict[str, int]:
+    """Return observable completeness state without exposing filesystem paths."""
+
+    games, unreadable = _collect_game_summaries(log_dir)
+    return {"readable_logs": len(games), "unreadable_logs": unreadable}
 
 
 def list_games(log_dir: Path | None = None) -> list[dict]:
@@ -544,13 +545,15 @@ def _page(offset: int, limit: int, total: int, returned: int) -> dict:
     }
 
 
-def list_games_page(
-    *, offset: int = 0, limit: int = 50, log_dir: Path | None = None
-) -> dict:
+def list_games_page(*, offset: int = 0, limit: int = 50, log_dir: Path | None = None) -> dict:
     _page(offset, limit, 0, 0)  # validate before scanning the filesystem
-    games = _all_game_summaries(log_dir)
+    games, unreadable = _collect_game_summaries(log_dir)
     selected = games[offset : offset + limit]
-    return {"games": selected, "page": _page(offset, limit, len(games), len(selected))}
+    return {
+        "games": selected,
+        "page": _page(offset, limit, len(games), len(selected)),
+        "unreadable_logs": unreadable,
+    }
 
 
 def _game_path(session_id: str, log_dir: Path | None) -> Path | None:
@@ -607,8 +610,4 @@ def read_game_page(
 ) -> dict | None:
     _page(offset, limit, 0, 0)  # validate before touching the filesystem
     path = _game_path(session_id, log_dir)
-    return (
-        _read_game_records(path, offset=offset, limit=limit)
-        if path is not None
-        else None
-    )
+    return _read_game_records(path, offset=offset, limit=limit) if path is not None else None

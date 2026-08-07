@@ -12,6 +12,7 @@ import hashlib
 import io
 import json
 import logging
+import math
 import os
 import re
 import secrets
@@ -47,6 +48,7 @@ from pydantic import ValidationError
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 if TYPE_CHECKING:
     from PIL.Image import Image as PILImage
@@ -97,12 +99,14 @@ RepoDep = Annotated[SessionRepository, Depends(get_repository)]
 
 LOGGER = logging.getLogger(__name__)
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_MULTIPART_OVERHEAD_BYTES = 256 * 1024
 MAX_IMAGE_PIXELS = 16_000_000
 ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp"}
 LOCAL_ORIGIN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 PROXY_USER_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9@._+:-]{0,253}$")
 MAX_WEBSOCKET_MESSAGE_BYTES = 4096
 MAX_WEBSOCKET_JSON_DEPTH = 32
+WEBSOCKET_SEND_TIMEOUT_SECONDS = 1.0
 MAX_IDEMPOTENCY_KEYS = 256
 MAX_IDEMPOTENCY_TOMBSTONES = 4096
 MAX_SESSION_VERSION = (1 << 63) - 1
@@ -113,6 +117,62 @@ MAX_REMOTE_VLM_CONSENT_TTL_SECONDS = 3600
 MAX_REMOTE_VLM_CONSENT_SESSIONS = 256
 MIN_API_TOKEN_LENGTH = 32
 MAX_API_TOKEN_LENGTH = 512
+
+
+class _RequestBodyTooLarge(Exception):
+    pass
+
+
+class _ImageBodyLimitMiddleware:
+    """Count image-request bytes before the multipart parser can spool them."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if not (
+            scope["type"] == "http"
+            and scope.get("method") == "POST"
+            and str(scope.get("path", "")).endswith("/copilot/from-image")
+        ):
+            await self.app(scope, receive, send)
+            return
+        limit = _configured_limit("POKER_MAX_IMAGE_BYTES", MAX_IMAGE_BYTES)
+        request_limit = limit + MAX_MULTIPART_OVERHEAD_BYTES
+        headers = {key.lower(): value for key, value in scope.get("headers", [])}
+        content_length = headers.get(b"content-length")
+        if content_length is not None:
+            try:
+                declared = int(content_length)
+            except ValueError:
+                declared = request_limit + 1
+            if declared < 0 or declared > request_limit:
+                response = JSONResponse(
+                    status_code=413,
+                    content={"detail": "corpo da imagem excede o limite seguro"},
+                )
+                await response(scope, receive, send)
+                return
+
+        consumed = 0
+
+        async def bounded_receive() -> Message:
+            nonlocal consumed
+            message = await receive()
+            if message["type"] == "http.request":
+                consumed += len(message.get("body", b""))
+                if consumed > request_limit:
+                    raise _RequestBodyTooLarge
+            return message
+
+        try:
+            await self.app(scope, bounded_receive, send)
+        except _RequestBodyTooLarge:
+            response = JSONResponse(
+                status_code=413,
+                content={"detail": "corpo da imagem excede o limite seguro"},
+            )
+            await response(scope, receive, send)
 
 
 @dataclass(frozen=True)
@@ -127,14 +187,18 @@ class _WebSocketPeer:
     websocket: WebSocket
     send_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     last_version: int = -1
+    failed: bool = False
 
 
 class _WebSocketHub:
     """Per-table connection registry with serialized, monotonic state delivery."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, send_timeout: float = WEBSOCKET_SEND_TIMEOUT_SECONDS) -> None:
+        if not math.isfinite(send_timeout) or send_timeout <= 0:
+            raise ValueError("send_timeout precisa ser finito e positivo")
         self._lock = asyncio.Lock()
         self._peers: dict[str, set[_WebSocketPeer]] = {}
+        self._send_timeout = send_timeout
 
     async def register(self, table_id: str, websocket: WebSocket) -> _WebSocketPeer:
         peer = _WebSocketPeer(websocket)
@@ -162,8 +226,9 @@ class _WebSocketHub:
         """Send one frame; stale state is dropped so concurrent publishes stay monotonic."""
 
         async with peer.send_lock:
+            sent = not peer.failed
             version = payload.get("version")
-            if (
+            if sent and (
                 isinstance(version, int)
                 and not isinstance(version, bool)
                 and (
@@ -172,14 +237,17 @@ class _WebSocketHub:
                 )
             ):
                 return True
-            try:
-                await peer.websocket.send_json(payload)
-            except Exception:  # noqa: BLE001 - a dead socket is isolated from other clients
-                sent = False
-            else:
-                sent = True
-                if isinstance(version, int) and not isinstance(version, bool):
-                    peer.last_version = max(peer.last_version, version)
+            if sent:
+                try:
+                    await asyncio.wait_for(
+                        peer.websocket.send_json(payload), timeout=self._send_timeout
+                    )
+                except Exception:  # noqa: BLE001 - a dead socket is isolated from other clients
+                    peer.failed = True
+                    sent = False
+                else:
+                    if isinstance(version, int) and not isinstance(version, bool):
+                        peer.last_version = max(peer.last_version, version)
         if not sent:
             await self.unregister(table_id, peer)
         return sent
@@ -360,11 +428,16 @@ def _decode_image(data: bytes) -> PILImage:
 def _review_image(
     img: PILImage,
     *,
-    to_call: int,
-    my_stack: int,
-    num_opponents: int,
-    in_position: bool,
+    to_call: int | None,
+    my_stack: int | None,
+    effective_stack: int | None,
+    num_opponents: int | None,
+    in_position: bool | None,
     position: str | None,
+    hero_current_bet: int | None,
+    current_bet: int | None,
+    min_raise_increment: int | None,
+    raise_reopened: bool | None,
     strict: bool,
     remote_vlm_consent: bool,
     remote_vlm_session_id: str | None,
@@ -377,6 +450,7 @@ def _review_image(
     from ..vision import (
         VlmRequestContext,
         check_state,
+        configured_redaction_policy,
         read_table_vlm,
         recognize_table,
         recognize_table_onnx,
@@ -437,6 +511,7 @@ def _review_image(
                 consent=True,
                 session_id=remote_vlm_session_id,
                 redaction_hook=redact_configured_regions,
+                redaction_policy=configured_redaction_policy(),
             )
             try:
                 vlm_state = read_table_vlm(img, context=context)
@@ -466,10 +541,49 @@ def _review_image(
         if "pote não detectado" not in sanity.problems:
             sanity.problems.append("pote não detectado")
 
-    effective_opponents = state.n_players - 1 if state.n_players >= 2 else num_opponents
+    if engine == "F2-onnx" and (
+        state.n_players < 2
+        or not state.position
+        or state.player_count_confidence is None
+        or state.position_confidence is None
+    ):
+        sanity.ok = False
+        sanity.problems.append("contexto estratégico F2 sem confiança explícita")
+    if engine == "F2-onnx":
+        sanity.warnings.append(
+            "visão validada pelo gate F2; preço, stack, oponentes ativos e ordem de "
+            "ação continuam sendo contexto manual não verificado pela imagem"
+        )
+
     effective_position = state.position or position
     decision = None
-    if sanity.ok and state.pot is not None:
+    manual_context = (
+        to_call,
+        my_stack,
+        effective_stack,
+        num_opponents,
+        in_position,
+        hero_current_bet,
+        current_bet,
+        min_raise_increment,
+        raise_reopened,
+    )
+    if engine == "F2-onnx" and any(value is None for value in manual_context):
+        sanity.ok = False
+        sanity.problems.append("contexto manual de apostas incompleto; decisão bloqueada")
+    if (
+        sanity.ok
+        and state.pot is not None
+        and to_call is not None
+        and my_stack is not None
+        and effective_stack is not None
+        and num_opponents is not None
+        and in_position is not None
+        and hero_current_bet is not None
+        and current_bet is not None
+        and min_raise_increment is not None
+        and raise_reopened is not None
+    ):
         try:
             view = review_spot(
                 state.hole,
@@ -477,10 +591,16 @@ def _review_image(
                 state.pot,
                 to_call,
                 my_stack,
-                effective_opponents,
+                num_opponents,
                 in_position,
                 list(available_levels()),
                 position=effective_position,
+                table_size=(state.n_players if state.n_players >= 2 else None),
+                effective_stack=effective_stack,
+                hero_current_bet=hero_current_bet,
+                current_bet=current_bet,
+                min_raise_increment=min_raise_increment,
+                raise_reopened=raise_reopened,
             )
             decision = CopilotResponse(**asdict(view))
         except InvalidSpotError:
@@ -497,6 +617,8 @@ def _review_image(
             confidence=state.confidence,
             n_players=state.n_players,
             position=state.position,
+            player_count_confidence=state.player_count_confidence,
+            position_confidence=state.position_confidence,
             stacks=state.stacks or {},
             pot_source=state.pot_source,
         ),
@@ -775,7 +897,7 @@ contra bots de IA de níveis configuráveis, ou assiste os bots se enfrentarem n
 ### Caixa de vidro (glass-box AI)
 Cada bot expõe o **raciocínio real** da última jogada no campo `seats[].insight`
 (ex.: *"Equity 37% (200 simulações)"*). No seu turno, o campo `analysis` traz uma
-análise completa da sua mão (equity, outs, pot odds, EV, e o que cada IA faria).
+análise completa da sua mão (equity, outs, pot odds, EV simplificado de checkdown e o que cada IA faria).
 
 ### Níveis de IA
 `random` (Iniciante), `heuristic` (Amador), `montecarlo` (Intermediário),
@@ -872,6 +994,7 @@ def create_app() -> FastAPI:
     ]
     public_origins = _validate_public_deployment(allowed_hosts)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+    app.add_middleware(_ImageBodyLimitMiddleware)
 
     async def run_and_publish(
         table_id: str,
@@ -1013,6 +1136,7 @@ def create_app() -> FastAPI:
         },
     )
     def readiness(response: Response, repo: RepoDep) -> dict[str, object]:
+        from ..application.match_log import MatchLogCorruptionError, audit_log_health
         from ..vision import vision_model_available
 
         remote_vlm_enabled = os.environ.get("POKER_ENABLE_REMOTE_VLM", "0") == "1"
@@ -1032,9 +1156,16 @@ def create_app() -> FastAPI:
         remote_vlm_ready = not remote_vlm_enabled or (
             remote_provider_ready and remote_api_token_ready and remote_consent_ttl_ready
         )
+        try:
+            audit_health = audit_log_health()
+            audit_logs_ready = audit_health["unreadable_logs"] == 0
+        except MatchLogCorruptionError:
+            audit_health = {"readable_logs": 0, "unreadable_logs": 1}
+            audit_logs_ready = False
 
         checks = {
             "repository": type(repo).__name__,
+            "audit_logs": "complete" if audit_logs_ready else "incomplete-or-unreadable",
             "vision_model": "available" if vision_model_available() else "optional-missing",
             "expert_model": "available" if "expert" in available_levels() else "optional-missing",
             "remote_vlm": (
@@ -1066,7 +1197,7 @@ def create_app() -> FastAPI:
                 else "disabled"
             ),
         }
-        service_ready = remote_vlm_ready and api_token_configuration_ready
+        service_ready = remote_vlm_ready and api_token_configuration_ready and audit_logs_ready
         if not service_ready:
             response.status_code = 503
         return {"status": "ready" if service_ready else "degraded", "checks": checks}
@@ -1084,7 +1215,8 @@ def create_app() -> FastAPI:
     )
     def copilot(req: CopilotRequest) -> CopilotResponse:
         """Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)
-        e devolve a leitura completa: equity real, pot odds, EV, MDF, outs, a nut,
+        e devolve a leitura completa: equity modelada, pot odds, EV simplificado de checkdown,
+        MDF, outs, a nut,
         textura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o
         conselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos
         locais e não acessa sites de poker. É destinado a estudo e revisão pós-jogo."""
@@ -1101,7 +1233,13 @@ def create_app() -> FastAPI:
                 req.in_position,
                 list(available_levels()),
                 position=req.position,
+                table_size=req.table_size,
                 big_blind=req.big_blind,
+                effective_stack=req.effective_stack,
+                hero_current_bet=req.hero_current_bet,
+                current_bet=req.current_bet,
+                min_raise_increment=req.min_raise_increment,
+                raise_reopened=req.raise_reopened,
             )
         except InvalidSpotError as e:
             raise HTTPException(400, str(e)) from e
@@ -1175,11 +1313,16 @@ def create_app() -> FastAPI:
     )
     async def from_image(
         image: Annotated[UploadFile, File(description="Screenshot 2D da mesa de poker.")],
-        to_call: Annotated[int, Form(ge=0, le=MAX_CHIPS)] = 0,
-        my_stack: Annotated[int, Form(gt=0, le=MAX_CHIPS)] = 1000,
-        num_opponents: Annotated[int, Form(ge=1, le=8)] = 1,
-        in_position: Annotated[bool, Form()] = True,
+        to_call: Annotated[int | None, Form(ge=0, le=MAX_CHIPS)] = None,
+        my_stack: Annotated[int | None, Form(gt=0, le=MAX_CHIPS)] = None,
+        effective_stack: Annotated[int | None, Form(ge=0, le=MAX_CHIPS)] = None,
+        num_opponents: Annotated[int | None, Form(ge=1, le=8)] = None,
+        in_position: Annotated[bool | None, Form()] = None,
         position: Annotated[str | None, Form()] = None,
+        hero_current_bet: Annotated[int | None, Form(ge=0, le=MAX_CHIPS)] = None,
+        current_bet: Annotated[int | None, Form(ge=0, le=MAX_CHIPS)] = None,
+        min_raise_increment: Annotated[int | None, Form(gt=0, le=MAX_CHIPS)] = None,
+        raise_reopened: Annotated[bool | None, Form()] = None,
         strict: Annotated[
             bool,
             Form(
@@ -1242,9 +1385,14 @@ def create_app() -> FastAPI:
             img,
             to_call=to_call,
             my_stack=my_stack,
+            effective_stack=effective_stack,
             num_opponents=num_opponents,
             in_position=in_position,
             position=position,
+            hero_current_bet=hero_current_bet,
+            current_bet=current_bet,
+            min_raise_increment=min_raise_increment,
+            raise_reopened=raise_reopened,
             strict=strict,
             remote_vlm_consent=remote_vlm_consent,
             remote_vlm_session_id=remote_vlm_session_id,
@@ -1255,13 +1403,14 @@ def create_app() -> FastAPI:
         "/copilot/review-hand",
         response_model=HandReviewResponse,
         tags=["Copiloto"],
-        summary="Copiloto: revisar uma MÃO inteira (cole o histórico PHH)",
+        summary="Copiloto: revisar uma mão do subconjunto PHH-NLHE inteiro",
         responses={
             400: {"description": "Histórico inválido, jogador inexistente ou sem decisões suas."}
         },
     )
     def review_hand_endpoint(req: HandReviewRequest) -> HandReviewResponse:
-        """Cole o histórico da mão (formato PHH — o texto que o jogo exporta ao FIM da
+        """Cole o histórico da mão (subconjunto PHH variant='NT', valores inteiros —
+        o texto que o jogo exporta ao FIM da
         mão) e escolha qual jogador é você. O copiloto reproduz a mão e revisa CADA
         decisão sua, comparando com a recomendação. É estudo pós-jogo (como rever um
         PGN de xadrez), executado localmente — não lê tela de jogo ao vivo."""

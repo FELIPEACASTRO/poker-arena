@@ -146,9 +146,7 @@ def test_rejected_historical_training_notebooks_fail_before_side_effects(name: s
     assert block < source.index("upload_file")
     assert "os.environ['HF_TOKEN']" not in source
     assert "'PIP_CONFIG_FILE': os.devnull" in source
-    assert source.index("'pip', 'install'") < source.index(
-        "hf_token = userdata.get('HF_TOKEN')"
-    )
+    assert source.index("'pip', 'install'") < source.index("hf_token = userdata.get('HF_TOKEN')")
     assert "stable-baselines3==2.7.0" in source
     assert "huggingface_hub==0.34.3" in source
 
@@ -347,7 +345,7 @@ def test_real_finetune_is_grouped_pinned_and_never_promotes_directly():
     assert "'PIP_CONFIG_FILE': os.devnull" in code
     assert "os.environ.pop('HF_TOKEN', None)" in code
     assert "sensitive_env_name.search(inherited_name)" in code
-    assert code.index("HF_TOKEN = ''") < code.index("ft.train(")
+    assert code.index("baseline_auth_value = ''") < code.index("ft.train(")
     assert "shutil.rmtree(ROOT)" in code
     assert "torch.use_deterministic_algorithms(True)" in code
     assert "validate_manifest(" in code
@@ -391,7 +389,7 @@ def test_card_reader_notebook_is_deterministic_parity_checked_and_candidate_only
     assert "'state': 'candidate'" in code
     assert "MANIFEST.json" in code and "training_receipt.json" in code
     assert "real_world_validated': False" in code
-    assert "files.download(\"card_reader.onnx\")" not in code
+    assert 'files.download("card_reader.onnx")' not in code
     assert "coloque em **`backend/models/`**" not in prose
     assert "canônico" in prose.lower()
 

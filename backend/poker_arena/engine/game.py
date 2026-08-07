@@ -80,7 +80,14 @@ class Hand:
             bb_seat = self._next_seat(sb_seat)
         self._post(sb_seat, self.sb)
         self._post(bb_seat, self.bb)
-        self.current_bet = self.bb
+        # Em HU, se o BB estiver all-in por menos, o único adversário enfrenta o
+        # valor efetivamente postado, não o bring-in nominal. Em multiway o BB nominal
+        # continua sendo a abertura preflop para os jogadores ainda ativos.
+        self.current_bet = (
+            max(self.players[sb_seat].current_bet, self.players[bb_seat].current_bet)
+            if heads_up
+            else self.bb
+        )
         self.min_raise = self.bb
         # distribui uma a uma, começando pelo SB (esquerda do botão) — ordem oficial
         n = len(self.players)
@@ -97,29 +104,55 @@ class Hand:
 
     # ---- consultas de aposta ----
     def amount_to_call(self) -> int:
-        return self.current_bet - self.players[self.to_act].current_bet
+        target = self.current_bet
+        active = [p for p in self.players if p.status == PlayerStatus.ACTIVE]
+        if len(active) == 1:
+            # Quando todos os adversários estão all-in, qualquer parcela acima da
+            # maior aposta real seria devolvida como uncalled. Expor apenas o custo
+            # economicamente contestável impede pot odds/EV inflados por esse trânsito.
+            contesting = [p for p in self.players if p.status != PlayerStatus.FOLDED]
+            target = max(p.current_bet for p in contesting)
+        return max(0, target - self.players[self.to_act].current_bet)
 
     def min_raise_to(self) -> int:
         """Menor 'total nesta rodada' para um raise voluntário válido."""
         return self.current_bet + self.min_raise
 
     def legal_actions(self) -> set[ActionType]:
+        # Uma rodada terminal não tem ator nem ação legal. Isso importa sobretudo
+        # quando um blind está all-in por menos: `current_bet` ainda preserva o bring-in
+        # nominal, mas não deve criar uma aposta fictícia contra o único stack ativo.
+        if self.round_complete():
+            return set()
         p = self.players[self.to_act]
         to_call = self.amount_to_call()
         actions: set[ActionType] = {ActionType.FOLD}
         if to_call == 0:
             actions.add(ActionType.CHECK)
-        if to_call > 0 and p.stack > 0:
+        if to_call > 0 and p.stack > to_call:
             actions.add(ActionType.CALL)
         # a ação só está ABERTA pra aumentar se o jogador ainda não agiu nesta
         # "rodada de aumentos". Um all-in curto (< aumento cheio) NÃO reabre a aposta
         # pra quem já agiu — regra TDA 47 / WSOP 96 (ele só pode pagar ou desistir).
         cumulative_raise = self.current_bet - p.last_bet_faced
         reopened = not p.acted or cumulative_raise >= self.min_raise
-        if reopened and p.stack > to_call and (p.current_bet + p.stack) >= self.min_raise_to():
+        has_contesting_opponent = any(
+            i != self.to_act
+            and other.status == PlayerStatus.ACTIVE
+            and other.current_bet + other.stack > self.current_bet
+            for i, other in enumerate(self.players)
+        )
+        if (
+            has_contesting_opponent
+            and reopened
+            and p.stack > to_call
+            # Equality consumes the whole stack and is represented canonically only
+            # by ALL_IN; RAISE remains available only when chips remain afterward.
+            and (p.current_bet + p.stack) > self.min_raise_to()
+        ):
             actions.add(ActionType.RAISE)
         # all-in: vale sempre como PAGAMENTO; como AUMENTO, só se a ação está aberta
-        if p.stack > 0 and (reopened or p.stack <= to_call):
+        if p.stack > 0 and (p.stack <= to_call or (reopened and has_contesting_opponent)):
             actions.add(ActionType.ALL_IN)
         return actions
 
@@ -187,10 +220,13 @@ class Hand:
         active = [p for p in self.players if p.status == PlayerStatus.ACTIVE]
         if not active:
             return True  # todos os contestantes estão all-in
-        if len(active) == 1 and active[0].current_bet >= self.current_bet:
-            # sobrou UM jogador com fichas e nada a pagar: não existe mais aposta
-            # possível (ninguém pode responder) — a rodada encerra e as cartas correm
-            return True
+        if len(active) == 1:
+            # Um único stack ativo ainda precisa responder a uma aposta REAL maior feita
+            # por um all-in. O bring-in nominal do BB, porém, pode exceder tudo o que foi
+            # efetivamente postado (ex.: HU SB=10, BB all-in=5); essa diferença não é
+            # uma aposta e não pode manter a rodada aberta.
+            highest_committed = max(p.current_bet for p in contesting)
+            return active[0].current_bet >= highest_committed
         return all(p.acted and p.current_bet == self.current_bet for p in active)
 
     # ---- progressão do board ----
@@ -221,30 +257,41 @@ class Hand:
             self._deal_board()
 
     # ---- resolução (side pots + vencedores) ----
-    def build_side_pots(self) -> list[Pot]:
-        """Constrói main pot + side pots a partir do total apostado por cada um.
-
-        Algoritmo de camadas: a cada nível de contribuição, fecha-se um pote com
-        todos que contribuíram até ali; só os não-foldados são elegíveis.
-        """
+    def _settlement(self) -> tuple[list[Pot], dict[int, int]]:
+        """Build contested pots and isolate uncalled top-layer refunds."""
         remaining = {
             i: p.total_committed for i, p in enumerate(self.players) if p.total_committed > 0
         }
         pots: list[Pot] = []
+        refunds: dict[int, int] = {}
         while remaining:
             layer = min(remaining.values())
-            contributors = list(remaining.keys())
+            contributors = list(remaining)
             amount = layer * len(contributors)
-            eligible = [
-                self.players[i]
-                for i in contributors
-                if self.players[i].status != PlayerStatus.FOLDED
-            ]
-            pots.append(Pot(amount=amount, eligible=eligible))
+            if len(contributors) == 1:
+                seat = contributors[0]
+                refunds[seat] = refunds.get(seat, 0) + amount
+            else:
+                eligible = [
+                    self.players[i]
+                    for i in contributors
+                    if self.players[i].status != PlayerStatus.FOLDED
+                ]
+                pots.append(Pot(amount=amount, eligible=eligible))
             for i in contributors:
                 remaining[i] -= layer
                 if remaining[i] == 0:
                     del remaining[i]
+        return pots, refunds
+
+    def build_side_pots(self) -> list[Pot]:
+        """Constrói apenas o main pot e side pots efetivamente disputados.
+
+        Algoritmo de camadas: a cada nível de contribuição, fecha-se um pote com
+        todos que contribuíram até ali; só os não-foldados são elegíveis. Uma
+        camada com contribuidor único é uncalled e, portanto, refund — não pote.
+        """
+        pots, _refunds = self._settlement()
         return pots
 
     def _winners_of(self, eligible: list[Player]) -> list[Player]:
@@ -264,7 +311,11 @@ class Hand:
         """Distribui cada pote ao(s) melhor(es) elegível(is). Retorna vencedores."""
         if self._resolved_winners is not None:
             return list(self._resolved_winners)
-        pots = self.build_side_pots()
+        pots, refunds = self._settlement()
+        for seat, amount in refunds.items():
+            self.players[seat].stack += amount
+        # O pote observável/estatístico exclui fichas não pagas devolvidas.
+        self.pot = sum(pot.amount for pot in pots)
         # showdown disputado precisa do board completo
         if len(self.board) < 5 and any(len(pot.eligible) > 1 for pot in pots):
             self._runout_board()

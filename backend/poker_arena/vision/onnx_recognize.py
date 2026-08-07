@@ -346,14 +346,14 @@ class OnnxRecognizer:
         button_candidates: list[tuple[float, float, float]] = []
         hole: list[CardCandidate] = []
         board: list[CardCandidate] = []
-        seats: list[Point] = []
+        seat_detections: list[tuple[float, float, float]] = []
         for c, cf, x1, y1, x2, y2 in dets:
             cxp, cyp = (x1 + x2) / 2, (y1 + y2) / 2
             if c < 52:
                 box = (int(x1), int(y1), int(x2 - x1), int(y2 - y1))
                 (hole if cyp > H * 0.66 else board).append((cxp, cyp, cf, CARD_NAMES[c], box))
             elif c == SEAT_CLS:
-                seats.append((cxp, cyp))
+                seat_detections.append((float(cf), cxp, cyp))
             elif c == BUTTON_CLS:
                 button_candidates.append((cf, cxp, cyp))
         # corte top-k pela CONFIANÇA (não pela posição), depois ordena L->R por x
@@ -368,7 +368,22 @@ class OnnxRecognizer:
         ]
         card_boxes = [item[4] for item in (*hole_ordered, *board_ordered)]
 
+        seats = [(x, y) for _confidence, x, y in seat_detections]
         button = _select_button(button_candidates, (W, H))
+        button_confidence = (
+            max(
+                confidence
+                for confidence, x, y in button_candidates
+                if button is not None and (x, y) == button
+            )
+            if button is not None
+            else None
+        )
+        player_count_confidence = (
+            min(confidence for confidence, _x, _y in seat_detections)
+            if len(seat_detections) >= 2
+            else None
+        )
         if len(seats) >= 2 and hole_top:
             hero = (
                 float(np.mean([item[0] for item in hole_top])),
@@ -377,6 +392,14 @@ class OnnxRecognizer:
             n_players, position = derive_position(seats, hero, button)
         else:
             n_players, position = len(seats), ""
+        position_confidence = (
+            min(player_count_confidence, button_confidence, *(item[2] for item in hole_top))
+            if position
+            and player_count_confidence is not None
+            and button_confidence is not None
+            and hole_top
+            else None
+        )
 
         if ocr_numbers and _cards_force_abstention(
             hole_sorted, board_sorted, card_confs, fail_fast_abstain_below
@@ -399,6 +422,8 @@ class OnnxRecognizer:
             pot_confidence=float(potc) if pot is not None else None,
             n_players=n_players,
             position=position,
+            player_count_confidence=player_count_confidence,
+            position_confidence=position_confidence,
             stacks=stacks,
             stack_confidences=stack_confs,
             pot_source=src,

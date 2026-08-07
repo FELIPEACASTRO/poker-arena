@@ -4,16 +4,25 @@
 
 Estados `approved`/`promoted` do artefato `vision` exigem agora um
 `promotion_receipt` local, hash-pinado e válido no perfil
-`poker-arena-external-vision-v2-2026-08-07`. O receipt inclui o ambiente de execução
-(SO, arquitetura, Python, Pillow, ONNX Runtime, provider, CPU lógico e escopo da medição)
+`poker-arena-external-vision-v3-2026-08-07`. O receipt inclui o ambiente de execução
+(SO, arquitetura, modelo reportado do processador, CPU lógico, Python, Pillow, NumPy,
+OpenCV, RapidOCR, ONNX, ONNX Runtime, provider e escopo da medição)
 e é produzido somente pelo
 runner que executa o candidato e o pipeline F2 real sobre holdout autorizado;
 predictions importadas não autorizam promoção. Ele liga modelo, dataset,
-protocolo de anotação, código/configuração do pipeline, lock de dependências,
+protocolo de anotação, todo o pacote Python do backend, configuração do pipeline,
+lock de dependências,
 exact-state, IC, falso aceite, calibração, subgrupos e latência.
 
+O perfil v3 exige detector de 54 classes (cartas, assentos e botão), rejeita duplicatas
+exatas e colisões idênticas do hash perceptual também dentro do holdout, exige 99 sessões,
+mede o limite por cluster de sessão e cobre todas as
+ruas, tamanhos de mesa e posições suportadas. Um detector de 52 classes não pode produzir
+o contexto estratégico completo e falha antes da avaliação.
+
 O loader revalida o receipt inclusive em cache hit. Evidência ausente, alterada,
-`fail`, de outro SHA ou de pipeline antigo bloqueia o runtime. Esse perfil não
+`fail`, de outro SHA, ambiente instalado diferente, idade superior a 30 dias ou pipeline
+antigo bloqueia o runtime. Esse perfil não
 pode autorizar `expert` nem `card_reader`, cujas tarefas exigem protocolos
 próprios. `scripts/promote_model.py` cria uma proposta nova e nunca sobrescreve
 o manifesto ativo.

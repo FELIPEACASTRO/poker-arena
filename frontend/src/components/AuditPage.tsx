@@ -104,6 +104,7 @@ function HandCard({
 export default function AuditPage({ onClose }: { onClose: () => void }) {
   const [games, setGames] = useState<GameSummary[] | null>(null)
   const [gamesPage, setGamesPage] = useState<PageInfo | null>(null)
+  const [unreadableLogs, setUnreadableLogs] = useState(0)
   const [game, setGame] = useState<GameLog | null>(null)
   const [openHand, setOpenHand] = useState<number | null>(null)
   const [listError, setListError] = useState<string | null>(null)
@@ -141,6 +142,7 @@ export default function AuditPage({ onClose }: { onClose: () => void }) {
       .then((response) => {
         setGames(response.games)
         setGamesPage(response.page)
+        setUnreadableLogs(response.unreadable_logs)
       })
       .catch((caught: unknown) => {
         if (caught instanceof DOMException && caught.name === 'AbortError') return
@@ -166,6 +168,7 @@ export default function AuditPage({ onClose }: { onClose: () => void }) {
       .then((response) => {
         setGames((current) => [...(current ?? []), ...response.games])
         setGamesPage(response.page)
+        setUnreadableLogs(response.unreadable_logs)
       })
       .catch((caught: unknown) => {
         if (caught instanceof DOMException && caught.name === 'AbortError') return
@@ -266,6 +269,12 @@ export default function AuditPage({ onClose }: { onClose: () => void }) {
             <p className="audit-info">nenhuma partida gravada ainda — jogue uma mão e ela aparece aqui.</p>
           ) : (
             <div className="audit-games">
+              {unreadableLogs > 0 && (
+                <p className="audit-info" role="alert">
+                  Trilha incompleta: {unreadableLogs} log(s) corrompido(s) ou inacessível(is)
+                  foram isolados.
+                </p>
+              )}
               {listError && <p className="audit-info" role="alert">Falha ao carregar mais partidas: {listError}</p>}
               {games.map((g) => (
                 <button

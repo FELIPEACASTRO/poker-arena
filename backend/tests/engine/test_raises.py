@@ -69,6 +69,17 @@ def test_short_stack_cannot_raise_must_all_in():
         h.apply(Action(ActionType.RAISE, amount=30))
 
 
+def test_exact_minimum_raise_that_consumes_stack_is_only_all_in():
+    players = [Player("BTN", 40), Player("BB", 100)]
+    hand = Hand(players, button=0, small_blind=10, big_blind=20, seed=1)
+    hand.start()
+
+    assert hand.to_act == 0
+    assert players[0].current_bet + players[0].stack == hand.min_raise_to() == 40
+    assert ActionType.ALL_IN in hand.legal_actions()
+    assert ActionType.RAISE not in hand.legal_actions()
+
+
 def test_all_in_below_min_raise_is_allowed_but_not_a_full_raise():
     players = _players()
     players[3].stack = 30

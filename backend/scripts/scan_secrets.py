@@ -151,10 +151,10 @@ CREDENTIAL_FIELD_PATTERN = (
     r"(?:DATABASE_URL|REDIS_URL|DSN|CONNECTION_STRING)"
 )
 ASSIGNMENT_PATTERN = re.compile(
-    r"(?im)(?:^|[{,;])\s*(?:export\s+|const\s+|let\s+|var\s+|env\s+|arg\s+)?"
+    r"(?im)(?:^|[{,;])\s*(?:-\s*)?(?:export\s+|const\s+|let\s+|var\s+|env\s+|arg\s+)?"
     r"(?:\$env:|process\.env\.|\$)?"
     rf"[\"']?(?P<name>{CREDENTIAL_FIELD_PATTERN})[\"']?"
-    r"\s*(?P<separator>[:=])\s*(?P<quote>[\"']?)(?P<secret>[^\s\"'#,;\}\]\)]{8,})"
+    r"\s*(?P<separator>[:=])\s*(?P<quote>[\"']?)(?P<secret>[^\s\"'#,;]{8,})"
 )
 XML_ASSIGNMENT_PATTERN = re.compile(
     rf"(?is)<(?P<name>{CREDENTIAL_FIELD_PATTERN})(?:\s[^>]*)?>\s*"
@@ -168,7 +168,15 @@ NETRC_PASSWORD_PATTERN = re.compile(
     r"(?im)^\s*(?:machine\s+\S+\s+)?(?:login\s+\S+\s+)?password\s+"
     r"(?P<secret>\S{8,})"
 )
-EXACT_PLACEHOLDERS = {"change-me", "changeme", "dummy", "example", "fake", "placeholder", "redacted"}
+EXACT_PLACEHOLDERS = {
+    "change-me",
+    "changeme",
+    "dummy",
+    "example",
+    "fake",
+    "placeholder",
+    "redacted",
+}
 PLACEHOLDER_PREFIXES = (
     "change-me-",
     "changeme-",
@@ -178,6 +186,17 @@ PLACEHOLDER_PREFIXES = (
     "synthetic-",
     "your-",
 )
+SEMANTIC_PLACEHOLDER_NAMES = {
+    "api_key_here",
+    "apikey",
+    "apitoken",
+    "environment_secret",
+    "runtime_secret",
+    "runtime_value",
+    "secret_from_environment",
+    "segredo-obtido-do-ambiente",
+    "token_from_environment",
+}
 
 
 @dataclass(frozen=True, order=True)
@@ -190,14 +209,31 @@ class Finding:
 def _is_placeholder(value: str) -> bool:
     stripped = value.strip()
     lowered = stripped.casefold()
-    if stripped.startswith(("<", "{", "[", "(")):
+    enclosed = re.fullmatch(r"<([^<>\r\n]{1,128})>", stripped)
+    if enclosed:
+        inner = enclosed.group(1).casefold()
+        return (
+            inner in SEMANTIC_PLACEHOLDER_NAMES
+            or inner in EXACT_PLACEHOLDERS
+            or inner.startswith(PLACEHOLDER_PREFIXES)
+        )
+    balanced = re.fullmatch(r"([\{\[\(])([A-Za-z_][A-Za-z0-9_.:-]{0,126})([\}\]\)])", stripped)
+    if balanced:
+        pairs = {"{": "}", "[": "]", "(": ")"}
+        if pairs[balanced.group(1)] != balanced.group(3):
+            return False
+        inner = balanced.group(2).casefold()
+        return (
+            inner in SEMANTIC_PLACEHOLDER_NAMES
+            or inner in EXACT_PLACEHOLDERS
+            or inner.startswith(PLACEHOLDER_PREFIXES)
+        )
+    if re.fullmatch(r"\$\{[A-Za-z_][A-Za-z0-9_.:-]{0,126}\}", stripped):
         return True
-    if lowered.startswith(
-        ("_required_secret(", "userdata.get", "os.getenv", "os.environ", "process.env", "getenv(")
-    ):
-        return True
-    if "{{" in value or "${" in value:
-        return True
+    template = re.fullmatch(r"\{\{([A-Za-z_][A-Za-z0-9_.:-]{0,126})\}\}", stripped)
+    if template:
+        inner = template.group(1).casefold()
+        return inner in SEMANTIC_PLACEHOLDER_NAMES or inner.startswith(PLACEHOLDER_PREFIXES)
     return lowered in EXACT_PLACEHOLDERS or lowered.startswith(PLACEHOLDER_PREFIXES)
 
 
@@ -210,16 +246,33 @@ def _is_sensitive_filename(filename: str) -> bool:
 
 def _assignment_is_placeholder(match: re.Match[str], path: Path) -> bool:
     value = match.group("secret")
-    if _is_placeholder(value):
+    # Ao inspecionar código-fonte e JSON de notebooks, a expressão regular pode
+    # incluir o ``\\n`` textual que fecha uma string de fixture/célula. Remova
+    # somente esse terminador serializado; nunca altere o valor implantado de um
+    # arquivo dotenv/YAML real.
+    embedded_value = value.split(r"\n", 1)[0].split(r"\r", 1)[0]
+    if _is_placeholder(embedded_value):
+        return True
+    # A regex principal captura até a primeira aspa interna. Confirme a chamada
+    # dinâmica completa na linha antes de dispensá-la; prefixos incompletos não bastam.
+    tail = match.string[match.start("secret") :].splitlines()[0].strip()
+    normalized_tail = tail.replace(r"\"", '"').replace(r"\'", "'")
+    if re.fullmatch(
+        r"(?:_required_secret|userdata\.get|os\.getenv|os\.environ\.get|getenv)"
+        r"\(\s*['\"][A-Za-z_][A-Za-z0-9_]{0,126}['\"]\s*\)"
+        r"(?:\\r\\n|\\n)?[\"']?[,;]?",
+        normalized_tail,
+    ):
         return True
     # In source code, ``{"TOKEN": token_variable}`` is a reference, not a literal
     # credential.  Keep unquoted dotenv/YAML assignments fail-closed because there an
     # identifier-looking value is itself the deployed secret.
+    source_value = embedded_value.rstrip("}])")
     return (
         path.suffix.casefold() in {".js", ".jsx", ".py", ".ts", ".tsx"}
         and match.group("separator") == ":"
         and not match.group("quote")
-        and re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_.$]*", value) is not None
+        and re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_.$]*", source_value) is not None
     )
 
 
@@ -231,7 +284,17 @@ def _looks_binary(probe: bytes) -> bool:
     if probe.startswith((b"\xff\xfe", b"\xfe\xff")):
         return False
     if probe.startswith(
-        (b"\x89PNG\r\n\x1a\n", b"PK\x03\x04", b"%PDF-", b"GIF8", b"\xff\xd8\xff", b"MZ", b"\x7fELF", b"\x1f\x8b", b"7z\xbc\xaf\x27\x1c")
+        (
+            b"\x89PNG\r\n\x1a\n",
+            b"PK\x03\x04",
+            b"%PDF-",
+            b"GIF8",
+            b"\xff\xd8\xff",
+            b"MZ",
+            b"\x7fELF",
+            b"\x1f\x8b",
+            b"7z\xbc\xaf\x27\x1c",
+        )
     ):
         return True
     if b"\x00" not in probe:
@@ -244,9 +307,7 @@ def _looks_binary(probe: bytes) -> bool:
             decoded = probe.decode(encoding)
         except UnicodeDecodeError:
             return True
-        control_count = sum(
-            ord(char) < 32 and char not in "\n\r\t" for char in decoded
-        )
+        control_count = sum(ord(char) < 32 and char not in "\n\r\t" for char in decoded)
         return control_count > max(2, len(decoded) // 100)
     return True
 
@@ -290,9 +351,7 @@ def scan(root: Path) -> list[Finding]:
             relative = "."
         findings.add(Finding(relative, 1, "unreadable_directory"))
 
-    for current, directories, files in os.walk(
-        root, followlinks=False, onerror=record_walk_error
-    ):
+    for current, directories, files in os.walk(root, followlinks=False, onerror=record_walk_error):
         current_path = Path(current)
         kept_directories: list[str] = []
         for name in directories:

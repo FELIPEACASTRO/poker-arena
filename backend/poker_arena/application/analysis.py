@@ -19,7 +19,8 @@ from treys import Evaluator as TEvaluator
 
 from ..bots.adaptive_bot import AdaptiveBot
 from ..bots.base import Bot
-from ..bots.observation import observation_for
+from ..bots.monte_carlo_bot import bounded_wilson_interval
+from ..bots.observation import eligible_pot_for, observation_for
 from ..bots.opponent_model import OpponentModel
 from ..engine.actions import ActionType
 from ..engine.cards import Card
@@ -78,7 +79,13 @@ def _win_probs(
         winners = [s for s in seats if scores[s] == best]
         for s in winners:
             wins[s] += 1.0 / len(winners)
-    return {s: wins[s] / samples for s in seats}
+    probabilities = {s: wins[s] / samples for s in seats}
+    # Villains use the same exchangeable uniform range. Per-seat differences are
+    # Monte-Carlo label noise, not an individual opponent read.
+    if opponents:
+        villain_mean = sum(probabilities[seat] for seat in opponents) / len(opponents)
+        probabilities.update({seat: villain_mean for seat in opponents})
+    return probabilities
 
 
 def _hand_name(hole: Sequence[Card], board: Sequence[Card]) -> str | None:
@@ -88,22 +95,67 @@ def _hand_name(hole: Sequence[Card], board: Sequence[Card]) -> str | None:
     return _EVAL.class_to_string(_EVAL.get_rank_class(score))
 
 
+_STRAIGHTS = (
+    frozenset({14, 2, 3, 4, 5}),
+    *(frozenset(range(start, start + 5)) for start in range(2, 11)),
+)
+
+
 def _outs_and_draws(hole: Sequence[Card], board: Sequence[Card]) -> tuple[int, list[str]]:
+    """Count visible structural straight/flush outs, including the wheel.
+
+    Only a draw that requires at least one private hero card is reported. These are
+    gross structural outs: opponent ranges, domination and redraws can make them dirty,
+    so they are explanatory signals and never replace the equity estimator.
+    """
     if not (3 <= len(board) < 5):
         return 0, []
+    cards = [*hole, *board]
+    known = {str(card) for card in cards}
+    hero_ranks = {int(card.rank) for card in hole}
+    board_ranks = {int(card.rank) for card in board}
+    ranks = hero_ranks | board_ranks
+    hero_private_ranks = hero_ranks - board_ranks
     my, bd = _t(hole), _t(board)
-    cur = _EVAL.get_rank_class(_EVAL.evaluate(bd, my))
-    known = set(my) | set(bd)
-    deck = [c for c in _FULL if c not in known]
-    outs = sum(1 for c in deck if _EVAL.get_rank_class(_EVAL.evaluate([*bd, c], my)) < cur)
+    current_score = _EVAL.evaluate(bd, my)
+
+    def improves_current_hand(card: str) -> bool:
+        return _EVAL.evaluate([*bd, TCard.new(card)], my) < current_score
+
+    out_cards: set[str] = set()
     draws: list[str] = []
-    cards = list(hole) + list(board)
-    if max(Counter(c.suit for c in cards).values()) == 4:
-        draws.append("projeto de flush")
-    ranks = sorted({int(c.rank) for c in cards})
-    if any(ranks[i + 3] - ranks[i] == 3 for i in range(len(ranks) - 3)):
-        draws.append("projeto de sequência")
-    return outs, draws
+
+    straight_missing: set[int] = set()
+    for sequence in _STRAIGHTS:
+        missing = sequence - ranks
+        if len(missing) == 1 and sequence.intersection(hero_private_ranks):
+            straight_missing.update(missing)
+    if straight_missing:
+        rank_name = {14: "A", 13: "K", 12: "Q", 11: "J", 10: "T"}
+        straight_outs: set[str] = set()
+        for rank in straight_missing:
+            symbol = rank_name.get(rank, str(rank))
+            straight_outs.update(symbol + suit for suit in "shdc" if symbol + suit not in known)
+        straight_outs = {card for card in straight_outs if improves_current_hand(card)}
+        if straight_outs:
+            out_cards.update(straight_outs)
+            draws.append("projeto/melhoria de sequência")
+
+    suit_counts = Counter(card.suit.value for card in cards)
+    hero_suits = {card.suit.value for card in hole}
+    flush_suits = {suit for suit in hero_suits if suit_counts[suit] == 4}
+    if flush_suits:
+        flush_outs = {
+            rank + suit
+            for suit in flush_suits
+            for rank in "23456789TJQKA"
+            if rank + suit not in known
+        }
+        flush_outs = {card for card in flush_outs if improves_current_hand(card)}
+        if flush_outs:
+            out_cards.update(flush_outs)
+            draws.append("projeto/melhoria de flush")
+    return len(out_cards), draws
 
 
 def _nut(board: Sequence[Card]) -> str | None:
@@ -120,9 +172,30 @@ def _texture(board: Sequence[Card]) -> str | None:
     if len(board) < 3:
         return None
     suits = Counter(c.suit for c in board)
-    ranks = sorted(int(c.rank) for c in board)
-    wet = max(suits.values()) >= 3 or (ranks[-1] - ranks[0]) <= 4
-    return "molhado (perigoso)" if wet else "seco (tranquilo)"
+    ranks = [int(c.rank) for c in board]
+    unique = set(ranks)
+    low_ace = {1 if rank == 14 else rank for rank in unique}
+    connected = any(
+        sum(1 for rank in view if start <= rank <= start + 4) >= 3
+        for view in (unique, low_ace)
+        for start in range(1, 11)
+    )
+    paired = len(unique) < len(ranks)
+    max_suit = max(suits.values())
+    suit_label = (
+        "três-ou-mais do mesmo naipe"
+        if max_suit >= 3
+        else "dois do mesmo naipe"
+        if max_suit == 2
+        else "naipes distintos"
+    )
+    return " · ".join(
+        (
+            "pareado" if paired else "não pareado",
+            "conectado" if connected else "desconectado",
+            suit_label,
+        )
+    )
 
 
 def _position(seat: int, button: int, n: int) -> str:
@@ -202,7 +275,7 @@ def analyze(
     opp_model: OpponentModel,
     available_levels: list[str],
     *,
-    samples: int = 250,
+    samples: int = 1_000,
 ) -> HumanAnalysisView:
     players = hand.players
     me = players[seat]
@@ -211,13 +284,25 @@ def analyze(
     active = [i for i, p in enumerate(players) if p.status != PlayerStatus.FOLDED]
     wp = _win_probs(seat, me.hole, active, board, samples) if len(active) >= 2 else {seat: 1.0}
     equity = wp.get(seat, 0.0)
+    sampled = len(active) >= 2
+    equity_trials = samples if sampled else 1
+    # Envelope Wilson evita largura zero espúria em 0%/100%. Como empates geram
+    # payoffs fracionários, ele é declarado como aproximação conservadora de
+    # Bernoulli para erro amostral, não como cobertura exata nem erro de modelo.
+    equity_lo, equity_hi = (
+        bounded_wilson_interval(equity, equity_trials) if sampled else (equity, equity)
+    )
+    equity_se = (equity_hi - equity_lo) / (2 * 1.959963984540054) if sampled else 0.0
 
-    pot = hand.pot
+    pot = eligible_pot_for(hand, seat)
     to_call = hand.amount_to_call()
-    pot_odds = to_call / (pot + to_call) if to_call > 0 else 0.0
-    ev_call = equity * (pot + to_call) - to_call
+    call_cost = min(to_call, me.stack)
+    pot_odds = call_cost / (pot + call_cost) if call_cost > 0 else 0.0
+    recommendation_stable = to_call == 0 or not (equity_lo < pot_odds <= equity_hi)
+    # EV terminal/checkdown: não modela apostas futuras nem realização da equity.
+    ev_call = equity * (pot + call_cost) - call_cost
     # MDF (frequência mínima de defesa): 1 − to_call/pote (pote já contém a aposta)
-    mdf = (1 - to_call / pot) if (to_call > 0 and pot > 0) else None
+    mdf = (1 - to_call / pot) if (to_call > 0 and call_cost == to_call and pot > 0) else None
     realization, realization_why = _realization(seat, hand.button, players)
     others = [
         p.stack for i, p in enumerate(players) if i != seat and p.status != PlayerStatus.FOLDED
@@ -251,13 +336,26 @@ def analyze(
             LOGGER.exception("falha ao calcular o conselho ao vivo do nível %s", lvl)
             continue
 
-    best = next((c for c in council if c.level == "expert"), None) or (
-        council[0] if council else None
-    )
+    # O contrato diz "segundo o Expert". Sem Expert comprovadamente disponível,
+    # não rotule o primeiro baseline do conselho como "melhor".
+    best = next((c for c in council if c.level == "expert"), None)
     profile = opp_model.read()
 
     return HumanAnalysisView(
         equity=round(equity, 4),
+        equity_method=("monte-carlo-uniform-range" if sampled else "deterministic-uncontested"),
+        equity_trials=equity_trials,
+        equity_standard_error=round(equity_se, 6),
+        equity_ci95_lower=round(equity_lo, 4),
+        equity_ci95_upper=round(equity_hi, 4),
+        recommendation_stable=recommendation_stable,
+        equity_note=(
+            "IC95% cruza as pot odds; pagar/desistir é incerto. O EV assume checkdown, "
+            "sem apostas futuras nem erro de range."
+            if not recommendation_stable
+            else "Ranges adversários são uniformes; o IC cobre só amostragem. "
+            "O EV assume checkdown, sem apostas futuras nem realização imperfeita."
+        ),
         win_probs=[
             WinProbView(seat=s, prob=round(wp[s], 4)) for s in sorted(wp, key=lambda x: -wp[x])
         ],
@@ -265,6 +363,7 @@ def analyze(
         outs=outs,
         draws=draws,
         pot_odds=round(pot_odds, 4),
+        call_cost=call_cost,
         ev_call=round(ev_call, 1),
         nut=_nut(board),
         texture=_texture(board),

@@ -53,8 +53,7 @@ def test_floor_excludes_clearly_worse_actions():
     # favorita 0.60; piso 15% -> 0.09: a ação de 0.05 NUNCA pode sair
     probs = [0.05, 0.60, 0.35, 0.0, 0.0]
     seen = {
-        sample_action(probs, _rng(s), temperature=0.75, min_prob_ratio=0.15)
-        for s in range(300)
+        sample_action(probs, _rng(s), temperature=0.75, min_prob_ratio=0.15) for s in range(300)
     }
     assert 0 not in seen and 3 not in seen and 4 not in seen
     assert seen <= {1, 2}
@@ -64,8 +63,7 @@ def test_confident_spot_stays_deterministic():
     # rede com 99% de certeza: só a favorita sobrevive ao piso -> sempre ela
     probs = [0.99, 0.01, 0.0, 0.0, 0.0]
     seen = {
-        sample_action(probs, _rng(s), temperature=0.75, min_prob_ratio=0.15)
-        for s in range(200)
+        sample_action(probs, _rng(s), temperature=0.75, min_prob_ratio=0.15) for s in range(200)
     }
     assert seen == {0}
 

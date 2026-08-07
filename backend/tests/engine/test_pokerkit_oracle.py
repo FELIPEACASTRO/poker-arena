@@ -9,7 +9,8 @@ from pokerkit import StandardHighHand  # noqa: E402
 
 from poker_arena.engine.actions import Action, ActionType  # noqa: E402
 from poker_arena.engine.evaluator import card_from_str, compare  # noqa: E402
-from poker_arena.engine.game import IllegalActionError  # noqa: E402
+from poker_arena.engine.game import Hand, IllegalActionError  # noqa: E402
+from poker_arena.engine.player import Player  # noqa: E402
 from tests.helpers.pokerkit_oracle import (  # noqa: E402
     DealPlan,
     DifferentialState,
@@ -53,6 +54,58 @@ def test_heads_up_blinds_and_first_actor_match_pokerkit(button: int):
     assert pair.internal.to_act == pair.pokerkit_actor == button
     assert pair.players[button].current_bet == 10
     assert pair.players[(button + 1) % 2].current_bet == 20
+
+
+def test_heads_up_tiny_big_blind_ends_without_fictitious_action_like_pokerkit():
+    pair = DifferentialState([100, 5], button=0)
+
+    assert tuple(player.current_bet for player in pair.players) == (10, 5)
+    assert pair.internal.current_bet == 10
+    assert pair.internal.round_complete() is True
+    assert pair.internal.legal_actions() == set()
+    assert pair.pokerkit_actor is None
+
+
+@pytest.mark.parametrize(("big_blind_stack", "to_call"), [(15, 5), (20, 10)])
+def test_heads_up_all_in_big_blind_allows_only_real_call_or_fold_like_pokerkit(
+    big_blind_stack: int, to_call: int
+):
+    pair = DifferentialState([100, big_blind_stack], button=0)
+
+    assert pair.internal.to_act == pair.pokerkit_actor == 0
+    assert pair.internal.current_bet == big_blind_stack
+    assert pair.internal.amount_to_call() == to_call
+    assert pair.internal.legal_actions() == {ActionType.FOLD, ActionType.CALL}
+    assert pair.pokerkit.can_check_or_call()
+    assert pair.pokerkit.can_fold()
+    assert not pair.pokerkit.can_complete_bet_or_raise_to()
+
+    pair.internal.apply(Action(ActionType.CALL))
+    assert pair.internal.pot == 2 * big_blind_stack
+    assert pair.internal.round_complete() is True
+    assert pair.internal.legal_actions() == set()
+
+
+def test_multiway_short_blinds_expose_only_contestable_call_after_last_all_in():
+    # BTN/UTG tem 15, SB tem 100 e BB está all-in por 5. A abertura nominal é 20,
+    # mas, depois do all-in de UTG por 15, os 5 excedentes do SB seriam devolvidos.
+    players = [Player("SB", 100), Player("BB", 5), Player("BTN", 15)]
+    hand = Hand(players, button=2, small_blind=10, big_blind=20, seed=1)
+    hand.start()
+    assert hand.current_bet == 20
+    assert hand.to_act == 2
+
+    hand.apply(Action(ActionType.ALL_IN))
+
+    assert hand.to_act == 0
+    assert [player.current_bet for player in players] == [10, 5, 15]
+    assert hand.amount_to_call() == 5
+    assert hand.legal_actions() == {ActionType.FOLD, ActionType.CALL}
+
+    hand.apply(Action(ActionType.CALL))
+    assert hand.pot == 35
+    assert [pot.amount for pot in hand.build_side_pots()] == [15, 20]
+    assert hand.round_complete() is True
 
 
 @pytest.mark.parametrize("button", [0, 1, 2, 3])
@@ -137,6 +190,21 @@ def test_cumulative_short_all_ins_reopen_raising_in_either_engine():
     assert pair.internal.min_raise_to() == pair.pokerkit.min_completion_betting_or_raising_to_amount
     assert ActionType.RAISE in pair.internal.legal_actions()
     assert pair.pokerkit.can_complete_bet_or_raise_to()
+
+
+def test_raise_is_forbidden_when_no_opponent_can_contest_it_in_either_engine():
+    pair = DifferentialState([81, 176, 101, 75, 56, 433], button=4)
+    pair.apply(all_in())
+    pair.apply(fold())
+    pair.apply(fold())
+    pair.apply(fold())
+
+    assert pair.internal.to_act == pair.pokerkit_actor == 5
+    assert pair.internal.current_bet == 176
+    assert pair.internal.legal_actions() == {ActionType.FOLD, ActionType.CALL}
+    assert not pair.pokerkit.can_complete_bet_or_raise_to()
+    with pytest.raises(IllegalActionError):
+        pair.internal.apply(Action(ActionType.RAISE, amount=332))
 
 
 def test_below_minimum_non_all_in_raise_is_rejected_by_both_engines():

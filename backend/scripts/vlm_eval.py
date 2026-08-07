@@ -21,9 +21,11 @@ from typing import Any
 
 from PIL import Image
 
+from poker_arena.position_rules import position_is_compatible
 from poker_arena.vision import (
     VlmRequestContext,
     check_state,
+    configured_redaction_policy,
     read_table_vlm,
     redact_configured_regions,
     vlm_available,
@@ -51,7 +53,8 @@ def discover_images(folder: Path) -> list[Path]:
 def _validate_truth(data: Any, path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError(f"truth {path} deve ser um objeto JSON")
-    missing = [field for field in ("hole", "board", "pot") if field not in data]
+    required = ("hole", "board", "pot", "n_players", "position")
+    missing = [field for field in required if field not in data]
     if missing:
         raise ValueError(f"truth {path} sem campos obrigatórios: {', '.join(missing)}")
     hole, board, pot = data["hole"], data["board"], data["pot"]
@@ -66,14 +69,16 @@ def _validate_truth(data: Any, path: Path) -> dict[str, Any]:
         raise ValueError(f"truth {path}: carta repetida")
     if isinstance(pot, bool) or not isinstance(pot, int) or not 0 <= pot <= _MAX_CHIPS:
         raise ValueError(f"truth {path}: pot deve ser inteiro entre 0 e {_MAX_CHIPS}")
-    if "n_players" in data and (
+    if (
         isinstance(data["n_players"], bool)
         or not isinstance(data["n_players"], int)
         or not 2 <= data["n_players"] <= 9
     ):
         raise ValueError(f"truth {path}: n_players deve ser inteiro de 2 a 9")
-    if "position" in data and data["position"] not in _VALID_POSITIONS:
+    if data["position"] not in _VALID_POSITIONS:
         raise ValueError(f"truth {path}: position não pertence à taxonomia canônica")
+    if not position_is_compatible(data["position"], data["n_players"]):
+        raise ValueError(f"truth {path}: position impossível para n_players")
     return data
 
 
@@ -111,10 +116,8 @@ def score_truth(state: RecognizedState, truth: dict[str, Any]) -> dict[str, Any]
         "board": state.board == truth["board"],
         "pot": state.pot == truth["pot"],
     }
-    if "n_players" in truth:
-        fields["n_players"] = state.n_players == truth["n_players"]
-    if "position" in truth:
-        fields["position"] = state.position == truth["position"]
+    fields["n_players"] = state.n_players == truth["n_players"]
+    fields["position"] = state.position == truth["position"]
     return {**fields, **cards, "exact_state": all(fields.values())}
 
 
@@ -197,7 +200,9 @@ def evidence_gate(evaluations: list[dict[str, Any]]) -> tuple[int, list[str]]:
     if unsafe:
         reasons.append(f"abstenção de produção violada em {len(unsafe)}/{len(evaluations)} telas")
     if slow:
-        reasons.append(f"latência acima de {_BUDGET_S:.0f}s em {len(slow)}/{len(evaluations)} telas")
+        reasons.append(
+            f"latência acima de {_BUDGET_S:.0f}s em {len(slow)}/{len(evaluations)} telas"
+        )
     return (1, reasons) if reasons else (0, [])
 
 
@@ -226,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
         consent=True,
         session_id=f"eval-{secrets.token_hex(24)}",
         redaction_hook=redact_configured_regions,
-        redaction_policy="configured-mask-v1",
+        redaction_policy=configured_redaction_policy(),
     )
     evaluations: list[dict[str, Any]] = []
     for image in images:

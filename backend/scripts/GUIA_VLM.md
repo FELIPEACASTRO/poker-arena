@@ -36,7 +36,7 @@ notebook, URL, log ou screenshot:
 ```powershell
 $env:POKER_VLM_URL = "https://vlm.seu-dominio.example/v1/chat/completions"
 $env:POKER_VLM_ALLOWED_HOSTS = "vlm.seu-dominio.example"
-$env:POKER_VLM_API_TOKEN = "<segredo gerenciado com pelo menos 32 caracteres>"
+$env:POKER_VLM_API_TOKEN = "<segredo-obtido-do-ambiente>"
 $env:POKER_VLM_MODEL = "qwen3-vl-4b-instruct-q4-k-m-00c00da"
 $env:POKER_VLM_TIMEOUT = "20"
 $env:POKER_VLM_REDACT_REGIONS = "0.00,0.00,1.00,0.12;0.00,0.88,1.00,1.00"

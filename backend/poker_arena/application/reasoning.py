@@ -24,8 +24,8 @@ from ..engine.cards import Card
 from .analysis import _hand_name
 from .views import OptionView, ReasoningView
 
-_RNG = random.Random()  # noqa: S311 - varies didactic phrasing; never protects a secret
-_EQUITY_SAMPLES = 160
+_PHRASE_RNG = random.SystemRandom()
+_EQUITY_SAMPLES = 1_000
 _VALUE = 0.66  # acima disso, mão "forte o bastante" para apostar por valor
 
 # Vários jeitos de explicar cada paradigma — sorteia um por jogada (não repete tanto).
@@ -93,14 +93,33 @@ def _preflop_label(hole: Sequence[Card]) -> str:
 
 def _pick(*variants: str) -> str:
     """Sorteia uma das formas de dizer a mesma coisa (variedade sem perder o sentido)."""
-    return _RNG.choice(variants)
+    return _PHRASE_RNG.choice(variants)
 
 
 def _option(
-    act: ActionType, obs: Observation, eq: int, po: int, chosen: bool, amount: int
+    act: ActionType,
+    obs: Observation,
+    eq: int,
+    po: int,
+    chosen: bool,
+    amount: int,
+    *,
+    equity_rate: float | None = None,
+    pot_odds_rate: float | None = None,
+    decision_margin: float = 0.0,
 ) -> OptionView:
     """Avalia uma jogada possível com poker de verdade (equity x pot odds)."""
-    val = round(_VALUE * 100)
+    equity_value = eq / 100 if equity_rate is None else equity_rate
+    pot_odds_value = po / 100 if pot_odds_rate is None else pot_odds_rate
+    call_threshold = pot_odds_value + decision_margin
+    value_threshold = _VALUE + decision_margin
+    call_threshold_pct = round(call_threshold * 100)
+    val = round(value_threshold * 100)
+    adjustment = (
+        f"limiar ajustado de {call_threshold_pct}% (preço {po}% + posição)"
+        if decision_margin > 0
+        else f"preço de {po}%"
+    )
     if act == ActionType.FOLD:
         label = "Desistir"
         if obs.to_call == 0:
@@ -110,22 +129,15 @@ def _option(
                 "Não há nada a pagar: largar a mão agora seria desperdício.",
                 "Sem aposta na mesa, desistir é só jogar fora uma chance grátis.",
             )
-        elif eq < po:
+        elif equity_value < call_threshold:
             v = "good"
-            r = _pick(
-                f"Sua chance ({eq}%) é menor que o preço ({po}%): pagar perderia fichas no longo prazo, então largar é o certo.",
-                f"Você ganha menos ({eq}%) do que custa pagar ({po}%) — abrir mão da mão evita prejuízo.",
-                f"A conta não fecha: {eq}% de chance contra {po}% de preço. Desistir aqui é a jogada disciplinada.",
-            )
+            r = f"Sua chance ({eq}%) fica abaixo do {adjustment}; a heurística recomenda desistir."
         else:
             v = "bad"
-            r = _pick(
-                f"Você ainda ganha mais ({eq}%) do que o preço pede ({po}%) — desistir joga fora uma mão lucrativa.",
-                f"Largar seria um erro: {eq}% de chance supera o preço de {po}%, então a mão ainda dá lucro.",
-            )
+            r = f"Sua chance ({eq}%) cobre o {adjustment}; desistir contraria esta heurística."
     elif act == ActionType.CHECK:
         label = "Passar"
-        if eq >= _VALUE * 100:
+        if equity_value >= value_threshold:
             v = "ok"
             r = _pick(
                 f"Vê a próxima carta de graça — mas com mão forte ({eq}%) dava pra apostar por valor.",
@@ -140,28 +152,21 @@ def _option(
             )
     elif act == ActionType.CALL:
         label = f"Pagar {obs.to_call}"
-        if eq >= po:
+        if equity_value >= call_threshold:
             v = "good"
-            r = _pick(
-                f"Sua chance ({eq}%) é maior que o preço ({po}%): pagar dá lucro no longo prazo.",
-                f"Vale o preço: você ganha {eq}% das vezes e paga só {po}% — no longo prazo, rende fichas.",
-                f"As contas fecham — {eq}% de chance contra {po}% de custo. Pagar é matematicamente positivo.",
-            )
+            r = f"Sua chance ({eq}%) cobre o {adjustment}; pagar passa o limiar da heurística."
         else:
             v = "bad"
-            r = _pick(
-                f"Você paga por {po}% mas só ganha {eq}%: no longo prazo, pagar perde fichas.",
-                f"O preço ({po}%) é maior que a sua chance ({eq}%) — pagar aqui sangra fichas com o tempo.",
-            )
+            r = f"Sua chance ({eq}%) fica abaixo do {adjustment}; pagar não passa o limiar."
     elif act == ActionType.RAISE:
         label = f"Aumentar p/ {amount}" if (chosen and amount) else "Aumentar"
-        if eq >= _VALUE * 100:
+        if equity_value >= value_threshold:
             v = "good"
             r = _pick(
                 f"Mão forte ({eq}%): aumentar cresce o pote enquanto você está na frente (aposta de valor).",
                 f"Com {eq}% de chance você está na liderança — aumentar extrai fichas dos adversários.",
             )
-        elif eq >= po:
+        elif equity_value >= call_threshold:
             v = "ok"
             r = _pick(
                 f"Arriscado: a mão ({eq}%) não é forte o bastante pra apostar por valor (ideal ~{val}%+). Só compensa como blefe contra quem desiste fácil.",
@@ -174,14 +179,19 @@ def _option(
                 f"Aumentar com {eq}% é apostar no escuro: você raramente está na frente, é fichas no risco.",
             )
     else:  # ALL_IN
-        label = "All-in"
-        if eq >= 75:
+        me = next(player for player in obs.players if player.seat == obs.seat)
+        all_in_is_call = obs.to_call > 0 and me.stack <= obs.to_call
+        label = f"All-in para pagar {me.stack}" if all_in_is_call else "All-in"
+        if all_in_is_call and equity_value >= call_threshold:
             v = "good"
-            r = _pick(
-                f"Mão muito forte ({eq}%): vale colocar tudo no meio.",
-                f"Com {eq}% de chance, ir com tudo maximiza o ganho — poucas mãos batem a sua.",
-            )
-        elif eq >= po:
+            r = f"É o call curto canônico: {eq}% cobre o {adjustment}; não é uma agressão."
+        elif all_in_is_call:
+            v = "bad"
+            r = f"É um call curto, mas {eq}% fica abaixo do {adjustment}."
+        elif equity_value >= value_threshold:
+            v = "good"
+            r = f"Mão de valor ({eq}%) supera o limiar ajustado de {val}% para a agressão."
+        elif equity_value >= call_threshold:
             v = "ok"
             r = _pick(
                 f"Agressivo demais: só compensa com mão muito forte ou como blefe pesado ({eq}%).",
@@ -251,11 +261,15 @@ def _gto_numbers(obs: Observation, action: Action) -> tuple[int | None, int | No
       recompensa = pote atual. Referência teórica (heads-up/river).
     """
     mdf_pct: int | None = None
-    if obs.to_call > 0 and obs.pot > 0:
-        mdf_pct = round((1 - obs.to_call / obs.pot) * 100)
+    me = next(p for p in obs.players if p.seat == obs.seat)
+    call_cost = min(obs.to_call, me.stack)
+    # A fórmula didática de MDF pressupõe que o defensor pode cobrir a aposta.
+    # Um all-in curto muda o jogo/pote elegível; omitir é mais correto que exibir
+    # um número com a aposta nominal que o jogador nem sequer pode pagar.
+    if obs.to_call > 0 and obs.pot > 0 and call_cost == obs.to_call:
+        mdf_pct = round((1 - call_cost / obs.pot) * 100)
     bluff_alpha_pct: int | None = None
     if action.type in (ActionType.RAISE, ActionType.ALL_IN):
-        me = next(p for p in obs.players if p.seat == obs.seat)
         added = (action.amount - me.current_bet) if action.type == ActionType.RAISE else me.stack
         if added > 0 and added > obs.to_call:  # só quando a ação é de fato agressiva
             bluff_alpha_pct = round(added / (added + obs.pot) * 100)
@@ -266,8 +280,16 @@ def explain(
     name: str, level: str, obs: Observation, action: Action, insight: BotInsight | None
 ) -> ReasoningView:
     n_opp = max(obs.num_active - 1, 1)
-    equity = estimate_equity(obs.hole, obs.board, n_opp, _EQUITY_SAMPLES, _RNG)
-    pot_odds = obs.to_call / (obs.pot + obs.to_call) if obs.to_call > 0 else 0.0
+    equity = estimate_equity(
+        obs.hole,
+        obs.board,
+        n_opp,
+        _EQUITY_SAMPLES,
+        random.Random(20260704),  # noqa: S311 - deterministic explanation for the same state
+    )
+    me = next(p for p in obs.players if p.seat == obs.seat)
+    call_cost = min(obs.to_call, me.stack)
+    pot_odds = call_cost / (obs.pot + call_cost) if call_cost > 0 else 0.0
     eq, po = round(equity * 100), round(pot_odds * 100)
     mdf_pct, bluff_alpha_pct = _gto_numbers(obs, action)
     sig = round(insight.confidence * 100) if insight else None
@@ -277,7 +299,16 @@ def explain(
         hand_label = _preflop_label(obs.hole)
 
     options = [
-        _option(act, obs, eq, po, chosen=(act == action.type), amount=action.amount)
+        _option(
+            act,
+            obs,
+            eq,
+            po,
+            chosen=(act == action.type),
+            amount=action.amount,
+            equity_rate=equity,
+            pot_odds_rate=pot_odds,
+        )
         for act in _ORDER
         if act in obs.legal_actions
     ]

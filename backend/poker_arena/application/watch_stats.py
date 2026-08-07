@@ -2,9 +2,9 @@
 
 Acumula em memória, a partir dos mesmos eventos do MatchLogger, as métricas de
 HUD clássicas que revelam a PERSONALIDADE de cada paradigma de IA:
-  - placar: fichas, lucro, mãos ganhas;
+  - placar: fichas, resultado econômico líquido (inclui recompras), mãos ganhas;
   - VPIP  (% de mãos que entra voluntariamente)      -> solto x apertado;
-  - PFR   (% de mãos que ABRE aumentando no pré-flop) -> o gap VPIP-PFR separa
+  - PFR   (% de mãos em que aumenta no pré-flop) -> o gap VPIP-PFR separa
     o agressivo (raise) do passivo (só paga);
   - agressão (% de ações que são aposta/aumento)      -> agressivo x passivo;
   - WTSD  (% das mãos em que viu o flop e chegou ao showdown) -> "paga-tudo";
@@ -71,6 +71,7 @@ def _new_per() -> dict:
         "wsd": 0,  # showdowns vencidos
         "stack": 0,
         "start": 0,
+        "buy_in_total": 0,
         # por região: bucket -> [mãos, vpip, pfr]
         "pos": {b: [0, 0, 0] for b in POS_BUCKETS},
     }
@@ -115,10 +116,23 @@ class WatchStats:
             p["stack"] = s["start"]
             if is_new:
                 p["start"] = s["start"]
+                p["buy_in_total"] = s["start"]
             bucket = bucket_of(s.get("position", ""))
             self._bucket_hand[player_id] = bucket
             p["pos"][bucket][0] += 1
         self._start_set = True
+
+    def record_rebuy(self, player_id: str, amount: int) -> None:
+        """Registra capital novo antes de restaurar o stack de um jogador quebrado."""
+        if player_id in self.per:
+            self.per[player_id]["buy_in_total"] += amount
+
+    def street_started(self, street: str, contenders: list[str]) -> None:
+        """Marca o flop pelo evento da mesa, ainda que um sobrevivente não volte a agir."""
+        if street == "flop":
+            self._saw_flop_hand.update(
+                player_id for player_id in contenders if player_id in self.per
+            )
 
     def action(
         self,
@@ -141,6 +155,8 @@ class WatchStats:
             if is_aggressive:
                 self._pfr_hand.add(player_id)
         elif street in _POSTFLOP:
+            # Compatibilidade defensiva com chamadores legados; a sessão normal
+            # marca todos os sobreviventes pelo evento ``street_started``.
             self._saw_flop_hand.add(player_id)
 
     def finish_hand(
@@ -159,7 +175,9 @@ class WatchStats:
             self.biggest_pot_winner = winners[0]["name"] if winners else None
         # quem foi all-in cedo pode não ter agido pós-flop, mas disputou o showdown
         if showdown and contenders:
-            self._saw_flop_hand.update(player_id for player_id in contenders if player_id in self.per)
+            self._saw_flop_hand.update(
+                player_id for player_id in contenders if player_id in self.per
+            )
         for player_id in self._vpip_hand:
             if player_id in self.per:
                 self.per[player_id]["vpip"] += 1

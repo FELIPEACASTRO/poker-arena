@@ -22,6 +22,7 @@ describe('AuditPage', () => {
     vi.mocked(api.listGames).mockResolvedValue({
       games: [game],
       page: { offset: 0, limit: 50, returned: 1, total: 1, next_offset: null },
+      unreadable_logs: 0,
     })
     vi.mocked(api.getGame).mockResolvedValue({
       meta: { id: 'g1' },
@@ -40,10 +41,12 @@ describe('AuditPage', () => {
       .mockResolvedValueOnce({
         games: [game],
         page: { offset: 0, limit: 1, returned: 1, total: 2, next_offset: 1 },
+        unreadable_logs: 0,
       })
       .mockResolvedValueOnce({
         games: [game2],
         page: { offset: 1, limit: 1, returned: 1, total: 2, next_offset: null },
+        unreadable_logs: 0,
       })
     render(<AuditPage onClose={() => undefined} />)
 

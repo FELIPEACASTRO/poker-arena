@@ -49,6 +49,14 @@ class Observation:
     num_active: int
 
 
+def eligible_pot_for(hand: Hand, seat: int) -> int:
+    """Parcela já comprometida que o assento ainda pode efetivamente disputar."""
+
+    player = hand.players[seat]
+    cap = player.total_committed + player.stack
+    return sum(min(other.total_committed, cap) for other in hand.players)
+
+
 def observation_for(hand: Hand) -> Observation:
     """Monta a observação do jogador da vez (`hand.to_act`)."""
     seat = hand.to_act
@@ -69,7 +77,7 @@ def observation_for(hand: Hand) -> Observation:
         seat=seat,
         hole=tuple(me.hole),
         board=tuple(hand.board),
-        pot=hand.pot,
+        pot=eligible_pot_for(hand, seat),
         to_call=hand.amount_to_call(),
         current_bet=hand.current_bet,
         min_raise_to=hand.min_raise_to(),

@@ -7,6 +7,7 @@ def test_power_analysis_reproduces_the_policy_sample_floors() -> None:
     assert result["exact_state"].samples == 99
     assert result["false_accept"].samples == 142
     assert result["subgroup_exact_state"].samples == 40
+    assert result["session_exact_state"].samples == 99
     assert all(design.type_one_error <= 0.05 for design in result.values())
     assert all(design.power >= 0.80 for design in result.values())
 

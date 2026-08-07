@@ -226,8 +226,13 @@ export const api = {
     opts: {
       to_call: number
       my_stack: number
+      effective_stack: number
       num_opponents: number
       in_position: boolean
+      hero_current_bet: number
+      current_bet: number
+      min_raise_increment: number
+      raise_reopened: boolean
       position?: StandardPosition
       remoteVlmConsent?: RemoteVlmConsent
     },
@@ -237,8 +242,13 @@ export const api = {
     fd.append('image', file)
     fd.append('to_call', String(opts.to_call))
     fd.append('my_stack', String(opts.my_stack))
+    fd.append('effective_stack', String(opts.effective_stack))
     fd.append('num_opponents', String(opts.num_opponents))
     fd.append('in_position', String(opts.in_position))
+    fd.append('hero_current_bet', String(opts.hero_current_bet))
+    fd.append('current_bet', String(opts.current_bet))
+    fd.append('min_raise_increment', String(opts.min_raise_increment))
+    fd.append('raise_reopened', String(opts.raise_reopened))
     fd.append('strict', 'true')
     fd.append('remote_vlm_consent', String(opts.remoteVlmConsent?.granted === true))
     if (opts.remoteVlmConsent) {

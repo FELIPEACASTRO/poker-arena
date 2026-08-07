@@ -4,7 +4,10 @@ import hashlib
 import json
 from pathlib import Path
 
+import numpy as np
+import onnxruntime as ort
 import pytest
+from onnx import TensorProto, checker, helper, save_model
 
 from scripts.promote_model import (
     PromotionRejected,
@@ -12,6 +15,30 @@ from scripts.promote_model import (
     write_manifest_proposal,
 )
 from tests.helpers.model_manifest import promotion_evidence_fixture, verified_test_governance
+
+
+def _write_vision_onnx(path: Path, *, marker: str) -> None:
+    inputs = [helper.make_tensor_value_info("images", TensorProto.FLOAT, [1, 3, 640, 640])]
+    outputs = [helper.make_tensor_value_info("output0", TensorProto.FLOAT, [1, 58, 8400])]
+    output_shape = helper.make_tensor("output_shape", TensorProto.INT64, [3], [1, 58, 8400])
+    constant = helper.make_node("ConstantOfShape", ["output_shape"], ["output0"])
+    graph = helper.make_graph(
+        [constant], "promotion-fixture", inputs, outputs, initializer=[output_shape]
+    )
+    model = helper.make_model(
+        graph,
+        opset_imports=[helper.make_opsetid("", 13)],
+        ir_version=10,
+    )
+    metadata = model.metadata_props.add()
+    metadata.key = "fixture_marker"
+    metadata.value = marker
+    checker.check_model(model)
+    save_model(model, path)
+    session = ort.InferenceSession(path.read_bytes(), providers=["CPUExecutionProvider"])
+    assert session.get_outputs()[0].shape == [1, 58, 8400]
+    output = session.run(None, {"images": np.zeros((1, 3, 640, 640), dtype=np.float32)})[0]
+    assert output.shape == (1, 58, 8400)
 
 
 def _candidate(path: Path) -> Path:
@@ -30,11 +57,14 @@ def _candidate(path: Path) -> Path:
     return manifest
 
 
-def test_pass_receipt_creates_reviewable_proposal_without_mutating_candidate(tmp_path: Path) -> None:
+def test_pass_receipt_creates_reviewable_proposal_without_mutating_candidate(
+    tmp_path: Path,
+) -> None:
     artifact = tmp_path / "vision.onnx"
-    artifact.write_bytes(b"candidate-model")
+    _write_vision_onnx(artifact, marker="candidate")
     candidate = _candidate(artifact)
-    evidence = promotion_evidence_fixture(artifact)
+    candidate_entry = json.loads(candidate.read_text(encoding="utf-8"))["artifacts"][0]
+    evidence = promotion_evidence_fixture(artifact, candidate_entry)
 
     proposal = build_promoted_manifest(
         artifact_path=artifact,
@@ -55,10 +85,10 @@ def test_pass_receipt_creates_reviewable_proposal_without_mutating_candidate(tmp
 
 def test_receipt_for_another_artifact_is_rejected(tmp_path: Path) -> None:
     artifact = tmp_path / "vision.onnx"
-    artifact.write_bytes(b"candidate-model")
+    _write_vision_onnx(artifact, marker="candidate")
     candidate = _candidate(artifact)
     other = tmp_path / "other.onnx"
-    other.write_bytes(b"other-model")
+    _write_vision_onnx(other, marker="other")
     evidence = promotion_evidence_fixture(other)
 
     with pytest.raises(PromotionRejected, match="did not pass"):

@@ -11,11 +11,14 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+from ..position_rules import position_is_compatible
 from .recognize import RecognizedState
 from .synth import RANKS, SUITS
 
 _VALID = {r + s for r in RANKS for s in SUITS}
 _MAX_PLAYERS = 9
+_MAX_CHIPS = 1_000_000_000
+_POSITIONS = {"BTN", "SB", "BB", "UTG", "UTG+1", "MP", "LJ", "HJ", "CO"}
 
 
 @dataclass
@@ -53,21 +56,22 @@ def check_state(
         problems.append(f"board com {len(st.board)} cartas (só 0/3/4/5 é legal)")
     if st.pot is None:
         problems.append("não consegui ler o pote com segurança")
-    elif isinstance(st.pot, bool) or not isinstance(st.pot, (int, float)):
-        problems.append("pote não numérico")
-    elif not math.isfinite(float(st.pot)) or st.pot < 0:
-        problems.append("pote negativo ou não finito")
+    elif isinstance(st.pot, bool) or not isinstance(st.pot, int):
+        problems.append("pote precisa ser inteiro")
+    elif not 0 <= st.pot <= _MAX_CHIPS:
+        problems.append(f"pote fora do limite seguro (0 a {_MAX_CHIPS})")
 
     card_conf = st.card_confidences
     if card_conf and len(card_conf) != len(cards):
         problems.append("vetor de confiança por carta não corresponde às cartas selecionadas")
-    critical: list[float] = []
+    critical: list[float] = [st.confidence]
     if card_conf and len(card_conf) == len(cards):
         critical.extend(card_conf)
-    elif cards:
-        critical.append(st.confidence)
     if st.pot is not None:
         critical.append(st.pot_confidence if st.pot_confidence is not None else st.confidence)
+    for context_confidence in (st.player_count_confidence, st.position_confidence):
+        if context_confidence is not None:
+            critical.append(context_confidence)
     if any(
         isinstance(value, bool)
         or not isinstance(value, (int, float))
@@ -84,27 +88,89 @@ def check_state(
                 f"confiança crítica ({weakest:.3f}) abaixo do limiar seguro ({threshold:.3f})"
             )
 
-    if abstain_below is not None and cards and st.confidence < abstain_below:
+    overall_confidence_valid = (
+        not isinstance(st.confidence, bool)
+        and isinstance(st.confidence, (int, float))
+        and math.isfinite(float(st.confidence))
+        and 0 <= float(st.confidence) <= 1
+    )
+    if (
+        overall_confidence_valid
+        and abstain_below is not None
+        and cards
+        and st.confidence < abstain_below
+    ):
         problems.append(
             f"confiança da leitura ({st.confidence}) abaixo do limiar seguro "
             f"({abstain_below}) — abstenho em vez de decidir sobre leitura incerta"
         )
-    elif st.confidence < min_confidence:
+    elif overall_confidence_valid and st.confidence < min_confidence:
         warnings.append(f"confiança baixa ({st.confidence}) — leitura incerta")
     if st.pot is None:
         warnings.append("não consegui ler o pote")
-    if st.n_players and not (2 <= st.n_players <= _MAX_PLAYERS):
-        problems.append(
-            f"nº de participantes implausível: {st.n_players} (2 a {_MAX_PLAYERS})"
-        )
+    if isinstance(st.n_players, bool) or not isinstance(st.n_players, int):
+        problems.append("nº de participantes precisa ser inteiro")
+    elif st.n_players and not (2 <= st.n_players <= _MAX_PLAYERS):
+        problems.append(f"nº de participantes implausível: {st.n_players} (2 a {_MAX_PLAYERS})")
     if not st.n_players:
         warnings.append("não detectei os jogadores — usando o nº informado")
+    if not isinstance(st.position, str):
+        problems.append("posição detectada precisa ser texto")
+    elif st.position and st.position not in _POSITIONS:
+        problems.append(f"posição detectada inválida: {st.position!r}")
+    if isinstance(st.position, str) and st.position and not st.n_players:
+        problems.append("posição detectada sem contagem de jogadores consistente")
+    if (
+        isinstance(st.position, str)
+        and st.position
+        and isinstance(st.n_players, int)
+        and not isinstance(st.n_players, bool)
+        and st.n_players
+        and not position_is_compatible(st.position, st.n_players)
+    ):
+        problems.append(
+            f"posição {st.position!r} impossível para mesa com {st.n_players} jogadores"
+        )
+
+    for label, value in (
+        ("contagem de jogadores", st.player_count_confidence),
+        ("posição", st.position_confidence),
+    ):
+        if value is not None and (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or not 0 <= float(value) <= 1
+        ):
+            problems.append(f"confiança de {label} inválida")
 
     if st.stacks is not None:
-        invalid_stack = any(
-            isinstance(v, bool) or not isinstance(v, int) or v < 0 for v in st.stacks.values()
+        if not isinstance(st.stacks, dict) or len(st.stacks) > _MAX_PLAYERS:
+            problems.append("mapa de stacks detectados inválido")
+        else:
+            invalid_stack = any(
+                isinstance(seat, bool)
+                or not isinstance(seat, int)
+                or not 0 <= seat < _MAX_PLAYERS
+                or isinstance(value, bool)
+                or not isinstance(value, int)
+                or not 0 <= value <= _MAX_CHIPS
+                for seat, value in st.stacks.items()
+            )
+            if invalid_stack:
+                problems.append("stack detectado inválido")
+    if st.stack_confidences is not None and (
+        not isinstance(st.stack_confidences, dict)
+        or not isinstance(st.stacks, dict)
+        or set(st.stack_confidences) != set(st.stacks)
+        or any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or not 0 <= float(value) <= 1
+            for value in st.stack_confidences.values()
         )
-        if invalid_stack:
-            problems.append("stack detectado inválido")
+    ):
+        problems.append("confianças dos stacks detectados são inválidas")
 
     return SanityResult(ok=not problems, problems=problems, warnings=warnings)

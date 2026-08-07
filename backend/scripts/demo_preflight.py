@@ -27,7 +27,12 @@ class DemoPreflightError(RuntimeError):
 
 
 def _require_local_offline_profile() -> None:
-    forbidden_when_present = ("POKER_API_TOKEN", "POKER_VLM_URL", "POKER_VLM_API_KEY")
+    forbidden_when_present = (
+        "POKER_API_TOKEN",
+        "POKER_VLM_URL",
+        "POKER_VLM_API_TOKEN",
+        "POKER_VLM_API_KEY",
+    )
     present = [name for name in forbidden_when_present if os.environ.get(name)]
     if os.environ.get("POKER_ENABLE_REMOTE_VLM", "0") == "1":
         present.append("POKER_ENABLE_REMOTE_VLM")
@@ -109,9 +114,8 @@ def _exercise_real_image_route() -> dict[str, Any]:
         or truth["pot"] < 0
         or not isinstance(truth["n_players"], int)
         or isinstance(truth["n_players"], bool)
-        or not 2 <= truth["n_players"] <= 10
-        or not isinstance(truth["position"], str)
-        or not truth["position"]
+        or not 2 <= truth["n_players"] <= 9
+        or truth["position"] not in {"BTN", "SB", "BB", "UTG", "UTG+1", "MP", "LJ", "HJ", "CO"}
     ):
         raise DemoPreflightError("conteúdo do gabarito da fixture da banca é inválido")
     client = TestClient(create_app())

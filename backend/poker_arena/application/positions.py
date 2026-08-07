@@ -7,16 +7,11 @@ em mesas menores as posições mais cedo somem primeiro (como num cassino).
 
 from __future__ import annotations
 
+from ..position_rules import POSITION_BY_PLAYER_COUNT, position_is_compatible, valid_positions
+
 # rótulos por nº de jogadores na mão, indexados pelo offset do botão (0 = botão)
 _POS: dict[int, list[str]] = {
-    2: ["SB", "BB"],  # heads-up: o botão é o small blind
-    3: ["BTN", "SB", "BB"],
-    4: ["BTN", "SB", "BB", "UTG"],
-    5: ["BTN", "SB", "BB", "UTG", "CO"],
-    6: ["BTN", "SB", "BB", "UTG", "HJ", "CO"],
-    7: ["BTN", "SB", "BB", "UTG", "LJ", "HJ", "CO"],
-    8: ["BTN", "SB", "BB", "UTG", "UTG+1", "LJ", "HJ", "CO"],
-    9: ["BTN", "SB", "BB", "UTG", "UTG+1", "MP", "LJ", "HJ", "CO"],
+    count: list(labels) for count, labels in POSITION_BY_PLAYER_COUNT.items()
 }
 
 _FULL: dict[str, str] = {
@@ -44,3 +39,6 @@ def position(seat: int, button: int, n: int) -> str:
 def position_full(label: str) -> str:
     """Nome completo de uma sigla de posição (ex.: 'UTG' -> 'Under the Gun')."""
     return _FULL.get(label, label)
+
+
+__all__ = ["position", "position_full", "position_is_compatible", "valid_positions"]

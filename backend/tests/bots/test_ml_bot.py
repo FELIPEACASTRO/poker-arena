@@ -90,6 +90,32 @@ def test_argmax_mode_respects_fold(tmp_path):
     assert bot.act(obs).type == ActionType.FOLD
 
 
+def test_equity_guard_counts_all_in_opponents_as_contesting(tmp_path, monkeypatch):
+    path = tmp_path / "expert.onnx"
+    _make_onnx(path, [9.0, 0.0, 0.0, 0.0, 0.0])
+    bot = MLBot(path, seed=1, equity_guard=True)
+    base = _obs({ActionType.FOLD, ActionType.CALL})
+    all_in = PublicPlayer(2, "all-in", 0, 100, 100, "all_in", False)
+    observation = Observation(
+        **{
+            **base.__dict__,
+            "pot": 100,
+            "players": (*base.players, all_in),
+            "num_active": 3,
+        }
+    )
+    seen: dict[str, int] = {}
+
+    def fake_equity(_hole, _board, n_opp, _samples, _rng):
+        seen["n_opp"] = n_opp
+        return 0.0
+
+    monkeypatch.setattr("poker_arena.bots.monte_carlo_bot.estimate_equity", fake_equity)
+
+    bot._guarded_fold(observation)
+    assert seen["n_opp"] == 2
+
+
 def test_explicit_floor_can_make_confident_model_deterministic(tmp_path):
     # O corte não neutro só ocorre quando solicitado explicitamente.
     path = tmp_path / "expert.onnx"

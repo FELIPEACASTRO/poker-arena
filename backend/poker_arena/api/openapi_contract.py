@@ -121,9 +121,7 @@ def enrich_contract(spec: dict[str, Any]) -> dict[str, Any]:
     schemas["HttpError"] = {
         "additionalProperties": False,
         "description": "Erro HTTP simples emitido pelo backend.",
-        "properties": {
-            "detail": {"description": "Mensagem segura e acionável.", "type": "string"}
-        },
+        "properties": {"detail": {"description": "Mensagem segura e acionável.", "type": "string"}},
         "required": ["detail"],
         "title": "HttpError",
         "type": "object",
@@ -212,7 +210,9 @@ def enrich_contract(spec: dict[str, Any]) -> dict[str, Any]:
     )
 
     for method, path, operation in operation_rows(spec):
-        operation.setdefault("description", operation.get("summary") or f"Operação {method} {path}.")
+        operation.setdefault(
+            "description", operation.get("summary") or f"Operação {method} {path}."
+        )
         parameters = operation.setdefault("parameters", [])
         if method == "POST" and path == "/tables":
             parameters[:] = [
@@ -284,9 +284,7 @@ def enrich_contract(spec: dict[str, Any]) -> dict[str, Any]:
             response_headers = response.setdefault("headers", {})
             response_headers["X-Request-ID"] = {"$ref": "#/components/headers/RequestId"}
             for header_name, component_name in SECURITY_RESPONSE_HEADERS.items():
-                response_headers[header_name] = {
-                    "$ref": f"#/components/headers/{component_name}"
-                }
+                response_headers[header_name] = {"$ref": f"#/components/headers/{component_name}"}
             is_documented_error = (
                 str(status).startswith("4")
                 and status != "422"
@@ -298,12 +296,8 @@ def enrich_contract(spec: dict[str, Any]) -> dict[str, Any]:
                 response_headers.update(
                     {
                         "ETag": {"$ref": "#/components/headers/ETag"},
-                        "X-Idempotent-Replay": {
-                            "$ref": "#/components/headers/IdempotentReplay"
-                        },
-                        "X-Session-Version": {
-                            "$ref": "#/components/headers/SessionVersion"
-                        },
+                        "X-Idempotent-Replay": {"$ref": "#/components/headers/IdempotentReplay"},
+                        "X-Session-Version": {"$ref": "#/components/headers/SessionVersion"},
                     }
                 )
     return spec

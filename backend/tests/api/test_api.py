@@ -47,8 +47,14 @@ def test_copilot_reviews_a_spot(client):
             "pot": 100,
             "to_call": 20,
             "my_stack": 1000,
+            "effective_stack": 1000,
             "num_opponents": 1,
+            "table_size": 2,
             "in_position": True,
+            "hero_current_bet": 0,
+            "current_bet": 20,
+            "min_raise_increment": 20,
+            "raise_reopened": True,
         },
     )
     assert r.status_code == 200
@@ -67,9 +73,66 @@ def test_copilot_rejects_invalid_spot(client):
             "pot": 100,
             "to_call": 20,
             "my_stack": 1000,
+            "effective_stack": 1000,
+            "table_size": 2,
+            "hero_current_bet": 0,
+            "current_bet": 20,
+            "min_raise_increment": 20,
+            "raise_reopened": True,
         },
     )
     assert r.status_code == 400
+
+
+def test_copilot_api_preserves_real_raise_to_context(client):
+    response = client.post(
+        "/copilot",
+        json={
+            "hole": ["As", "Ah"],
+            "board": ["Kd", "7c", "2s"],
+            "pot": 140,
+            "to_call": 40,
+            "my_stack": 980,
+            "effective_stack": 980,
+            "num_opponents": 1,
+            "in_position": False,
+            "position": "BB",
+            "table_size": 3,
+            "hero_current_bet": 20,
+            "current_bet": 60,
+            "min_raise_increment": 40,
+            "raise_reopened": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["recommendation"] == "raise"
+    assert response.json()["recommendation_amount"] == 100
+
+
+@pytest.mark.parametrize("invalid_card", ["Asjunk", "10s", "Ás"])
+def test_copilot_rejects_noncanonical_full_card_tokens(client, invalid_card):
+    response = client.post(
+        "/copilot",
+        json={
+            "hole": [invalid_card, "Kd"],
+            "board": [],
+            "pot": 10,
+            "to_call": 0,
+            "my_stack": 100,
+            "effective_stack": 100,
+            "num_opponents": 1,
+            "in_position": False,
+            "position": "SB",
+            "hero_current_bet": 0,
+            "current_bet": 0,
+            "min_raise_increment": 20,
+            "table_size": 2,
+            "raise_reopened": True,
+        },
+    )
+
+    assert response.status_code == 400
 
 
 def test_from_image_reads_a_synthetic_table_and_fails_closed(client, tmp_path, monkeypatch):

@@ -63,7 +63,11 @@ Motor coberto por testes determinísticos, invariantes gerativos e 16 cenários
 diferenciais independentes contra PokerKit: blinds e rotação do botão, heads-up, ordem de ação (UTG pré-flop
 / SB pós-flop), **aumento mínimo e full-raise**, **all-in incompleto não reabre a
 aposta** (TDA 47 / WSOP 96), **side pots**, burn cards, showdown (melhor de 5 em 7),
-ranking de mãos, opção do big blind e ficha-ímpar à esquerda do botão. As cartas são
+ranking de mãos, opção do big blind e fichas indivisíveis distribuídas, no máximo uma por
+vencedor, em ordem a partir do primeiro vencedor à esquerda do botão. Essa house rule segue
+[Robert's Rules of Poker](https://www.pagat.com/de/docs/RobsPkrRules11.pdf); PokerKit concentra
+múltiplas sobras no primeiro vencedor, portanto a igualdade diferencial de stacks exclui
+deliberadamente esse caso de interoperabilidade. As cartas são
 embaralhadas com **aleatoriedade criptográfica** (`SystemRandom`) fora de testes.
 O diferencial atual cobre NLHE sem ante, rake, straddle ou múltiplos boards; não é
 uma certificação formal de todas as regras possíveis.
@@ -152,7 +156,7 @@ autoriza uso multi-tenant entre partes mutuamente desconfiadas.
 |---|---|---|
 | `POST` | `/copilot` | revisa um spot descrito, localmente e após o jogo |
 | `POST` | `/copilot/from-image` | propõe estado a partir de screenshot e abstém quando o gate reprova |
-| `POST` | `/copilot/review-hand` | revisa as decisões de um histórico PHH válido |
+| `POST` | `/copilot/review-hand` | revisa o subconjunto PHH-NLHE com valores inteiros; não cobre todas as variantes PHH |
 | `POST` | `/tables` | cria a mesa (cérebros, blinds, formato, modo) → devolve o `table_id` |
 | `GET` | `/tables/{id}` | estado atual da mesa |
 | `POST` | `/tables/{id}/actions` | sua jogada (`fold/check/call/raise/all_in`) |
@@ -297,8 +301,9 @@ checkout é [`assets/validar.ps1`](assets/validar.ps1); uma contagem histórica 
 substitui a saída da execução atual. A execução consolidada, o escopo E2E, as correções
 verificadas e os limites que ainda impedem alegações científicas mais fortes estão no
 [`relatório de evidências de QA de 2026-07-18`](docs/QA_EVIDENCE_20260718.md).
-O parecer consolidado da distribuição preparada para apresentação está no
-[`relatório final de auditoria de 2026-08-07`](docs/RELATORIO_FINAL_AUDITORIA_20260807.md).
+O parecer vigente da distribuição preparada para apresentação, com cobertura T01–T80,
+silent-bug hunt S01–S36 e refutação independente, está no
+[`relatório Omega de 2026-08-07`](docs/RELATORIO_OMEGA_AUDITORIA_20260807.md).
 
 ---
 

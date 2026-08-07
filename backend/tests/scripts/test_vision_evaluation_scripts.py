@@ -56,7 +56,7 @@ def test_real_eval_rejects_incomplete_truth(tmp_path):
     try:
         real_eval.load_truth(image)
     except ValueError as exc:
-        assert "board" in str(exc) and "pot" in str(exc)
+        assert all(field in str(exc) for field in ("board", "pot", "n_players", "position"))
     else:
         raise AssertionError("incomplete truth must not count as evidence")
 
@@ -94,12 +94,32 @@ def test_real_eval_rejects_ten_player_truth(tmp_path):
     image = tmp_path / "table.png"
     Image.new("RGB", (8, 8)).save(image)
     image.with_suffix(".json").write_text(
-        json.dumps({"hole": ["As", "Kd"], "board": [], "pot": 10, "n_players": 10}),
+        json.dumps(
+            {
+                "hole": ["As", "Kd"],
+                "board": [],
+                "pot": 10,
+                "n_players": 10,
+                "position": "BTN",
+            }
+        ),
         encoding="utf-8",
     )
 
     with pytest.raises(ValueError, match="2 to 9"):
         real_eval.load_truth(image)
+
+
+def test_vlm_truth_requires_complete_strategic_context(tmp_path):
+    image = tmp_path / "table.png"
+    Image.new("RGB", (8, 8)).save(image)
+    image.with_suffix(".json").write_text(
+        json.dumps({"hole": ["As", "Kd"], "board": [], "pot": 10}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="n_players, position"):
+        vlm_eval.load_truth(image)
 
 
 def test_vlm_eval_card_metrics_penalize_duplicates_and_false_positives():

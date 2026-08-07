@@ -276,6 +276,11 @@ Invoke-Step 'Backend pytest + branch coverage' $projectRoot `
 Invoke-Step 'Backend Ruff' (Join-Path $projectRoot 'backend') `
     "`"$python`" -B -m ruff check poker_arena tests scripts ..\api-docs\generate.py ..\frontend\e2e\run_e2e.py ..\assets\make_icon.py" `
     180
+Invoke-Step 'Backend Ruff format policy' (Join-Path $projectRoot 'backend') `
+    "`"$python`" -B -m ruff format --check poker_arena tests scripts --exclude scripts/catalog_search_receipt.py" `
+    180
+# catalog_search_receipt.py permanece lintado acima, mas não é reformatado: seu hash é
+# evidência histórica encadeada em docs/research/evidence/catalog_collector_hardening_20260718.json.
 # S311 e deliberadamente permitido apenas nos notebooks: seus PRNGs seedados geram
 # amostras/augmentations cientificas, nunca tokens, nonces ou credenciais.
 Invoke-Step 'Notebook security lint (including F821)' (Join-Path $projectRoot 'backend') `

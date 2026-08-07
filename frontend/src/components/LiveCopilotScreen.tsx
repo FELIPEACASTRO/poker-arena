@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Lightbulb, MonitorPlay, Play, Square, X } from 'lucide-react'
 import { API_BASE, api } from '../api'
 import { fitWithin } from '../capture'
+import { actionableDecision, isVisionExpired } from '../liveVision'
 import type { FromImageResult } from '../types'
 import { useDialogA11y } from '../useDialogA11y'
 import VisionDiagnostics from './VisionDiagnostics'
@@ -23,6 +24,7 @@ const sourceLabel = (surface: DisplaySurface) => ({
   browser: 'Guia do navegador selecionada', unknown: 'Fonte não verificável (tipo não informado)',
 })[surface]
 const isApprovedSurface = (surface: DisplaySurface | null): surface is 'window' => surface === 'window'
+const FRAME_REQUEST_TIMEOUT_MS = 15_000
 
 /** Captura supervisionada para estudo em uma mesa própria ou explicitamente autorizada. */
 export default function LiveCopilotScreen({ onClose, standalone = false }: {
@@ -33,6 +35,7 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
   const streamRef = useRef<MediaStream | null>(null)
   const endedHandlerRef = useRef<(() => void) | null>(null)
   const uploadController = useRef<AbortController | null>(null)
+  const contextGenerationRef = useRef(0)
   const consentRef = useRef(false)
   const remoteConsentRef = useRef(false)
   const remoteConsentSessionRef = useRef<string | null>(null)
@@ -42,6 +45,7 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
   const mountedRef = useRef(true)
   const nextAllowedReadRef = useRef(0)
   const consecutiveErrorsRef = useRef(0)
+  const lastVisionSuccessAtRef = useRef(0)
   const [capturing, setCapturing] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [starting, setStarting] = useState(false)
@@ -50,6 +54,10 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
   const [everyMs, setEveryMs] = useState(1500)
   const [toCall, setToCall] = useState(0)
   const [stack, setStack] = useState(1000)
+  const [effectiveStack, setEffectiveStack] = useState(1000)
+  const [heroCurrentBet, setHeroCurrentBet] = useState(0)
+  const [minRaiseIncrement, setMinRaiseIncrement] = useState(20)
+  const [raiseReopened, setRaiseReopened] = useState(true)
   const [opponents, setOpponents] = useState(1)
   const [inPosition, setInPosition] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -61,12 +69,25 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
   const [displaySurface, setDisplaySurface] = useState<DisplaySurface | null>(null)
   const [stageStatus, setStageStatus] = useState('Etapa 1 de 4: autorize a captura local.')
 
+  const invalidateLiveContext = useCallback(() => {
+    contextGenerationRef.current += 1
+    uploadController.current?.abort()
+    uploadController.current = null
+    inFlight.current = false
+    nextAllowedReadRef.current = 0
+    lastVisionSuccessAtRef.current = 0
+    setVision(null)
+    setVisionStale(false)
+    setVisionLatencyMs(null)
+  }, [])
+
   const stop = useCallback((updateState = true, preserveConsent = false) => {
     uploadController.current?.abort()
     uploadController.current = null
     inFlight.current = false
     nextAllowedReadRef.current = 0
     consecutiveErrorsRef.current = 0
+    lastVisionSuccessAtRef.current = 0
     const stream = streamRef.current
     const track = stream?.getVideoTracks()[0]
     if (track && endedHandlerRef.current) track.removeEventListener('ended', endedHandlerRef.current)
@@ -90,6 +111,9 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
       setStarting(false)
       setCapturing(false)
       setAnalyzing(false)
+      setVision(null)
+      setVisionStale(false)
+      setVisionLatencyMs(null)
       setCaptureSource(null)
       setDisplaySurface(null)
       if (!preserveConsent) {
@@ -203,6 +227,9 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
     if (!capturing || !analyzing) return
     const canvas = document.createElement('canvas')
     const id = window.setInterval(async () => {
+      if (vision && isVisionExpired(lastVisionSuccessAtRef.current, performance.now(), everyMs)) {
+        setVisionStale(true)
+      }
       if (Date.now() < nextAllowedReadRef.current) return
       const video = videoRef.current
       if (!video || !video.videoWidth || !video.videoHeight || inFlight.current) return
@@ -210,6 +237,7 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
       const remoteSessionId = remoteConsentRef.current ? remoteConsentSessionRef.current : null
       if (remoteConsentRef.current && !remoteSessionId) return
       inFlight.current = true
+      const contextGeneration = contextGenerationRef.current
       const size = fitWithin(video.videoWidth, video.videoHeight, 1280)
       canvas.width = size.width
       canvas.height = size.height
@@ -224,49 +252,85 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
       }
       context.drawImage(video, 0, 0, size.width, size.height)
       let controller: AbortController | null = null
+      let requestTimeout: number | null = null
+      let requestTimedOut = false
       let startedAt: number | null = null
       try {
         const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.78))
         if (!blob) throw new Error('O navegador não conseguiu codificar o quadro capturado.')
-        if (!streamRef.current) return
+        if (!streamRef.current || contextGeneration !== contextGenerationRef.current) return
         controller = new AbortController()
         uploadController.current = controller
         startedAt = performance.now()
+        requestTimeout = window.setTimeout(() => {
+          requestTimedOut = true
+          controller?.abort()
+        }, FRAME_REQUEST_TIMEOUT_MS)
         const result = await api.fromImage(new File([blob], 'frame.jpg', { type: 'image/jpeg' }), {
           to_call: toCall, my_stack: stack, num_opponents: opponents, in_position: inPosition,
+          effective_stack: effectiveStack,
+          hero_current_bet: heroCurrentBet,
+          current_bet: heroCurrentBet + toCall,
+          min_raise_increment: minRaiseIncrement,
+          raise_reopened: raiseReopened,
           remoteVlmConsent: remoteSessionId ? { granted: true, sessionId: remoteSessionId } : undefined,
         }, controller.signal)
-        if (!controller.signal.aborted && mountedRef.current) {
+        if (
+          !controller.signal.aborted
+          && mountedRef.current
+          && contextGeneration === contextGenerationRef.current
+        ) {
           consecutiveErrorsRef.current = 0
           nextAllowedReadRef.current = 0
           setVision(result)
           setVisionStale(false)
+          lastVisionSuccessAtRef.current = performance.now()
           setVisionLatencyMs(Math.max(0, performance.now() - startedAt))
           setFrames((count) => count + 1)
           setError(null)
         }
       } catch (caught) {
-        if (!isAbort(caught) && mountedRef.current) {
+        if ((requestTimedOut || !isAbort(caught)) && mountedRef.current) {
           consecutiveErrorsRef.current += 1
           const backoffMs = Math.min(10000, everyMs * (2 ** Math.min(3, consecutiveErrorsRef.current)))
           nextAllowedReadRef.current = Date.now() + backoffMs
-          setError(`${errorMessage(caught, 'Erro ao ler o quadro')} Nova tentativa em ${Math.ceil(backoffMs / 1000)}s.`)
+          setError(`${requestTimedOut ? 'Tempo limite ao ler o quadro.' : errorMessage(caught, 'Erro ao ler o quadro')} Nova tentativa em ${Math.ceil(backoffMs / 1000)}s.`)
           setVisionStale(Boolean(vision))
           setVisionLatencyMs(startedAt === null ? null : Math.max(0, performance.now() - startedAt))
         }
       } finally {
+        if (requestTimeout !== null) window.clearTimeout(requestTimeout)
         if (!controller || uploadController.current === controller) {
           uploadController.current = null
           inFlight.current = false
         }
       }
     }, everyMs)
-    return () => window.clearInterval(id)
-  }, [analyzing, capturing, everyMs, inPosition, opponents, stack, stop, toCall, vision])
+    return () => {
+      window.clearInterval(id)
+      contextGenerationRef.current += 1
+      uploadController.current?.abort()
+      uploadController.current = null
+      inFlight.current = false
+    }
+  }, [
+    analyzing, capturing, effectiveStack, everyMs, heroCurrentBet, inPosition,
+    minRaiseIncrement, opponents, raiseReopened, stack, stop, toCall, vision,
+  ])
 
-  useEffect(() => () => { mountedRef.current = false; stop(false) }, [stop])
+  useEffect(() => {
+    // StrictMode executa setup → cleanup → setup em desenvolvimento. Restaure o
+    // marcador no segundo setup para a verificação não simular unmount permanente.
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      stop(false)
+    }
+  }, [stop])
 
-  const decision = vision?.decision ?? null
+  // Diagnóstico histórico pode permanecer visível, mas conselho de um quadro
+  // anterior nunca continua acionável depois de erro/timeout em mesa mutável.
+  const decision = actionableDecision(vision, visionStale)
   const blockedSource = !isApprovedSurface(displaySurface)
   return (
     <motion.div className={standalone ? 'capture-page' : 'guide-overlay'} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={standalone ? undefined : close}>
@@ -302,11 +366,16 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
             setRemoteConsented(checked)
           }} /><span>Também autorizo, somente nesta sessão, o envio de versão redigida ao VLM remoto de terceiro. Retenção efetiva depende do provedor e do túnel.</span></label>
           <div className="cp-live-controls">
-            <label className="cp-field"><span>Ler a cada</span><select disabled={analyzing} value={everyMs} onChange={(event) => setEveryMs(Number(event.currentTarget.value))}><option value={1000}>1s</option><option value={1500}>1,5s</option><option value={2500}>2,5s</option><option value={4000}>4s</option></select></label>
-            <label className="cp-field"><span>A pagar</span><input disabled={analyzing} type="number" min={0} value={toCall} onChange={(event) => setToCall(safeNumber(event.currentTarget.valueAsNumber, toCall, 0))} /></label>
-            <label className="cp-field"><span>Seu stack</span><input disabled={analyzing} type="number" min={1} value={stack} onChange={(event) => setStack(safeNumber(event.currentTarget.valueAsNumber, stack, 1))} /></label>
-            <label className="cp-field"><span>Oponentes</span><input disabled={analyzing} type="number" min={1} max={9} value={opponents} onChange={(event) => setOpponents(Math.min(9, safeNumber(event.currentTarget.valueAsNumber, opponents, 1)))} /></label>
-            <label className="cp-field"><span>Posição</span><select disabled={analyzing} value={inPosition ? 'in' : 'out'} onChange={(event) => setInPosition(event.currentTarget.value === 'in')}><option value="out">Fora de posição</option><option value="in">Em posição</option></select></label>
+            <label className="cp-field"><span>Ler a cada</span><select disabled={analyzing} value={everyMs} onChange={(event) => { invalidateLiveContext(); setEveryMs(Number(event.currentTarget.value)) }}><option value={1000}>1s</option><option value={1500}>1,5s</option><option value={2500}>2,5s</option><option value={4000}>4s</option></select></label>
+            <label className="cp-field"><span>A pagar</span><input disabled={analyzing} type="number" min={0} value={toCall} onChange={(event) => { invalidateLiveContext(); setToCall(safeNumber(event.currentTarget.valueAsNumber, toCall, 0)) }} /></label>
+            <label className="cp-field"><span>Seu stack</span><input disabled={analyzing} type="number" min={1} value={stack} onChange={(event) => { invalidateLiveContext(); setStack(safeNumber(event.currentTarget.valueAsNumber, stack, 1)) }} /></label>
+            <label className="cp-field"><span>Stack efetivo rival</span><input disabled={analyzing} type="number" min={0} value={effectiveStack} onChange={(event) => { invalidateLiveContext(); setEffectiveStack(safeNumber(event.currentTarget.valueAsNumber, effectiveStack, 0)) }} /></label>
+            <label className="cp-field"><span>Sua aposta nesta rua</span><input disabled={analyzing} type="number" min={0} value={heroCurrentBet} onChange={(event) => { invalidateLiveContext(); setHeroCurrentBet(safeNumber(event.currentTarget.valueAsNumber, heroCurrentBet, 0)) }} /></label>
+            <label className="cp-field"><span>Aposta-alvo atual</span><input disabled type="number" value={heroCurrentBet + toCall} aria-readonly="true" /></label>
+            <label className="cp-field"><span>Último aumento completo</span><input disabled={analyzing} type="number" min={1} value={minRaiseIncrement} onChange={(event) => { invalidateLiveContext(); setMinRaiseIncrement(safeNumber(event.currentTarget.valueAsNumber, minRaiseIncrement, 1)) }} /></label>
+            <label className="cp-field cp-check"><input disabled={analyzing} type="checkbox" checked={raiseReopened} onChange={(event) => { invalidateLiveContext(); setRaiseReopened(event.currentTarget.checked) }} /><span>Ação reaberta</span></label>
+            <label className="cp-field"><span>Oponentes</span><input disabled={analyzing} type="number" min={1} max={8} value={opponents} onChange={(event) => { invalidateLiveContext(); setOpponents(Math.min(8, safeNumber(event.currentTarget.valueAsNumber, opponents, 1))) }} /></label>
+            <label className="cp-field"><span>Posição</span><select disabled={analyzing} value={inPosition ? 'in' : 'out'} onChange={(event) => { invalidateLiveContext(); setInPosition(event.currentTarget.value === 'in') }}><option value="out">Fora de posição</option><option value="in">Em posição</option></select></label>
           </div>
         </details>
 
@@ -323,10 +392,10 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
         <div className="cp-live-grid">
           <div className="cp-live-preview"><video ref={videoRef} muted playsInline className="cp-live-video" aria-label="Prévia da janela compartilhada" />{!capturing && <div className="cp-live-hint">A prévia da janela autorizada aparecerá aqui.</div>}</div>
           <div className="cp-live-read">
-            {visionStale && <div className="capture-stale" role="note">Última leitura válida — pode estar desatualizada.</div>}
+            {visionStale && <div className="capture-stale" role="note">Última leitura válida — diagnóstico histórico; recomendação suprimida até um novo quadro válido.</div>}
             {vision && <VisionDiagnostics result={vision} latencyMs={visionLatencyMs} />}
             {standalone && <div className="capture-academic-note">Modo apresentação: estratégia não é exibida durante a captura ao vivo.</div>}
-            {!standalone && decision && <><div className="cp-headline"><Lightbulb size={18} /> {decision.headline}</div><div className="cp-grid"><div><span>Recomendação</span><b>{decision.recommendation_label}</b></div><div><span>Equity estimada</span><b className="mono">{decision.equity_pct}%</b></div><div><span>Pot odds</span><b className="mono">{decision.pot_odds_pct}%</b></div><div><span>EV de pagar</span><b className="mono">{Math.round(decision.ev_call)}</b></div></div><div className="cp-options">{decision.options.map((option) => <div key={option.action} className={`cp-opt v-${option.verdict}${option.chosen ? ' is-chosen' : ''}`}><b>{option.label}</b> <small>{option.reason}</small></div>)}</div></>}
+            {!standalone && decision && <><div className="cp-headline"><Lightbulb size={18} /> {decision.headline}</div><div className="cp-grid"><div><span>Recomendação</span><b>{decision.recommendation_label}</b></div><div><span>Equity estimada</span><b className="mono">{decision.equity_pct}%</b></div><div><span>Pot odds</span><b className="mono">{decision.pot_odds_pct}%</b></div><div title="Assume checkdown, sem apostas futuras."><span>EV simplificado (checkdown)</span><b className="mono">{Math.round(decision.ev_call)}</b></div></div><div className="capture-stale" role="note">{decision.decision_note}</div><div className="cp-options">{decision.options.map((option) => <div key={option.action} className={`cp-opt v-${option.verdict}${option.chosen ? ' is-chosen' : ''}`}><b>{option.label}</b> <small>{option.reason}</small></div>)}</div></>}
             {!vision && analyzing && <div className="cp-live-hint">Lendo o primeiro quadro…</div>}
             {!vision && !analyzing && <div className="cp-live-hint">A análise começa somente depois da confirmação.</div>}
           </div>

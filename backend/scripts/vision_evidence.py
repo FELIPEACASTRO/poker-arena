@@ -1,25 +1,34 @@
 """Gera a EVIDÊNCIA da visão F1 (pra banca): tabela de acurácia + imagens de exemplo.
 
-Roda o reconhecedor em N mesas por estilo (calibrado × nunca visto) e mede acurácia
-de cartas/hole/board/pote. A queda nos estilos não vistos mede a limitação do baseline
-nesse gerador; não prova desempenho de F2 nem transferência real. Salva também
-imagens com o gabarito vs o detectado.
+Compara o antigo banco canônico com o banco multiestilo de produção e mede também
+dois estilos sintéticos realmente retidos da calibração. Nenhum resultado sintético
+prova desempenho de F2 ou transferência para screenshots reais.
 
 Uso: uv run python scripts/vision_evidence.py [saida_dir]
 """
 
 from __future__ import annotations
 
+import json
+import platform
 import sys
 from collections import Counter
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 
 from PIL import Image, ImageDraw
 
 from poker_arena.vision import recognize_table, render_table
-from poker_arena.vision.synth import CANONICAL, STYLES
+from poker_arena.vision.recognize import _CANONICAL_T, RecognizedState, _recognize_table
+from poker_arena.vision.synth import FOUR_COLOR, STYLES, TWO_COLOR, Style
 
 N = 80
+HELD_OUT_STYLES = (
+    Style("holdout-tahoma", "tahoma.ttf", TWO_COLOR, (60, 40, 46), 64),
+    Style("holdout-courier-4color", "cour.ttf", FOUR_COLOR, (30, 70, 50), 60),
+)
+Recognizer = Callable[[Image.Image], RecognizedState]
 
 
 def card_detection_counts(truth_cards: list[str], predicted_cards: list[str]) -> dict[str, int]:
@@ -42,11 +51,11 @@ def is_exact_state(state, truth: dict) -> bool:
     )
 
 
-def measure(style) -> dict:
+def measure(style: Style, recognizer: Recognizer = recognize_table) -> dict[str, float]:
     tp = truth_n = pred_n = hx = bx = px = npl = pos = abst = exact = 0
     for seed in range(N):
         img, truth = render_table(seed=20000 + seed, style=style, with_seats=True)
-        st = recognize_table(img)
+        st = recognizer(img)
         tc = truth["hole"] + truth["board"]
         gc = st.hole + st.board
         counts = card_detection_counts(tc, gc)
@@ -105,37 +114,60 @@ def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else default
     out.mkdir(parents=True, exist_ok=True)
 
-    rows = [("classic-green (CALIBRADO)", measure(CANONICAL), True)]
-    for st in STYLES[1:]:
-        rows.append((f"{st.name} (nunca visto)", measure(st), False))
+    def canonical_only(image: Image.Image) -> RecognizedState:
+        return _recognize_table(image, _CANONICAL_T)
+
+    baseline_rows = [(style.name, measure(style, canonical_only)) for style in STYLES]
+    production_rows = [(style.name, measure(style)) for style in STYLES]
+    holdout_rows = [(style.name, measure(style)) for style in HELD_OUT_STYLES]
+
+    def append_table(lines: list[str], rows: list[tuple[str, dict[str, float]]]) -> None:
+        lines.extend(
+            [
+                "| Estilo | Precisão cartas | Recall cartas | F1 cartas | Estado exato |",
+                "|---|---|---|---|---|",
+            ]
+        )
+        for name, metrics in rows:
+            lines.append(
+                f"| {name} | {metrics['precisao']:.1f}% | {metrics['recall']:.1f}% "
+                f"| {metrics['cartas']:.1f}% | {metrics['estado_exato']:.1f}% |"
+            )
 
     lines = [
         "# Evidência — Visão F1 (reconhecimento de mesa 2D)",
         "",
-        f"Reconhecedor por template rodado em **{N} mesas por estilo**. O estilo *calibrado* é",
-        "de onde saem os templates; os demais o reconhecedor **nunca viu** — a QUEDA neles é a",
-        "evidência de que este baseline por template **não generaliza sozinho**. Este relatório",
-        "não mede nem atribui ao F2 o fechamento desse gap.",
+        f"Reconhecedor por template rodado em **{N} mesas por estilo**, seeds `20000..20079`.",
+        "O comparativo usa exatamente as mesmas imagens nos dois perfis. Os cinco estilos",
+        "conhecidos fazem parte do banco de produção; Tahoma e Courier ficam retidos como",
+        "holdout sintético. Isso mede apenas este gerador e não mede generalização real.",
         "",
-        "| Estilo | Precisão cartas | Recall cartas | F1 cartas | Estado exato |",
-        "|---|---|---|---|---|",
+        "## Baseline anterior — somente estilo canônico",
+        "",
     ]
-    for name, m, _ in rows:
-        lines.append(
-            f"| {name} | {m['precisao']:.1f}% | {m['recall']:.1f}% "
-            f"| {m['cartas']:.1f}% | {m['estado_exato']:.1f}% |"
-        )
-    seen = rows[0][1]["cartas"]
-    unseen = sum(r[1]["cartas"] for r in rows[1:]) / (len(rows) - 1)
+    append_table(lines, baseline_rows)
     lines += [
         "",
-        f"**Calibrado: {seen:.1f}% F1 de cartas** · **média nunca-visto: {unseen:.1f}%** → "
-        f"queda observada de **{seen - unseen:.1f} pontos** no baseline F1.",
+        "## Produção local — banco multiestilo conhecido",
+        "",
+    ]
+    append_table(lines, production_rows)
+    lines += [
+        "",
+        "## Holdout sintético — fontes fora do banco",
+        "",
+    ]
+    append_table(lines, holdout_rows)
+    lines += [
+        "",
+        "O holdout continua vindo do mesmo gerador e serve apenas como teste adversarial",
+        "local. O gate externo com screenshots rotulados permanece bloqueante para qualquer",
+        "alegação de precisão real ou promoção do F2.",
         "",
         "## Jogadores + posição (assentos + dealer button)",
         "",
         "Contar participantes e derivar a posição do herói (regra oficial) a partir dos",
-        "assentos e do botão. A F1 acha por blob de cor, cobrindo os 5 estilos (o azulado",
+        "assentos e do botão. A F1 acha por blob de cor nos estilos avaliados (o azulado",
         "do avatar exige dominar o feltro: `b > g + 25`). Se ainda assim um feltro colidir,",
         "ela **ABSTÉM** (0 jogadores) em vez de contar errado — o copiloto cai no nº",
         "informado. Generalização do F2 exige avaliação real separada com gabarito.",
@@ -143,7 +175,7 @@ def main() -> None:
         "| Estilo | Nº de jogadores | Posição do herói | Absteve |",
         "|---|---|---|---|",
     ]
-    for name, m, _ in rows:
+    for name, m in production_rows:
         lines.append(
             f"| {name} | {m['jogadores']:.0f}% | {m['posicao']:.0f}% | {m['absteve']:.0f}% |"
         )
@@ -152,7 +184,21 @@ def main() -> None:
         "Imagens de exemplo (gabarito × detectado) salvas nesta pasta.",
     ]
     (out / "RELATORIO.md").write_text("\n".join(lines), encoding="utf-8")
-    for st in STYLES:
+    receipt = {
+        "schema_version": 1,
+        "created_at_utc": datetime.now(UTC).isoformat(),
+        "scope": "synthetic_f1_only_not_real_world_generalization",
+        "n_per_style": N,
+        "seeds": [20000, 20000 + N - 1],
+        "environment": {"python": platform.python_version(), "platform": platform.platform()},
+        "baseline_canonical_only": dict(baseline_rows),
+        "production_known_style_bank": dict(production_rows),
+        "synthetic_holdout_not_calibrated": dict(holdout_rows),
+    }
+    (out / "metrics.json").write_text(
+        json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    for st in (*STYLES, *HELD_OUT_STYLES):
         save_example(st, 20000, out)
 
     print("\n".join(lines))

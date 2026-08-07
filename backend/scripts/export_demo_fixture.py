@@ -27,8 +27,7 @@ def fixture_payload() -> tuple[bytes, dict[str, Any]]:
     image.save(output, format="PNG")
     image_bytes = output.getvalue()
     public_truth = {
-        field: truth[field]
-        for field in ("hole", "board", "pot", "n_players", "position")
+        field: truth[field] for field in ("hole", "board", "pot", "n_players", "position")
     }
     receipt = {
         "schema_version": 1,

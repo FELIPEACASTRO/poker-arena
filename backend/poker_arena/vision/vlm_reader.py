@@ -51,11 +51,11 @@ _MAX_TIMEOUT_SECONDS = 30.0
 _DEFAULT_MODEL = "qwen3-vl-4b-instruct-q4-k-m-00c00da"
 _MAX_SEATS = 9
 _MAX_CHIPS = 999_999_999
-_ALLOWED_RESPONSE_FIELDS = frozenset(
-    {"hole", "board", "pot", "num_players", "position", "stacks"}
-)
+_ALLOWED_RESPONSE_FIELDS = frozenset({"hole", "board", "pot", "num_players", "position", "stacks"})
 _SESSION_RE = re.compile(r"^[A-Za-z0-9_-]{20,128}$")
 _POLICY_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+_MIN_REDACTION_REGION_AREA = 0.005
+_MIN_TOTAL_REDACTION_AREA = 0.01
 _MODEL_RE = re.compile(r"^[A-Za-z0-9._@:/+-]{1,160}$")
 _BLOCKED_REMOTE_SUFFIXES = (".trycloudflare.com",)
 
@@ -173,9 +173,7 @@ def _validated_endpoint() -> tuple[str, bool, str | None]:
                 infos = socket.getaddrinfo(host, effective_port, type=socket.SOCK_STREAM)
             except OSError as exc:
                 raise VlmConfigurationError("host VLM remoto nao resolveu") from exc
-            addresses = {
-                ipaddress.ip_address(str(info[4][0]).split("%", 1)[0]) for info in infos
-            }
+            addresses = {ipaddress.ip_address(str(info[4][0]).split("%", 1)[0]) for info in infos}
         if not addresses or any(not address.is_global for address in addresses):
             raise VlmConfigurationError("host VLM remoto resolveu fora da Internet publica")
         connect_ip = sorted(str(address) for address in addresses)[0]
@@ -253,8 +251,40 @@ def _configured_redaction_regions() -> tuple[tuple[float, float, float, float], 
             raise VlmPrivacyError("coordenadas de redacao devem ficar entre 0 e 1")
         if x0 >= x1 or y0 >= y1:
             raise VlmPrivacyError("regiao de redacao deve ter area positiva")
+        if (x1 - x0) * (y1 - y0) < _MIN_REDACTION_REGION_AREA:
+            raise VlmPrivacyError("cada regiao de redacao deve cobrir area material")
         regions.append(values)
+    x_edges = sorted({x for x0, _y0, x1, _y1 in regions for x in (x0, x1)})
+    union_area = 0.0
+    for left, right in zip(x_edges, x_edges[1:], strict=False):
+        if right <= left:
+            continue
+        intervals = sorted((y0, y1) for x0, y0, x1, y1 in regions if x0 < right and x1 > left)
+        covered_y = 0.0
+        if intervals:
+            start, end = intervals[0]
+            for next_start, next_end in intervals[1:]:
+                if next_start > end:
+                    covered_y += end - start
+                    start, end = next_start, next_end
+                else:
+                    end = max(end, next_end)
+            covered_y += end - start
+        union_area += (right - left) * covered_y
+    if union_area < _MIN_TOTAL_REDACTION_AREA:
+        raise VlmPrivacyError("politica de redacao deve cobrir area material")
     return tuple(regions)
+
+
+def configured_redaction_policy() -> str:
+    """Opaque provenance for operator-owned mask coordinates; it does not prove coverage."""
+
+    regions = _configured_redaction_regions()
+    canonical = ";".join(
+        ",".join(f"{coordinate:.6f}" for coordinate in region) for region in regions
+    )
+    digest = hashlib.sha256(canonical.encode("ascii")).hexdigest()[:16]
+    return f"configured-mask-v1-{digest}"
 
 
 def redact_configured_regions(img: Image.Image) -> Image.Image:

@@ -62,6 +62,11 @@ def test_no_alpha_when_action_is_not_aggressive():
     assert mdf is None and alpha is None
 
 
+def test_mdf_is_omitted_when_stack_cannot_cover_nominal_call():
+    mdf, _ = _gto_numbers(_obs(pot=100, to_call=80, me_stack=30), Action(ActionType.ALL_IN))
+    assert mdf is None
+
+
 # ---------- HUD stats (watch_stats) ----------
 def _seats():
     return [
@@ -166,6 +171,42 @@ def test_late_joiner_uses_its_buy_in_as_profit_baseline():
     ws.begin_hand([*_seats()[:2], joined])
 
     assert ws.per["D"]["start"] == 500
+    assert ws.per["D"]["buy_in_total"] == 500
+
+
+def test_rebuy_is_included_in_economic_result_baseline():
+    ws = WatchStats()
+    ws.begin_hand(_seats()[:1])
+    ws.finish_hand(
+        [],
+        0,
+        [{"seat": 0, "name": "A", "end": 0, "delta": -1000}],
+        showdown=False,
+    )
+    ws.record_rebuy("A", 1000)
+    ws.begin_hand([{**_seats()[0], "start": 1000}])
+
+    assert ws.per["A"]["buy_in_total"] == 2000
+    assert ws.per["A"]["stack"] - ws.per["A"]["buy_in_total"] == -1000
+
+
+def test_flop_event_counts_survivor_even_without_postflop_action():
+    ws = WatchStats()
+    ws.begin_hand(_seats()[:2])
+    ws.street_started("flop", ["A", "B"])
+    ws.action("A", "fold", "flop")
+    ws.finish_hand(
+        [{"seat": 1, "name": "B"}],
+        40,
+        [
+            {"seat": 0, "name": "A", "end": 980, "delta": -20},
+            {"seat": 1, "name": "B", "end": 1020, "delta": 20},
+        ],
+        showdown=False,
+    )
+
+    assert ws.per["A"]["saw_flop"] == 1
+    assert ws.per["B"]["saw_flop"] == 1
 
 
 def test_wtsd_and_wsd_from_showdown_contenders():

@@ -2,7 +2,7 @@
 
 ## Status
 
-Aceita em 2026-07-18.
+Superada em 2026-08-07 pela ADR-0006. Mantida como registro histórico do perfil v2.
 
 ## Contexto
 
@@ -52,4 +52,3 @@ somente cria uma proposta nova de manifesto e nunca sobrescreve o ativo.
 O fallback continua utilizável, mas nenhum peso atual é promovido. Coleta e
 dupla anotação autorizadas têm custo real. Mudar thresholds ou pipeline exige
 nova revisão e novos receipts, nunca interpretação retroativa.
-

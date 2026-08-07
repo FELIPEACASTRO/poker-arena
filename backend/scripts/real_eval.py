@@ -1,9 +1,9 @@
 """Evaluate vision on recursively discovered real screenshots with auditable truth.
 
-Each labelled image must have ``<stem>.json`` or ``<stem>.truth.json`` beside it. A
-label is evidence only when it includes hole, board and pot; optional player/position
-fields are included in the exact-state decision when present. Unlabelled screenshots
-are still useful diagnostics, but the command exits non-zero if no valid truth exists.
+Each labelled image must have ``<stem>.json`` or ``<stem>.truth.json`` beside it.
+A label is evidence only when it includes the complete image-derived state: hole,
+board, pot, player count and hero position. Unlabelled screenshots remain useful
+diagnostics, but the command exits non-zero if no valid truth exists.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from typing import Any
 
 from PIL import Image
 
+from poker_arena.position_rules import position_is_compatible
 from poker_arena.vision import (
     check_state,
     recognize_table,
@@ -28,6 +29,7 @@ from poker_arena.vision.synth import RANKS, SUITS
 _BUDGET_S = 4.0
 _IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg"})
 _VALID_CARDS = frozenset(r + s for r in RANKS for s in SUITS)
+_VALID_POSITIONS = frozenset({"BTN", "SB", "BB", "UTG", "UTG+1", "MP", "LJ", "HJ", "CO"})
 
 
 def discover_images(folder: Path) -> list[Path]:
@@ -42,7 +44,8 @@ def discover_images(folder: Path) -> list[Path]:
 def _validate_truth(data: Any, path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError(f"truth {path} must be a JSON object")
-    missing = [key for key in ("hole", "board", "pot") if key not in data]
+    required = ("hole", "board", "pot", "n_players", "position")
+    missing = [key for key in required if key not in data]
     if missing:
         raise ValueError(f"truth {path} missing required fields: {', '.join(missing)}")
     hole, board, pot = data["hole"], data["board"], data["pot"]
@@ -57,14 +60,16 @@ def _validate_truth(data: Any, path: Path) -> dict[str, Any]:
         raise ValueError(f"truth {path}: duplicate card")
     if isinstance(pot, bool) or not isinstance(pot, int) or pot < 0:
         raise ValueError(f"truth {path}: pot must be a non-negative integer")
-    if "n_players" in data and (
+    if (
         isinstance(data["n_players"], bool)
         or not isinstance(data["n_players"], int)
         or not 2 <= data["n_players"] <= 9
     ):
         raise ValueError(f"truth {path}: n_players must be an integer from 2 to 9")
-    if "position" in data and not isinstance(data["position"], str):
-        raise ValueError(f"truth {path}: position must be a string")
+    if data["position"] not in _VALID_POSITIONS:
+        raise ValueError(f"truth {path}: position must use the canonical taxonomy")
+    if not position_is_compatible(data["position"], data["n_players"]):
+        raise ValueError(f"truth {path}: position is impossible for n_players")
     return data
 
 
@@ -91,10 +96,8 @@ def score_truth(state: RecognizedState, truth: dict[str, Any]) -> dict[str, bool
         "board": state.board == truth["board"],
         "pot": state.pot == truth["pot"],
     }
-    if "n_players" in truth:
-        fields["n_players"] = state.n_players == truth["n_players"]
-    if "position" in truth:
-        fields["position"] = state.position == truth["position"]
+    fields["n_players"] = state.n_players == truth["n_players"]
+    fields["position"] = state.position == truth["position"]
     fields["exact_state"] = all(fields.values())
     return fields
 
@@ -111,10 +114,7 @@ def quality_gate(evaluations: list[dict[str, Any]]) -> tuple[bool, list[str]]:
     exact = sum(bool(score and score.get("exact_state")) for score in f2_scores)
     if exact != len(labelled):
         reasons.append(f"F2 exact-state {exact}/{len(labelled)}")
-    accepted = sum(
-        item.get("acceptance", {}).get("f2") is True
-        for item in labelled
-    )
+    accepted = sum(item.get("acceptance", {}).get("f2") is True for item in labelled)
     if accepted != len(labelled):
         reasons.append(f"F2 aceito pelo gate estrito {accepted}/{len(labelled)}")
     slow = sum(float(item.get("elapsed", float("inf"))) > _BUDGET_S for item in labelled)
@@ -158,11 +158,7 @@ def evaluate_image(path: Path) -> dict[str, Any]:
     if "f1" not in results:
         results["f1"] = recognize_table(img, ocr_numbers=True)
     sanity_by_engine = {
-        engine: (
-            primary_sanity
-            if state is primary
-            else check_state(state, abstain_below=0.85)
-        )
+        engine: (primary_sanity if state is primary else check_state(state, abstain_below=0.85))
         for engine, state in results.items()
     }
     _print_state("F1 template", results["f1"], sanity=sanity_by_engine["f1"])

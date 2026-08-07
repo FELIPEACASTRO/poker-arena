@@ -1,7 +1,9 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
+import { StrictMode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../api'
+import { actionableDecision, isVisionExpired } from '../liveVision'
 import LiveCopilotScreen from './LiveCopilotScreen'
 
 function fakeStream(surface?: 'window' | 'monitor' | 'browser' | 'unknown') {
@@ -18,6 +20,19 @@ describe('LiveCopilotScreen', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+  })
+
+  it('suprime conselho acionável quando a última leitura ficou obsoleta', () => {
+    const vision = { decision: { headline: 'Pagar' } } as never
+
+    expect(actionableDecision(vision, false)).toEqual({ headline: 'Pagar' })
+    expect(actionableDecision(vision, true)).toBeNull()
+  })
+
+  it('expira leitura sem novo quadro mesmo quando nenhuma exceção foi lançada', () => {
+    expect(isVisionExpired(1_000, 4_999, 1_000)).toBe(false)
+    expect(isVisionExpired(1_000, 5_001, 1_000)).toBe(true)
+    expect(isVisionExpired(1_000, 13_001, 4_000)).toBe(true)
   })
 
   it('exige consentimento explícito e impede duas capturas simultâneas', async () => {
@@ -42,6 +57,26 @@ describe('LiveCopilotScreen', () => {
     expect(consent).toBeChecked()
     await userEvent.click(consent)
     expect(screen.getByRole('button', { name: /Selecionar janela do jogo/ })).toBeDisabled()
+  })
+
+  it('continua montado e permite captura sob o ciclo duplo do React StrictMode', async () => {
+    const { stream } = fakeStream('window')
+    const getDisplayMedia = vi.fn().mockResolvedValue(stream)
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getDisplayMedia },
+    })
+
+    render(
+      <StrictMode>
+        <LiveCopilotScreen onClose={() => undefined} />
+      </StrictMode>,
+    )
+    await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+    await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
+
+    expect(await screen.findByRole('button', { name: /Escolher outra janela/ })).toBeEnabled()
+    expect(getDisplayMedia).toHaveBeenCalledTimes(1)
   })
 
   it('encerra tracks se o preview falhar depois da permissão', async () => {
@@ -97,6 +132,11 @@ describe('LiveCopilotScreen', () => {
     await userEvent.click(localConsent)
     expect(localConsent).not.toBeChecked()
     expect(remoteConsent).not.toBeChecked()
+  })
+
+  it('limita oponentes ao mesmo máximo de oito aceito pela API', () => {
+    render(<LiveCopilotScreen onClose={() => undefined} />)
+    expect(screen.getByRole('spinbutton', { name: /Oponentes/i })).toHaveAttribute('max', '8')
   })
 
   it('captura local não concede compartilhamento remoto implicitamente', async () => {
@@ -295,5 +335,6 @@ describe('LiveCopilotScreen', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent(/compartilhamento foi encerrado/)
     expect(screen.getByRole('status')).toHaveTextContent(/Nenhum quadro está sendo analisado/)
+    expect(screen.queryByText('Recomendação')).not.toBeInTheDocument()
   })
 })

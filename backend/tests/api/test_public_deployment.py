@@ -137,9 +137,7 @@ def test_public_swagger_uses_gateway_root_path(
     assert docs.status_code == 200
     assert "url: '/api/openapi.json'" in docs.text
     contract = client.get("/openapi.json", headers=headers).json()
-    assert contract["servers"] == [
-        {"url": "/api", "description": "Gateway público autenticado"}
-    ]
+    assert contract["servers"] == [{"url": "/api", "description": "Gateway público autenticado"}]
     assert contract["components"]["securitySchemes"]["EdgeSession"] == {
         "type": "apiKey",
         "in": "cookie",
@@ -218,9 +216,7 @@ def test_public_websocket_requires_exact_origin_secret_and_user(
         pass
     assert wrong_origin.value.code == 4403
 
-    with client.websocket_connect(
-        f"/tables/{table_id}/ws", headers=headers
-    ) as websocket:
+    with client.websocket_connect(f"/tables/{table_id}/ws", headers=headers) as websocket:
         assert websocket.receive_json()["table_id"] == table_id
 
 
@@ -246,8 +242,6 @@ def test_versioned_public_profile_passes_its_structural_gate(
     runpy.run_path(str(profile / "validate_profile.py"), run_name="__main__")
     assert capsys.readouterr().out.strip() == "PRODUCTION_PROFILE_STATIC_OK"
 
-    monkeypatch.setattr(
-        sys, "argv", [str(profile / "validate_profile.py"), "--homologation"]
-    )
+    monkeypatch.setattr(sys, "argv", [str(profile / "validate_profile.py"), "--homologation"])
     with pytest.raises(AssertionError, match="fixe todas as imagens por digest"):
         runpy.run_path(str(profile / "validate_profile.py"), run_name="__main__")

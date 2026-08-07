@@ -1,0 +1,450 @@
+{
+  "schema_version": 4,
+  "created_at_utc": "2026-08-07T17:40:22.585785+00:00",
+  "scope": "local_post_hand_latency_only_not_strategy_quality",
+  "environment": {
+    "python": "3.11.15",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "machine": "AMD64",
+    "processor": "Intel64 Family 6 Model 165 Stepping 2, GenuineIntel",
+    "logical_cpu_count": 8,
+    "installed_distributions": [
+      {
+        "name": "annotated-doc",
+        "version": "0.0.4"
+      },
+      {
+        "name": "annotated-types",
+        "version": "0.7.0"
+      },
+      {
+        "name": "anyio",
+        "version": "4.14.0"
+      },
+      {
+        "name": "ast-serialize",
+        "version": "0.5.0"
+      },
+      {
+        "name": "boolean.py",
+        "version": "5.0"
+      },
+      {
+        "name": "cachecontrol",
+        "version": "0.14.4"
+      },
+      {
+        "name": "certifi",
+        "version": "2026.6.17"
+      },
+      {
+        "name": "charset-normalizer",
+        "version": "3.4.9"
+      },
+      {
+        "name": "click",
+        "version": "8.4.1"
+      },
+      {
+        "name": "colorama",
+        "version": "0.4.6"
+      },
+      {
+        "name": "coverage",
+        "version": "7.14.3"
+      },
+      {
+        "name": "cyclonedx-python-lib",
+        "version": "11.11.0"
+      },
+      {
+        "name": "defusedxml",
+        "version": "0.7.1"
+      },
+      {
+        "name": "fastapi",
+        "version": "0.138.0"
+      },
+      {
+        "name": "filelock",
+        "version": "3.30.2"
+      },
+      {
+        "name": "flatbuffers",
+        "version": "25.12.19"
+      },
+      {
+        "name": "h11",
+        "version": "0.16.0"
+      },
+      {
+        "name": "httpcore",
+        "version": "1.0.9"
+      },
+      {
+        "name": "httpx",
+        "version": "0.28.1"
+      },
+      {
+        "name": "hypothesis",
+        "version": "6.156.6"
+      },
+      {
+        "name": "idna",
+        "version": "3.18"
+      },
+      {
+        "name": "iniconfig",
+        "version": "2.3.0"
+      },
+      {
+        "name": "librt",
+        "version": "0.11.0"
+      },
+      {
+        "name": "license-expression",
+        "version": "30.4.4"
+      },
+      {
+        "name": "markdown-it-py",
+        "version": "4.2.0"
+      },
+      {
+        "name": "mdurl",
+        "version": "0.1.2"
+      },
+      {
+        "name": "ml-dtypes",
+        "version": "0.5.4"
+      },
+      {
+        "name": "msgpack",
+        "version": "1.2.1"
+      },
+      {
+        "name": "mypy",
+        "version": "2.1.0"
+      },
+      {
+        "name": "mypy-extensions",
+        "version": "1.1.0"
+      },
+      {
+        "name": "numpy",
+        "version": "2.4.6"
+      },
+      {
+        "name": "onnx",
+        "version": "1.22.0"
+      },
+      {
+        "name": "onnxruntime",
+        "version": "1.27.0"
+      },
+      {
+        "name": "opencv-python",
+        "version": "5.0.0.93"
+      },
+      {
+        "name": "packageurl-python",
+        "version": "0.17.6"
+      },
+      {
+        "name": "packaging",
+        "version": "26.2"
+      },
+      {
+        "name": "pathspec",
+        "version": "1.1.1"
+      },
+      {
+        "name": "pillow",
+        "version": "12.3.0"
+      },
+      {
+        "name": "pip",
+        "version": "26.1.2"
+      },
+      {
+        "name": "pip-api",
+        "version": "0.0.34"
+      },
+      {
+        "name": "pip-audit",
+        "version": "2.10.1"
+      },
+      {
+        "name": "pip-requirements-parser",
+        "version": "32.0.1"
+      },
+      {
+        "name": "platformdirs",
+        "version": "4.10.0"
+      },
+      {
+        "name": "pluggy",
+        "version": "1.6.0"
+      },
+      {
+        "name": "poker-arena",
+        "version": "0.2.0"
+      },
+      {
+        "name": "pokerkit",
+        "version": "0.7.4"
+      },
+      {
+        "name": "protobuf",
+        "version": "7.35.1"
+      },
+      {
+        "name": "py-serializable",
+        "version": "2.1.0"
+      },
+      {
+        "name": "pyclipper",
+        "version": "1.4.0"
+      },
+      {
+        "name": "pydantic",
+        "version": "2.13.4"
+      },
+      {
+        "name": "pydantic-core",
+        "version": "2.46.4"
+      },
+      {
+        "name": "pygments",
+        "version": "2.20.0"
+      },
+      {
+        "name": "pyparsing",
+        "version": "3.3.2"
+      },
+      {
+        "name": "pytest",
+        "version": "9.1.1"
+      },
+      {
+        "name": "pytest-cov",
+        "version": "7.1.0"
+      },
+      {
+        "name": "python-multipart",
+        "version": "0.0.32"
+      },
+      {
+        "name": "pyyaml",
+        "version": "6.0.3"
+      },
+      {
+        "name": "rapidocr-onnxruntime",
+        "version": "1.4.4"
+      },
+      {
+        "name": "requests",
+        "version": "2.34.2"
+      },
+      {
+        "name": "rich",
+        "version": "15.0.0"
+      },
+      {
+        "name": "ruff",
+        "version": "0.15.18"
+      },
+      {
+        "name": "shapely",
+        "version": "2.1.2"
+      },
+      {
+        "name": "six",
+        "version": "1.17.0"
+      },
+      {
+        "name": "sortedcontainers",
+        "version": "2.4.0"
+      },
+      {
+        "name": "starlette",
+        "version": "1.3.1"
+      },
+      {
+        "name": "tomli",
+        "version": "2.4.1"
+      },
+      {
+        "name": "tomli-w",
+        "version": "1.2.0"
+      },
+      {
+        "name": "tqdm",
+        "version": "4.68.3"
+      },
+      {
+        "name": "treys",
+        "version": "0.1.8"
+      },
+      {
+        "name": "typing-extensions",
+        "version": "4.15.0"
+      },
+      {
+        "name": "typing-inspection",
+        "version": "0.4.2"
+      },
+      {
+        "name": "urllib3",
+        "version": "2.7.0"
+      },
+      {
+        "name": "uvicorn",
+        "version": "0.49.0"
+      },
+      {
+        "name": "websockets",
+        "version": "16.1.1"
+      }
+    ]
+  },
+  "implementation_binding": {
+    "sha256": "d94d820f50bad1f92318633d09e6f5535e8cd07f0aa0f1b255e77e4d0e052cca",
+    "files": {
+      "scripts/copilot_performance_benchmark.py": "1c4f434b6708fab56e8ffd987a0f7e36f5727c53d1b39954f1f65e6039e14565",
+      "poker_arena/__init__.py": "16a5e60843efe443b39e3e9223d8e9b48f7051cb4719e3f5c683d6e592b52c92",
+      "poker_arena/api/__init__.py": "e36e1f9de4a0aa51eb5a163beff68c5d866853b730645a7a9de1d2f25c71b683",
+      "poker_arena/api/app.py": "8275fd45b3304a1ef4831c3856669cf780beb05f96c2530b797e453dbcfec509",
+      "poker_arena/api/dependencies.py": "a245630ffbdec4cac8c088d43cf35c244557d78a2aad777b4050c8bfda287902",
+      "poker_arena/api/mappers.py": "2b882b562271e5a5a2ff3d36a1219a21d6ffd702403771324b7eb67326802856",
+      "poker_arena/api/openapi_contract.py": "e5bde2f555191a41f2e970370092e7c1dc4fcf266a5c6c5854ef2eefba256f14",
+      "poker_arena/api/schemas.py": "acb82371043360683a820678014cf11f1a9c4268d8bd97e492ff1822d7911e3a",
+      "poker_arena/application/__init__.py": "9447c4aaf8399726a7c8b23fe3aa94478c0ca379dabe564aa6a09f1d6570dddf",
+      "poker_arena/application/analysis.py": "d0999ee0576a87ae20effd0bf9e128bcc9802220f4bb4fbd28f6b30b30e884e2",
+      "poker_arena/application/bot_factory.py": "767a5ac0c75d762c1162b348579258d70e8a9819b1bc3225dd4dda26eba8ba69",
+      "poker_arena/application/copilot.py": "a3bce7dcc6cdc179cf45fa9fa834a516571e8956f130defa7be9800e92b56ea3",
+      "poker_arena/application/game_session.py": "f2e2423df6d136981cc55b40dd67c4ef3b4b7e3c5eed19434442c09ee910a457",
+      "poker_arena/application/match_log.py": "f830c4417100a482ff9a0225b82b71548194eaf2d25e86cb570549997a9f43c5",
+      "poker_arena/application/positions.py": "6fe6f5ed1234229c972121149df17e54eb8012435d3d936178132d3959afb665",
+      "poker_arena/application/reasoning.py": "80d8380d89e45c1511e36b5ab1ba413b6cb2e222d7a8df54f8dd9b7b3d088ed8",
+      "poker_arena/application/session_repository.py": "0a59dd23b94658cbe52b2da604b8c5fd4b56de31aab5d5c6fe912681d55ab622",
+      "poker_arena/application/views.py": "88c81444c32461fee0008f1e77b3815de8bc2b9b54f0e49debe7f0acd38391b2",
+      "poker_arena/application/watch_stats.py": "7fd7ba5e4431b65d1a469b8b71b5dbac93089c8f741f5e2b3597a424bdb798f5",
+      "poker_arena/bots/__init__.py": "1d024c5e4b3eb32022c43015a3c98c74dbe2d211db4684d1a3161c95b2c433bb",
+      "poker_arena/bots/_policy.py": "a777191f8f9357dabeefe9f90669db7bf37a0400ec5f35686b902f9d8f21ed13",
+      "poker_arena/bots/adaptive_bot.py": "3c457a2e0a35f4b4ed5daa195802b4140936b5e4f36dcab9d9ec274307259b20",
+      "poker_arena/bots/base.py": "0c4eae5ab1b63608ea353fd3bde10c275e6854273c9e33a741697bec4a3e8f39",
+      "poker_arena/bots/heuristic_bot.py": "4aee0a4116a710305b5515477560e4a8696a37beac9093b35643a0bb987b6b91",
+      "poker_arena/bots/insight.py": "8606295c2650775b47e76951472d82c257ee893bbb88dfd9788a47c5b06219d8",
+      "poker_arena/bots/ml_bot.py": "baa51f224441c7f0d3a5013006e098a6225ad10fae7e5d6c4f1ee2570d984d36",
+      "poker_arena/bots/monte_carlo_bot.py": "5f51d6f2c6723a4d3d8b20677888e21cb534570f74addeb5b338d3b5c3b5942c",
+      "poker_arena/bots/observation.py": "8de2c664aa5b34b4db7ef841339310ff8884915c614c5e3fdcbad7f17f84bde4",
+      "poker_arena/bots/opponent_model.py": "be6b1fc0c4a88ed9c2fdb5c1ee84674af1c824edc426b10cdbbfa07ea7efabf0",
+      "poker_arena/bots/random_bot.py": "1135db32993ee1fb8ceef1c75c07033a3165e2198dc3a7db3d550d4d2ab54cf9",
+      "poker_arena/engine/__init__.py": "74caf3936323f95a2161c55c79d80f2feb584858de29b4b1a3432bfcfeff419d",
+      "poker_arena/engine/actions.py": "d520d8f972e754dd9cf576fe773539cb9422c240b4c58e6e94da1ddbdff353c8",
+      "poker_arena/engine/cards.py": "d1cbf24afcee0e3f93f6194d1808633393731a775f580f06b8b6da5661db8d3c",
+      "poker_arena/engine/evaluator.py": "e977ef5ee538ff0a57077808001f0445552e70aabbd92050e9f3a51d571802bf",
+      "poker_arena/engine/game.py": "1d9548e111c487c53c9a6a4a177cc1789aab36c54bee3347173fd37e44c272e3",
+      "poker_arena/engine/player.py": "6bc5eb542e0d13c41563a9b189c9a2ef342eb7aaed9b6c727e9243d0cf316738",
+      "poker_arena/engine/table.py": "232481b47d5f790b92a0b4e2937b097996373f13fa074ef6798e0b3dce8d4d41",
+      "poker_arena/ml/__init__.py": "7ce59f6daf757269957d216fc0c24b1327d7c37cb89bd97a1c5ec698f92e2a2d",
+      "poker_arena/ml/data_manifest.py": "0967ae4bab4384f1e56005ba96bbd13e19d058b5bdb488dbaf10c49d559476d0",
+      "poker_arena/ml/encoder.py": "95cf61abb4c73f6cc0fce7af8a9f8da8668dd48503f3cd1cd5e69583e5e42da7",
+      "poker_arena/ml/evaluate.py": "083d7151531701458408d780cafea89c55722a9adebb3a99e66962e2c8f7edce",
+      "poker_arena/ml/external_validation.py": "686f5f72bf39d39dcdf6c7da176d5a1262927081d499b3d198d2b69c9c9b9859",
+      "poker_arena/ml/pokerbench.py": "13ec582c31b98754e70b02f7b201296dbbc06e6a6a1baa6f077d52ac320010a8",
+      "poker_arena/ml/promotion_contract.py": "921becc244632fac2e27d314630528a1d8527201c802fd38b63b80e0f0f299ff",
+      "poker_arena/ml/self_play_env.py": "e22154f2670f22ff1b57f874cd1c58ad3c2af20239627c2f066544677ed97890",
+      "poker_arena/model_artifacts.py": "cae0908762e36c6ced8942551fdb30d51027f1b6887640f024d31c85dc0e42d3",
+      "poker_arena/position_rules.py": "46a879eef6b0f5af72b5e4dd9cd1b1667488b32f7954655eb9f2ed658231d7b6",
+      "poker_arena/vision/__init__.py": "c21ad33327ad9c1632f638f1bcf29ac1a4f5ca04835d00fb786d410bf1942778",
+      "poker_arena/vision/localize_read.py": "79c8cc01867bca3b1dc502989649e4407f3c9012d50d12362cd0f0034c245210",
+      "poker_arena/vision/ocr.py": "aef1874236af2b3dbf23dc715cb150401c5e4540a40a64b7d3781e88a5b47aab",
+      "poker_arena/vision/onnx_recognize.py": "ddee055a5796a83f1c00e38f59a00d3f5fc203cc1c29d25cef341706782dd80e",
+      "poker_arena/vision/recognize.py": "95ea796c9628240321be1f7eaaabbb9369b7cd59ca572df922db55eb858636bd",
+      "poker_arena/vision/sanity.py": "e5188c8e2d43dc0dfb662c44e3675562d020945b7dd68e9d81c8a882584761d7",
+      "poker_arena/vision/seats.py": "faefb05beb55c1c1e1439636ae27031a69a591a0f3a738ca9ef54f82d5939823",
+      "poker_arena/vision/synth.py": "4f055d801b1976f0e6169ebbd5faac9834761a5fc5e948c8ba059379a80b7e08",
+      "poker_arena/vision/vlm_reader.py": "c8a9980619e5df14c4eed8cc2b0bf7afcf00b9d58e2527edb7b9aefffb78b21c",
+      "uv.lock": "b77cf93e64ab03f1d9872f3d54a18c33e3d428959ff3307dbaff9bbc17d02e50"
+    }
+  },
+  "scenarios_sha256": "a5947cfdec21ca02e9b0e0b66c1d28a8920e99d365a461125498cd6b6cc22fe8",
+  "warmup_runs_per_scenario": 1,
+  "p95_budget_ms": 2500.0,
+  "scenarios": [
+    {
+      "name": "river-heads-up-exact",
+      "iterations": 7,
+      "latency_ms": {
+        "min": 37.47,
+        "median": 52.031,
+        "p95_nearest_rank": 92.63,
+        "max": 92.63
+      },
+      "equity_method": "exact-river-heads-up",
+      "equity_trials": 990,
+      "recommendation_stable": true,
+      "within_p95_budget": true
+    },
+    {
+      "name": "preflop-heads-up-adaptive",
+      "iterations": 7,
+      "latency_ms": {
+        "min": 184.445,
+        "median": 206.356,
+        "p95_nearest_rank": 337.792,
+        "max": 337.792
+      },
+      "equity_method": "monte-carlo-uniform-range",
+      "equity_trials": 5000,
+      "recommendation_stable": true,
+      "within_p95_budget": true
+    },
+    {
+      "name": "preflop-six-max",
+      "iterations": 7,
+      "latency_ms": {
+        "min": 501.337,
+        "median": 526.327,
+        "p95_nearest_rank": 726.957,
+        "max": 726.957
+      },
+      "equity_method": "monte-carlo-uniform-range",
+      "equity_trials": 5000,
+      "recommendation_stable": true,
+      "within_p95_budget": true
+    },
+    {
+      "name": "preflop-nine-max",
+      "iterations": 7,
+      "latency_ms": {
+        "min": 773.979,
+        "median": 808.569,
+        "p95_nearest_rank": 894.005,
+        "max": 894.005
+      },
+      "equity_method": "monte-carlo-uniform-range",
+      "equity_trials": 5000,
+      "recommendation_stable": true,
+      "within_p95_budget": true
+    },
+    {
+      "name": "flop-six-max",
+      "iterations": 7,
+      "latency_ms": {
+        "min": 516.85,
+        "median": 536.748,
+        "p95_nearest_rank": 799.249,
+        "max": 799.249
+      },
+      "equity_method": "monte-carlo-uniform-range",
+      "equity_trials": 5000,
+      "recommendation_stable": true,
+      "within_p95_budget": true
+    }
+  ],
+  "acceptance": {
+    "all_scenarios_within_budget": true
+  }
+}

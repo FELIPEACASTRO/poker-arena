@@ -6,7 +6,9 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import onnx
 import pytest
+from onnx import TensorProto, helper
 
 import poker_arena.model_artifacts as model_artifacts
 from poker_arena.model_artifacts import (
@@ -65,9 +67,24 @@ def _write_manifest(path: Path, entry: dict[str, object]) -> Path:
     return manifest
 
 
+def _write_test_onnx(path: Path, *, usage: str = "expert", marker: str = "base") -> Path:
+    if usage == "vision":
+        inputs = [helper.make_tensor_value_info("images", TensorProto.FLOAT, [1, 3, 640, 640])]
+        outputs = [helper.make_tensor_value_info("output0", TensorProto.FLOAT, [1, 58, 8400])]
+    else:
+        inputs = [helper.make_tensor_value_info("obs", TensorProto.FLOAT, [1, 121])]
+        outputs = [helper.make_tensor_value_info("logits", TensorProto.FLOAT, [1, 5])]
+    model = helper.make_model(helper.make_graph([], f"test-{usage}", inputs, outputs))
+    metadata = model.metadata_props.add()
+    metadata.key = "fixture_marker"
+    metadata.value = marker
+    onnx.save_model(model, path)
+    return path
+
+
 def _artifact(tmp_path: Path) -> Path:
     path = tmp_path / "expert.onnx"
-    path.write_bytes(b"hash-pinned-test-artifact")
+    _write_test_onnx(path)
     return path
 
 
@@ -83,7 +100,7 @@ def _vision_entry(path: Path, *, include_receipt: bool = True) -> dict[str, obje
         "classes": [f"card-{index}" for index in range(54)],
     }
     if include_receipt:
-        entry["promotion_receipt"] = promotion_evidence_fixture(path)
+        entry["promotion_receipt"] = promotion_evidence_fixture(path, entry)
     return entry
 
 
@@ -234,7 +251,7 @@ def test_canonical_nested_artifact_path_is_supported(tmp_path):
     model_dir = tmp_path / "models"
     model_dir.mkdir()
     path = model_dir / "expert.onnx"
-    path.write_bytes(b"nested-hash-pinned-test-artifact")
+    _write_test_onnx(path)
     entry = _expert_entry(path, path="models/expert.onnx")
     manifest = tmp_path / "MANIFEST.json"
     manifest.write_text(
@@ -506,14 +523,23 @@ def test_approved_hash_governance_and_contract_return_receipt(tmp_path):
     assert receipt.inference_policy.sizing_jitter == 0.0
 
 
+def test_hash_pinned_but_unparseable_onnx_fails_closed(tmp_path):
+    path = tmp_path / "expert.onnx"
+    path.write_bytes(b"not-an-onnx-protobuf")
+    manifest = _write_manifest(path, _expert_entry(path))
+
+    with pytest.raises(ModelArtifactUnavailable) as raised:
+        verify_model_artifact(path, "expert", manifest_path=manifest)
+
+    assert raised.value.code == "artifact_uninspectable"
+
+
 def test_deployable_state_without_scientific_receipt_fails_closed(tmp_path):
     path = tmp_path / "vision.onnx"
-    path.write_bytes(b"vision-artifact")
+    _write_test_onnx(path, usage="vision")
     entry = _vision_entry(path, include_receipt=False)
     manifest = path.parent / "MANIFEST.json"
-    manifest.write_text(
-        json.dumps({"schema_version": 1, "artifacts": [entry]}), encoding="utf-8"
-    )
+    manifest.write_text(json.dumps({"schema_version": 1, "artifacts": [entry]}), encoding="utf-8")
 
     with pytest.raises(ModelArtifactUnavailable) as raised:
         verify_model_artifact(path, "vision", manifest_path=manifest)
@@ -523,7 +549,7 @@ def test_deployable_state_without_scientific_receipt_fails_closed(tmp_path):
 
 def test_cached_deployment_revalidates_scientific_receipt(tmp_path):
     path = tmp_path / "vision.onnx"
-    path.write_bytes(b"vision-artifact")
+    _write_test_onnx(path, usage="vision")
     entry = _vision_entry(path)
     manifest = _write_manifest(path, entry)
     verify_model_artifact(path, "vision", manifest_path=manifest)
@@ -535,6 +561,60 @@ def test_cached_deployment_revalidates_scientific_receipt(tmp_path):
         verify_model_artifact(path, "vision", manifest_path=manifest)
 
     assert raised.value.code == "promotion_evidence_invalid"
+
+
+def test_deployment_receipt_rejects_manifest_contract_mutation(tmp_path):
+    path = tmp_path / "vision.onnx"
+    _write_test_onnx(path, usage="vision")
+    entry = _vision_entry(path)
+    manifest = _write_manifest(path, entry)
+    verify_model_artifact(path, "vision", manifest_path=manifest)
+
+    classes = entry["classes"]
+    assert isinstance(classes, list)
+    classes[0], classes[1] = classes[1], classes[0]
+    governance = entry["governance"]
+    assert isinstance(governance, dict)
+    lineage = governance["lineage"]
+    assert isinstance(lineage, dict)
+    lineage["id"] = "different-lineage"
+    _write_manifest(path, entry)
+    clear_model_artifact_cache()
+
+    with pytest.raises(ModelArtifactUnavailable) as raised:
+        verify_model_artifact(path, "vision", manifest_path=manifest)
+
+    assert raised.value.code == "promotion_evidence_invalid"
+
+
+def test_external_data_onnx_is_rejected_because_sidecar_is_not_hash_bound(tmp_path):
+    import numpy as np
+    import onnx
+    from onnx import TensorProto, helper, numpy_helper
+
+    path = tmp_path / "expert.onnx"
+    graph = helper.make_graph(
+        [helper.make_node("MatMul", ["obs", "weights"], ["logits"])],
+        "external-data-test",
+        [helper.make_tensor_value_info("obs", TensorProto.FLOAT, [1, 121])],
+        [helper.make_tensor_value_info("logits", TensorProto.FLOAT, [1, 5])],
+        [numpy_helper.from_array(np.ones((121, 5), dtype=np.float32), name="weights")],
+    )
+    model = helper.make_model(graph)
+    onnx.save_model(
+        model,
+        path,
+        save_as_external_data=True,
+        all_tensors_to_one_file=True,
+        location="weights.bin",
+        size_threshold=0,
+    )
+    manifest = _write_manifest(path, _expert_entry(path))
+
+    with pytest.raises(ModelArtifactUnavailable) as raised:
+        verify_model_artifact(path, "expert", manifest_path=manifest)
+
+    assert raised.value.code == "external_data_forbidden"
 
 
 def test_vision_receipt_cannot_authorize_expert_task(tmp_path):
@@ -643,7 +723,7 @@ def test_success_receipt_cache_skips_rehash_and_identity_change_revalidates(monk
     # is not a security boundary because size and mtime can be restored by an attacker.
     assert calls == 3
 
-    path.write_bytes(path.read_bytes() + b"-changed")
+    _write_test_onnx(path, marker="changed")
     _write_manifest(path, _expert_entry(path))
     changed = verify_model_artifact(path, "expert", manifest_path=manifest)
     assert changed.sha256 != first.sha256

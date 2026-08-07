@@ -32,10 +32,16 @@ def decide_from_equity(obs: Observation, equity: float, raise_threshold: float =
             return Action(ActionType.RAISE, amount=raise_size(obs))
         return Action(ActionType.CHECK)
 
-    # há aposta a pagar: compara equity com pot odds
-    pot_odds = obs.to_call / (obs.pot + obs.to_call)
+    # há aposta a pagar: um stack curto só arrisca o que ainda possui. Nesse
+    # caso o motor representa o call incompleto como ALL_IN, não como CALL.
+    me = next(p for p in obs.players if p.seat == obs.seat)
+    call_cost = min(obs.to_call, me.stack)
+    pot_odds = call_cost / (obs.pot + call_cost)
     if want_raise:
         return Action(ActionType.RAISE, amount=raise_size(obs))
-    if equity >= pot_odds and ActionType.CALL in legal:
-        return Action(ActionType.CALL)
+    if equity >= pot_odds:
+        if ActionType.CALL in legal:
+            return Action(ActionType.CALL)
+        if me.stack <= obs.to_call and ActionType.ALL_IN in legal:
+            return Action(ActionType.ALL_IN)
     return Action(ActionType.FOLD)

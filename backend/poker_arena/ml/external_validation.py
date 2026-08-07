@@ -19,7 +19,7 @@ import re
 import stat
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from statistics import fmean
@@ -28,10 +28,12 @@ from typing import Any, Final
 from PIL import Image, UnidentifiedImageError
 
 from poker_arena.ml.data_manifest import validate_manifest
+from poker_arena.ml.promotion_contract import promotion_contract_sha256
+from poker_arena.position_rules import position_is_compatible
 
-SCHEMA_VERSION: Final = 2
-PROFILE_REVISION: Final = "poker-arena-external-vision-v2-2026-08-07"
-PIPELINE_REVISION: Final = "poker-arena-strict-f2-exact-state-v2-2026-08-07"
+SCHEMA_VERSION: Final = 3
+PROFILE_REVISION: Final = "poker-arena-external-vision-v3-2026-08-07"
+PIPELINE_REVISION: Final = "poker-arena-strict-f2-exact-state-v3-2026-08-07"
 EXTERNAL_SPLIT: Final = "external-test"
 MAX_JSON_BYTES: Final = 16 * 1024 * 1024
 MAX_RECEIPT_BYTES: Final = 2 * 1024 * 1024
@@ -40,7 +42,9 @@ MAX_RECORDS: Final = 100_000
 MAX_NEAR_DUPLICATE_CANDIDATES: Final = 4_096
 MAX_IMAGE_DIMENSION: Final = 8_192
 MAX_IMAGE_PIXELS: Final = 16_000_000
-NEAR_DUPLICATE_HAMMING: Final = 4
+# Global table layouts dominate a 64-bit dHash. Only an identical perceptual hash is a
+# blocking candidate; session-cluster inference handles correlated but distinct frames.
+NEAR_DUPLICATE_HAMMING: Final = 0
 MIN_TOTAL: Final = 200
 MIN_SUBGROUP: Final = 40
 MIN_ACCEPTED: Final = 142
@@ -48,21 +52,29 @@ MIN_SOURCES: Final = 3
 MIN_CLIENTS: Final = 3
 MIN_THEMES: Final = 2
 MIN_DECKS: Final = 2
-MIN_SESSIONS: Final = 20
+MIN_SESSIONS: Final = 99
 MIN_RESOLUTIONS: Final = 3
 MIN_EXACT_LCB: Final = 0.90
+MIN_SESSION_EXACT_LCB: Final = 0.90
 MIN_SUBGROUP_EXACT_LCB: Final = 0.80
 MAX_FALSE_ACCEPT_UCB: Final = 0.05
 MAX_ECE: Final = 0.05
 MAX_BRIER: Final = 0.05
 MAX_LATENCY_P95_MS: Final = 1_000.0
+RECEIPT_MAX_AGE_DAYS: Final = 30
 
 _SHA256_RE = re.compile(r"[0-9a-f]{64}")
 _ID_RE = re.compile(r"[a-z0-9](?:[a-z0-9._-]{0,126}[a-z0-9])?")
 _IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp", ".bmp"})
+_CONTEXT_SUBGROUP_VALUES: Final[dict[str, frozenset[str]]] = {
+    "street": frozenset({"preflop", "flop", "turn", "river"}),
+    "n_players": frozenset(str(value) for value in range(2, 10)),
+    "position": frozenset({"BTN", "SB", "BB", "UTG", "UTG+1", "MP", "LJ", "HJ", "CO"}),
+}
 _POLICY: Final[dict[str, int | float | str]] = {
     "external_split": EXTERNAL_SPLIT,
     "near_duplicate_hamming": NEAR_DUPLICATE_HAMMING,
+    "receipt_max_age_days": RECEIPT_MAX_AGE_DAYS,
     "min_total": MIN_TOTAL,
     "min_subgroup": MIN_SUBGROUP,
     "min_accepted": MIN_ACCEPTED,
@@ -73,6 +85,7 @@ _POLICY: Final[dict[str, int | float | str]] = {
     "min_sessions": MIN_SESSIONS,
     "min_resolutions": MIN_RESOLUTIONS,
     "min_exact_lcb": MIN_EXACT_LCB,
+    "min_session_exact_lcb": MIN_SESSION_EXACT_LCB,
     "min_subgroup_exact_lcb": MIN_SUBGROUP_EXACT_LCB,
     "max_false_accept_ucb": MAX_FALSE_ACCEPT_UCB,
     "max_ece": MAX_ECE,
@@ -104,9 +117,14 @@ def execution_environment() -> dict[str, bool | int | str]:
         "operating_system": platform.system() or "unknown",
         "os_release": platform.release() or "unknown",
         "machine": platform.machine() or "unknown",
+        "processor": platform.processor() or "unknown",
         "logical_cpu_count": os.cpu_count() or 1,
         "python": platform.python_version(),
         "pillow": package_version("Pillow"),
+        "numpy": package_version("numpy"),
+        "opencv_python": package_version("opencv-python"),
+        "rapidocr_onnxruntime": package_version("rapidocr-onnxruntime"),
+        "onnx": package_version("onnx"),
         "onnxruntime": package_version("onnxruntime"),
         "execution_provider": "CPUExecutionProvider",
         "session_lifecycle": "single-persistent-session",
@@ -141,16 +159,10 @@ def current_pipeline_binding() -> dict[str, str]:
     """Bind evidence to the evaluator, deployed path, configuration and lockfile."""
 
     backend_root = Path(__file__).resolve().parents[2]
-    source_paths = [
-        Path(__file__).resolve(),
-        backend_root / "poker_arena" / "api" / "app.py",
-        backend_root / "poker_arena" / "vision" / "localize_read.py",
-        backend_root / "poker_arena" / "vision" / "onnx_recognize.py",
-        backend_root / "poker_arena" / "vision" / "ocr.py",
-        backend_root / "poker_arena" / "vision" / "recognize.py",
-        backend_root / "poker_arena" / "vision" / "sanity.py",
-        backend_root / "poker_arena" / "vision" / "seats.py",
-    ]
+    # Bind the complete backend package conservatively. The evaluator calls into
+    # manifests, artifact contracts, OCR and API adapters transitively; a manual list
+    # can silently omit a future dependency and keep a stale promotion valid.
+    source_paths = list((backend_root / "poker_arena").rglob("*.py"))
     digest = hashlib.sha256()
     for path in sorted(source_paths, key=lambda item: item.as_posix()):
         relative = path.relative_to(backend_root).as_posix().encode()
@@ -171,6 +183,7 @@ class VerifiedPromotionEvidence:
     path: Path
     sha256: str
     artifact_sha256: str
+    artifact_contract_sha256: str
     dataset_manifest_sha256: str
     observations_sha256: str
 
@@ -346,7 +359,7 @@ def _truth(payload: bytes) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise ScientificGateError("ground truth root must be an object")
     allowed = {"hole", "board", "pot", "n_players", "position"}
-    if not {"hole", "board", "pot"}.issubset(raw) or not set(raw).issubset(allowed):
+    if set(raw) != allowed:
         raise ScientificGateError("ground truth has an unsupported schema")
     hole, board, pot = raw.get("hole"), raw.get("board"), raw.get("pot")
     cards = [*hole, *board] if isinstance(hole, list) and isinstance(board, list) else []
@@ -363,13 +376,14 @@ def _truth(payload: bytes) -> dict[str, Any]:
     ):
         raise ScientificGateError("ground truth is semantically invalid")
     n_players = raw.get("n_players")
-    if n_players is not None and (type(n_players) is not int or not 2 <= n_players <= 9):
+    if type(n_players) is not int or not 2 <= n_players <= 9:
         raise ScientificGateError("ground truth player count is invalid")
     position = raw.get("position")
-    if position is not None and (
-        not isinstance(position, str) or not 1 <= len(position) <= 16 or not position.isascii()
-    ):
+    valid_positions = {"BTN", "SB", "BB", "UTG", "UTG+1", "MP", "LJ", "HJ", "CO"}
+    if not isinstance(position, str) or position not in valid_positions:
         raise ScientificGateError("ground truth position is invalid")
+    if not position_is_compatible(position, n_players):
+        raise ScientificGateError("ground truth position is impossible for player count")
     return raw
 
 
@@ -394,25 +408,35 @@ def _prediction(raw: object) -> dict[str, Any]:
     ):
         raise ScientificGateError("prediction is semantically invalid")
     n_players, position = value["n_players"], value["position"]
-    if n_players is not None and (type(n_players) is not int or not 0 <= n_players <= 9):
+    if n_players is not None and (
+        type(n_players) is not int or n_players not in {0, *range(2, 10)}
+    ):
         raise ScientificGateError("prediction player count is invalid")
     if position is not None and (
         not isinstance(position, str) or not 1 <= len(position) <= 16 or not position.isascii()
     ):
         raise ScientificGateError("prediction position is invalid")
+    if (
+        isinstance(n_players, int)
+        and n_players >= 2
+        and isinstance(position, str)
+        and position
+        and not position_is_compatible(position, n_players)
+    ):
+        raise ScientificGateError("prediction position is impossible for player count")
     return value
 
 
 def _exact_state(prediction: dict[str, Any], truth: dict[str, Any]) -> bool:
-    fields = [
-        len(prediction["hole"]) == 2 and set(prediction["hole"]) == set(truth["hole"]),
-        prediction["board"] == truth["board"],
-        prediction["pot"] == truth["pot"],
-    ]
-    for optional in ("n_players", "position"):
-        if optional in truth:
-            fields.append(prediction[optional] == truth[optional])
-    return all(fields)
+    return all(
+        [
+            len(prediction["hole"]) == 2 and set(prediction["hole"]) == set(truth["hole"]),
+            prediction["board"] == truth["board"],
+            prediction["pot"] == truth["pot"],
+            prediction["n_players"] == truth["n_players"],
+            prediction["position"] == truth["position"],
+        ]
+    )
 
 
 def _candidate_runner(
@@ -435,6 +459,11 @@ def _candidate_runner(
     artifact = verify_evaluation_candidate(
         artifact_path, "vision", manifest_path=candidate_manifest_path
     )
+    classes = artifact.entry.get("classes")
+    if not isinstance(classes, list) or len(classes) != 54:
+        raise ScientificGateError(
+            "promotion-grade exact-state evaluation requires the 54-class cards/seats/button contract"
+        )
     recognizer = OnnxRecognizer(
         artifact.path,
         manifest_path=artifact.manifest_path,
@@ -453,9 +482,7 @@ def _candidate_runner(
                     or image.height > MAX_IMAGE_DIMENSION
                     or image.width * image.height > MAX_IMAGE_PIXELS
                 ):
-                    raise ScientificGateError(
-                        "image dimensions exceed the evaluation profile"
-                    )
+                    raise ScientificGateError("image dimensions exceed the evaluation profile")
                 image.load()
                 state = recognizer.recognize(image.convert("RGB"), True, False)
         except (OSError, UnidentifiedImageError) as exc:
@@ -466,6 +493,12 @@ def _candidate_runner(
         critical.extend(float(value) for value in state.card_confidences)
         if state.pot_confidence is not None:
             critical.append(float(state.pot_confidence))
+        for context_confidence in (
+            state.player_count_confidence,
+            state.position_confidence,
+        ):
+            if context_confidence is not None:
+                critical.append(float(context_confidence))
         confidence = min((value for value in critical if math.isfinite(value)), default=0.0)
         confidence = min(1.0, max(0.0, confidence))
         prediction = {
@@ -475,9 +508,38 @@ def _candidate_runner(
             "n_players": state.n_players,
             "position": state.position,
         }
-        return prediction, confidence, sanity.ok, elapsed_ms
+        strategic_context_ok = (
+            type(state.n_players) is int
+            and 2 <= state.n_players <= 9
+            and isinstance(state.position, str)
+            and bool(state.position)
+            and position_is_compatible(state.position, state.n_players)
+            and not isinstance(state.player_count_confidence, bool)
+            and isinstance(state.player_count_confidence, (int, float))
+            and math.isfinite(float(state.player_count_confidence))
+            and 0.0 <= float(state.player_count_confidence) <= 1.0
+            and not isinstance(state.position_confidence, bool)
+            and isinstance(state.position_confidence, (int, float))
+            and math.isfinite(float(state.position_confidence))
+            and 0.0 <= float(state.position_confidence) <= 1.0
+        )
+        return prediction, confidence, sanity.ok and strategic_context_ok, elapsed_ms
 
     return run
+
+
+def _candidate_contract_binding(artifact_path: Path, candidate_manifest_path: Path) -> str:
+    """Verify and bind the semantic candidate entry, not only the ONNX bytes."""
+
+    from poker_arena.model_artifacts import verify_evaluation_candidate
+
+    artifact = verify_evaluation_candidate(
+        artifact_path, "vision", manifest_path=candidate_manifest_path
+    )
+    classes = artifact.entry.get("classes")
+    if not isinstance(classes, list) or len(classes) != 54:
+        raise ScientificGateError("promotion-grade evidence requires a 54-class contract")
+    return promotion_contract_sha256(artifact.entry)
 
 
 def _wilson(successes: int, total: int, *, upper: bool) -> float:
@@ -488,8 +550,10 @@ def _wilson(successes: int, total: int, *, upper: bool) -> float:
     denominator = 1 + z * z / total
     center = (proportion + z * z / (2 * total)) / denominator
     margin = z * math.sqrt(proportion * (1 - proportion) / total + z * z / (4 * total**2))
-    return min(1.0, center + margin / denominator) if upper else max(
-        0.0, center - margin / denominator
+    return (
+        min(1.0, center + margin / denominator)
+        if upper
+        else max(0.0, center - margin / denominator)
     )
 
 
@@ -537,9 +601,7 @@ def _image_signature(payload: bytes) -> tuple[int, str]:
     result = 0
     for row in range(8):
         for column in range(8):
-            result = (result << 1) | int(
-                pixels[row * 9 + column] > pixels[row * 9 + column + 1]
-            )
+            result = (result << 1) | int(pixels[row * 9 + column] > pixels[row * 9 + column + 1])
     return result, resolution
 
 
@@ -547,8 +609,10 @@ def _safe_group_ref(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
 
 
-def _near_duplicate_status(signatures: list[tuple[int, str]]) -> str | None:
-    """Bounded five-band search: <=4 differing bits share at least one band."""
+def _near_duplicate_status(
+    signatures: list[tuple[int, str]], *, reject_within_split: frozenset[str] = frozenset()
+) -> str | None:
+    """Bounded five-band candidate search with a strict perceptual-hash equality veto."""
 
     indexes: list[dict[int, list[tuple[int, str]]]] = [dict() for _ in range(5)]
     offsets = ((0, 13), (13, 13), (26, 13), (39, 13), (52, 12))
@@ -558,7 +622,11 @@ def _near_duplicate_status(signatures: list[tuple[int, str]]) -> str | None:
         for index, (offset, width) in enumerate(offsets):
             band = (signature >> offset) & ((1 << width) - 1)
             candidates.update(indexes[index].get(band, ()))
-        foreign = [candidate for candidate in candidates if candidate[1] != split]
+        foreign = [
+            candidate
+            for candidate in candidates
+            if candidate[1] != split or split in reject_within_split
+        ]
         comparisons += len(foreign)
         if len(foreign) > MAX_NEAR_DUPLICATE_CANDIDATES or comparisons > (
             MAX_NEAR_DUPLICATE_CANDIDATES * max(1, len(signatures))
@@ -582,18 +650,37 @@ def _build_metrics(rows: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dic
     accepted = [row for row in rows if row["accepted"]]
     false_accepts = sum(not row["exact"] for row in accepted)
     exact = sum(outcomes)
+    session_outcomes = {
+        str(session): all(bool(row["exact"]) for row in rows if row["session"] == session)
+        for session in {row["session"] for row in rows}
+    }
+    exact_sessions = sum(session_outcomes.values())
     metrics: dict[str, Any] = {
         "exact_state": exact / len(rows),
         "exact_state_wilson95_lower": _wilson(exact, len(rows), upper=False),
+        "session_exact_rate": exact_sessions / len(session_outcomes),
+        "session_exact_wilson95_lower": _wilson(exact_sessions, len(session_outcomes), upper=False),
         "coverage": len(accepted) / len(rows),
         "false_accept_rate": false_accepts / len(accepted) if accepted else 1.0,
         "false_accept_wilson95_upper": _wilson(false_accepts, len(accepted), upper=True),
         "ece_10_bin": _ece(confidences, outcomes),
-        "brier": fmean((confidence - float(outcome)) ** 2 for confidence, outcome in zip(confidences, outcomes, strict=True)),
+        "brier": fmean(
+            (confidence - float(outcome)) ** 2
+            for confidence, outcome in zip(confidences, outcomes, strict=True)
+        ),
         "latency_p95_ms": _percentile95([float(row["latency_ms"]) for row in rows]),
     }
     subgroups: list[dict[str, Any]] = []
-    for field in ("source", "client", "theme", "deck", "resolution"):
+    for field in (
+        "source",
+        "client",
+        "theme",
+        "deck",
+        "resolution",
+        "street",
+        "n_players",
+        "position",
+    ):
         values = sorted({str(row[field]) for row in rows})
         for value in values:
             members = [row for row in rows if row[field] == value]
@@ -604,9 +691,7 @@ def _build_metrics(rows: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dic
                     "value_ref": _safe_group_ref(value),
                     "count": len(members),
                     "exact_state": successes / len(members),
-                    "exact_state_wilson95_lower": _wilson(
-                        successes, len(members), upper=False
-                    ),
+                    "exact_state_wilson95_lower": _wilson(successes, len(members), upper=False),
                 }
             )
     return metrics, subgroups
@@ -627,6 +712,7 @@ def evaluate_external_holdout(
     root = Path(dataset_root)
     observations_file = Path(observations_path)
     artifact_sha256 = _sha256_file(artifact)
+    artifact_contract_sha256 = _candidate_contract_binding(artifact, candidate_manifest)
     manifest_report = validate_manifest(
         manifest_path,
         dataset_root=root,
@@ -636,6 +722,16 @@ def evaluate_external_holdout(
         raise ScientificGateError("dataset manifest failed its mandatory governance gate")
     manifest_sha256 = manifest_report.manifest_receipt.sha256
     manifest = _safe_manifest_snapshot(manifest_path, manifest_sha256)
+    policy = manifest.get("policy")
+    if not isinstance(policy, dict) or policy.get("reject_duplicates_within_split") is not True:
+        raise ScientificGateError(
+            "promotion manifest must reject exact duplicates within every split"
+        )
+    group_keys = policy.get("group_disjoint_keys")
+    if not isinstance(group_keys, list) or not any(
+        isinstance(group, list) and "session" in group for group in group_keys
+    ):
+        raise ScientificGateError("promotion manifest must enforce session-disjoint splits")
     observations, observation_payload = _load_json(observations_file, limit=MAX_JSON_BYTES)
     observations_sha256 = hashlib.sha256(observation_payload).hexdigest()
     top = _exact_fields(
@@ -644,6 +740,7 @@ def evaluate_external_holdout(
             "schema_version",
             "profile_revision",
             "artifact_sha256",
+            "artifact_contract_sha256",
             "pipeline",
             "annotation_protocol",
             "records",
@@ -654,6 +751,8 @@ def evaluate_external_holdout(
         raise ScientificGateError("observations use an unsupported profile")
     if top["artifact_sha256"] != artifact_sha256:
         raise ScientificGateError("observations are not bound to the evaluated artifact")
+    if top["artifact_contract_sha256"] != artifact_contract_sha256:
+        raise ScientificGateError("observations are not bound to the evaluated artifact contract")
     pipeline_binding = current_pipeline_binding()
     if top["pipeline"] != pipeline_binding:
         raise ScientificGateError("evaluation plan is bound to a stale or foreign runtime pipeline")
@@ -669,6 +768,7 @@ def evaluate_external_holdout(
         if not isinstance(sample, dict) or not isinstance(sample.get("id"), str):
             raise ScientificGateError("validated manifest has an invalid sample inventory")
         by_id[sample["id"]] = sample
+
     def sample_snapshot(sample: dict[str, Any]) -> bytes:
         expected = sample.get("sha256")
         if not isinstance(expected, str):  # pragma: no cover - manifest gate owns it
@@ -678,6 +778,7 @@ def evaluate_external_holdout(
             expected_sha256=expected,
             limit=MAX_SAMPLE_SNAPSHOT_BYTES,
         )
+
     protocol = _exact_fields(
         top["annotation_protocol"],
         {
@@ -725,7 +826,10 @@ def evaluate_external_holdout(
     failures: list[dict[str, str]] = []
     if EXTERNAL_SPLIT not in split_names or not ({"train", "validation"} & split_names):
         failures.append(
-            {"code": "external_split_missing", "message": "An external split and a development split are required."}
+            {
+                "code": "external_split_missing",
+                "message": "An external split and a development split are required.",
+            }
         )
 
     rows: list[dict[str, Any]] = []
@@ -785,7 +889,10 @@ def evaluate_external_holdout(
         image_sample, truth_sample = by_id.get(image_id), by_id.get(truth_id)
         if image_sample is None or truth_sample is None:
             raise ScientificGateError("observation references an undeclared sample")
-        if image_sample.get("split") != EXTERNAL_SPLIT or truth_sample.get("split") != EXTERNAL_SPLIT:
+        if (
+            image_sample.get("split") != EXTERNAL_SPLIT
+            or truth_sample.get("split") != EXTERNAL_SPLIT
+        ):
             raise ScientificGateError("every evaluated sample must belong to external-test")
         if any(image_sample.get(field) != truth_sample.get(field) for field in paired_fields):
             raise ScientificGateError("image and truth sidecar do not share one provenance group")
@@ -848,6 +955,9 @@ def evaluate_external_holdout(
                 "accepted": accepted,
                 "latency_ms": float(latency),
                 "resolution": sample_signature(image_sample)[1],
+                "street": {0: "preflop", 3: "flop", 4: "turn", 5: "river"}[len(truth["board"])],
+                "n_players": str(truth["n_players"]),
+                "position": truth["position"],
                 **{
                     field: image_sample[field]
                     for field in ("source", "client", "theme", "deck", "session")
@@ -864,7 +974,10 @@ def evaluate_external_holdout(
     }
     if seen_images != external_images:
         failures.append(
-            {"code": "holdout_not_exhaustive", "message": "Every external-test image must be evaluated exactly once."}
+            {
+                "code": "holdout_not_exhaustive",
+                "message": "Every external-test image must be evaluated exactly once.",
+            }
         )
 
     image_samples = [
@@ -890,9 +1003,37 @@ def evaluate_external_holdout(
             }
         )
 
+    external_hashes = [
+        (sample_signature(sample)[0], EXTERNAL_SPLIT)
+        for sample in image_samples
+        if sample.get("split") == EXTERNAL_SPLIT
+    ]
+    external_duplicate_status = _near_duplicate_status(
+        external_hashes, reject_within_split=frozenset({EXTERNAL_SPLIT})
+    )
+    if external_duplicate_status == "leakage":
+        failures.append(
+            {
+                "code": "near_duplicate_within_holdout",
+                "message": "A perceptual near-duplicate occurs inside the external holdout.",
+            }
+        )
+    elif external_duplicate_status == "ambiguous":
+        failures.append(
+            {
+                "code": "near_duplicate_holdout_search_ambiguous",
+                "message": "Bounded analysis could not prove within-holdout independence.",
+            }
+        )
+
     metrics, subgroups = _build_metrics(rows)
     if len(rows) < MIN_TOTAL:
-        failures.append({"code": "insufficient_holdout", "message": "External holdout is below the minimum sample size."})
+        failures.append(
+            {
+                "code": "insufficient_holdout",
+                "message": "External holdout is below the minimum sample size.",
+            }
+        )
     diversity = {
         "clients": len({row["client"] for row in rows}),
         "themes": len({row["theme"] for row in rows}),
@@ -922,12 +1063,24 @@ def evaluate_external_holdout(
                 "message": "Too few accepted predictions exist for conservative false-accept calibration.",
             }
         )
-    if any(group["count"] < MIN_SUBGROUP for group in subgroups):
-        failures.append({"code": "subgroup_too_small", "message": "At least one declared subgroup is below the minimum sample size."})
     if any(
-        group["exact_state_wilson95_lower"] < MIN_SUBGROUP_EXACT_LCB
-        for group in subgroups
+        {str(row[field]) for row in rows} != required
+        for field, required in _CONTEXT_SUBGROUP_VALUES.items()
     ):
+        failures.append(
+            {
+                "code": "context_subgroup_coverage_incomplete",
+                "message": "Holdout must cover every supported street, table size, and position label.",
+            }
+        )
+    if any(group["count"] < MIN_SUBGROUP for group in subgroups):
+        failures.append(
+            {
+                "code": "subgroup_too_small",
+                "message": "At least one declared subgroup is below the minimum sample size.",
+            }
+        )
+    if any(group["exact_state_wilson95_lower"] < MIN_SUBGROUP_EXACT_LCB for group in subgroups):
         failures.append(
             {
                 "code": "subgroup_accuracy_below_floor",
@@ -935,11 +1088,30 @@ def evaluate_external_holdout(
             }
         )
     if metrics["exact_state_wilson95_lower"] < MIN_EXACT_LCB:
-        failures.append({"code": "accuracy_below_floor", "message": "Exact-state confidence bound is below policy."})
+        failures.append(
+            {
+                "code": "accuracy_below_floor",
+                "message": "Exact-state confidence bound is below policy.",
+            }
+        )
+    if metrics["session_exact_wilson95_lower"] < MIN_SESSION_EXACT_LCB:
+        failures.append(
+            {
+                "code": "session_cluster_accuracy_below_floor",
+                "message": "Session-cluster exact-state confidence bound is below policy.",
+            }
+        )
     if metrics["false_accept_wilson95_upper"] > MAX_FALSE_ACCEPT_UCB:
-        failures.append({"code": "false_accept_above_ceiling", "message": "False-accept confidence bound exceeds policy."})
+        failures.append(
+            {
+                "code": "false_accept_above_ceiling",
+                "message": "False-accept confidence bound exceeds policy.",
+            }
+        )
     if metrics["ece_10_bin"] > MAX_ECE or metrics["brier"] > MAX_BRIER:
-        failures.append({"code": "calibration_failed", "message": "Calibration metrics exceed policy."})
+        failures.append(
+            {"code": "calibration_failed", "message": "Calibration metrics exceed policy."}
+        )
     if metrics["latency_p95_ms"] > MAX_LATENCY_P95_MS:
         failures.append({"code": "latency_failed", "message": "P95 latency exceeds policy."})
 
@@ -949,12 +1121,17 @@ def evaluate_external_holdout(
         "decision": "pass" if not failures else "fail",
         "generated_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "artifact_sha256": artifact_sha256,
+        "artifact_contract_sha256": artifact_contract_sha256,
         "dataset_manifest_sha256": manifest_sha256,
         "observations_sha256": observations_sha256,
         "pipeline": pipeline_binding,
         "execution_environment": execution_environment(),
         "policy": dict(_POLICY),
-        "counts": {"total": len(rows), "accepted": sum(row["accepted"] for row in rows), **diversity},
+        "counts": {
+            "total": len(rows),
+            "accepted": sum(row["accepted"] for row in rows),
+            **diversity,
+        },
         "metrics": metrics,
         "subgroups": subgroups,
         "failures": failures,
@@ -966,7 +1143,9 @@ def write_receipt(path: str | Path, receipt: dict[str, Any]) -> str:
 
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    payload = (json.dumps(receipt, sort_keys=True, separators=(",", ":"), ensure_ascii=True) + "\n").encode()
+    payload = (
+        json.dumps(receipt, sort_keys=True, separators=(",", ":"), ensure_ascii=True) + "\n"
+    ).encode()
     if len(payload) > MAX_RECEIPT_BYTES:
         raise ScientificGateError("promotion receipt exceeds the bounded profile")
     try:
@@ -984,30 +1163,56 @@ def verify_promotion_receipt(
     *,
     expected_sha256: str,
     artifact_sha256: str,
+    artifact_contract_sha256: str,
 ) -> VerifiedPromotionEvidence:
     """Validate the hash-pinned scientific receipt used by the runtime gate."""
 
-    if _SHA256_RE.fullmatch(expected_sha256) is None or _SHA256_RE.fullmatch(artifact_sha256) is None:
+    if (
+        _SHA256_RE.fullmatch(expected_sha256) is None
+        or _SHA256_RE.fullmatch(artifact_sha256) is None
+        or _SHA256_RE.fullmatch(artifact_contract_sha256) is None
+    ):
         raise PromotionEvidenceError("receipt_invalid", "digest fields are invalid")
     try:
         data, payload = _load_json(Path(path), limit=MAX_RECEIPT_BYTES)
     except ScientificGateError as exc:
-        raise PromotionEvidenceError("receipt_unreadable", "receipt could not be read safely") from exc
+        raise PromotionEvidenceError(
+            "receipt_unreadable", "receipt could not be read safely"
+        ) from exc
     actual = hashlib.sha256(payload).hexdigest()
     if actual != expected_sha256:
         raise PromotionEvidenceError("receipt_sha256_mismatch", "receipt digest does not match")
     required = {
-        "schema_version", "profile_revision", "decision", "generated_at",
-        "artifact_sha256", "dataset_manifest_sha256", "observations_sha256",
-        "pipeline", "execution_environment", "policy", "counts", "metrics",
-        "subgroups", "failures",
+        "schema_version",
+        "profile_revision",
+        "decision",
+        "generated_at",
+        "artifact_sha256",
+        "artifact_contract_sha256",
+        "dataset_manifest_sha256",
+        "observations_sha256",
+        "pipeline",
+        "execution_environment",
+        "policy",
+        "counts",
+        "metrics",
+        "subgroups",
+        "failures",
     }
-    if set(data) != required or data.get("schema_version") != SCHEMA_VERSION or data.get("profile_revision") != PROFILE_REVISION:
+    if (
+        set(data) != required
+        or data.get("schema_version") != SCHEMA_VERSION
+        or data.get("profile_revision") != PROFILE_REVISION
+    ):
         raise PromotionEvidenceError("receipt_invalid", "receipt schema or profile is unsupported")
     if data.get("decision") != "pass" or data.get("failures") != []:
         raise PromotionEvidenceError("receipt_failed", "scientific decision is not pass")
     if data.get("artifact_sha256") != artifact_sha256:
         raise PromotionEvidenceError("artifact_mismatch", "receipt belongs to another artifact")
+    if data.get("artifact_contract_sha256") != artifact_contract_sha256:
+        raise PromotionEvidenceError(
+            "artifact_contract_mismatch", "receipt belongs to another artifact contract"
+        )
     try:
         current_pipeline = current_pipeline_binding()
     except ScientificGateError as exc:
@@ -1019,23 +1224,43 @@ def verify_promotion_receipt(
             "pipeline_mismatch", "receipt belongs to a stale or foreign runtime pipeline"
         )
     environment = data.get("execution_environment")
-    environment_keys = set(execution_environment())
+    current_environment = execution_environment()
+    environment_keys = set(current_environment)
     if not isinstance(environment, dict) or set(environment) != environment_keys:
         raise PromotionEvidenceError("receipt_invalid", "execution environment is incomplete")
-    if any(
-        isinstance(value, (dict, list)) or value is None
-        for value in environment.values()
-    ):
+    if any(isinstance(value, (dict, list)) or value is None for value in environment.values()):
         raise PromotionEvidenceError("receipt_invalid", "execution environment is invalid")
     if environment.get("execution_provider") != "CPUExecutionProvider":
         raise PromotionEvidenceError("receipt_invalid", "execution provider is unsupported")
+    if environment != current_environment:
+        raise PromotionEvidenceError(
+            "environment_mismatch",
+            "receipt was measured under a different execution environment",
+        )
     if data.get("policy") != _POLICY:
-        raise PromotionEvidenceError("policy_mismatch", "receipt policy differs from the mandatory profile")
+        raise PromotionEvidenceError(
+            "policy_mismatch", "receipt policy differs from the mandatory profile"
+        )
     for field in ("dataset_manifest_sha256", "observations_sha256"):
         if not isinstance(data.get(field), str) or _SHA256_RE.fullmatch(data[field]) is None:
             raise PromotionEvidenceError("receipt_invalid", "receipt lineage digest is invalid")
     counts, metrics, subgroups = data.get("counts"), data.get("metrics"), data.get("subgroups")
-    if not isinstance(counts, dict) or counts.get("total", 0) < MIN_TOTAL:
+    count_keys = {
+        "total",
+        "accepted",
+        "sources",
+        "clients",
+        "themes",
+        "decks",
+        "sessions",
+        "resolutions",
+    }
+    if (
+        not isinstance(counts, dict)
+        or set(counts) != count_keys
+        or type(counts.get("total")) is not int
+        or counts["total"] < MIN_TOTAL
+    ):
         raise PromotionEvidenceError("insufficient_holdout", "receipt sample count is below policy")
     count_floors = {
         "accepted": MIN_ACCEPTED,
@@ -1053,10 +1278,33 @@ def verify_promotion_receipt(
         raise PromotionEvidenceError(
             "insufficient_diversity", "receipt diversity or acceptance count is below policy"
         )
-    if not isinstance(metrics, dict) or not isinstance(subgroups, list) or not subgroups:
+    if counts["accepted"] > counts["total"] or any(
+        counts[name] > counts["total"]
+        for name in ("sources", "clients", "themes", "decks", "sessions", "resolutions")
+    ):
+        raise PromotionEvidenceError("receipt_invalid", "receipt counts are incoherent")
+    metric_keys = {
+        "exact_state",
+        "exact_state_wilson95_lower",
+        "session_exact_rate",
+        "session_exact_wilson95_lower",
+        "coverage",
+        "false_accept_rate",
+        "false_accept_wilson95_upper",
+        "ece_10_bin",
+        "brier",
+        "latency_p95_ms",
+    }
+    if (
+        not isinstance(metrics, dict)
+        or set(metrics) != metric_keys
+        or not isinstance(subgroups, list)
+        or not subgroups
+    ):
         raise PromotionEvidenceError("receipt_invalid", "receipt metrics are incomplete")
     numeric_checks = (
         ("exact_state_wilson95_lower", MIN_EXACT_LCB, True),
+        ("session_exact_wilson95_lower", MIN_SESSION_EXACT_LCB, True),
         ("false_accept_wilson95_upper", MAX_FALSE_ACCEPT_UCB, False),
         ("ece_10_bin", MAX_ECE, False),
         ("brier", MAX_BRIER, False),
@@ -1064,32 +1312,181 @@ def verify_promotion_receipt(
     )
     for name, threshold, minimum in numeric_checks:
         value = metrics.get(name)
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or float(value) < 0
+        ):
             raise PromotionEvidenceError("receipt_invalid", "receipt metric is invalid")
+        if name != "latency_p95_ms" and float(value) > 1:
+            raise PromotionEvidenceError("receipt_invalid", "receipt rate is outside [0, 1]")
         if (minimum and value < threshold) or (not minimum and value > threshold):
             raise PromotionEvidenceError("metric_failed", "receipt metric violates policy")
+    for name in ("exact_state", "session_exact_rate", "coverage", "false_accept_rate"):
+        value = metrics[name]
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or not 0 <= float(value) <= 1
+        ):
+            raise PromotionEvidenceError("receipt_invalid", "receipt rate is invalid")
+
+    def integral_successes(rate: float, total: int, label: str) -> int:
+        successes = round(rate * total)
+        if not math.isclose(rate, successes / total, rel_tol=0.0, abs_tol=1e-12):
+            raise PromotionEvidenceError("receipt_invalid", f"{label} is not count-coherent")
+        return successes
+
+    total = counts["total"]
+    accepted_count = counts["accepted"]
+    exact_successes = integral_successes(float(metrics["exact_state"]), total, "exact state")
+    exact_sessions = integral_successes(
+        float(metrics["session_exact_rate"]), counts["sessions"], "session exact rate"
+    )
+    false_accepts = integral_successes(
+        float(metrics["false_accept_rate"]), accepted_count, "false accept rate"
+    )
+    expected_coverage = accepted_count / total
+    coherence = (
+        ("coverage", float(metrics["coverage"]), expected_coverage),
+        (
+            "exact-state confidence bound",
+            float(metrics["exact_state_wilson95_lower"]),
+            _wilson(exact_successes, total, upper=False),
+        ),
+        (
+            "session confidence bound",
+            float(metrics["session_exact_wilson95_lower"]),
+            _wilson(exact_sessions, counts["sessions"], upper=False),
+        ),
+        (
+            "false-accept confidence bound",
+            float(metrics["false_accept_wilson95_upper"]),
+            _wilson(false_accepts, accepted_count, upper=True),
+        ),
+    )
+    if any(
+        not math.isclose(actual, expected, rel_tol=0.0, abs_tol=1e-12)
+        for _label, actual, expected in coherence
+    ):
+        raise PromotionEvidenceError("receipt_invalid", "receipt aggregate metrics are incoherent")
+
+    seen_subgroups: set[tuple[str, str]] = set()
+    subgroup_fields = {
+        "source",
+        "client",
+        "theme",
+        "deck",
+        "resolution",
+        "street",
+        "n_players",
+        "position",
+    }
+    subgroup_totals = {field: 0 for field in subgroup_fields}
+    subgroup_successes = {field: 0 for field in subgroup_fields}
     for group in subgroups:
-        if not isinstance(group, dict) or group.get("count", 0) < MIN_SUBGROUP:
-            raise PromotionEvidenceError("subgroup_failed", "receipt subgroup evidence is insufficient")
+        if not isinstance(group, dict) or set(group) != {
+            "field",
+            "value_ref",
+            "count",
+            "exact_state",
+            "exact_state_wilson95_lower",
+        }:
+            raise PromotionEvidenceError("subgroup_failed", "receipt subgroup is malformed")
+        subgroup_field_obj = group.get("field")
+        subgroup_ref_obj = group.get("value_ref")
+        if not isinstance(subgroup_field_obj, str) or not isinstance(subgroup_ref_obj, str):
+            raise PromotionEvidenceError("subgroup_failed", "receipt subgroup is duplicated")
+        if (
+            subgroup_field_obj not in subgroup_fields
+            or re.fullmatch(r"[0-9a-f]{12}", subgroup_ref_obj) is None
+        ):
+            raise PromotionEvidenceError("subgroup_failed", "receipt subgroup identity is invalid")
+        subgroup_key = (subgroup_field_obj, subgroup_ref_obj)
+        if subgroup_key in seen_subgroups:
+            raise PromotionEvidenceError("subgroup_failed", "receipt subgroup is duplicated")
+        seen_subgroups.add(subgroup_key)
+        count = group.get("count")
+        if type(count) is not int or count < MIN_SUBGROUP or count > total:
+            raise PromotionEvidenceError(
+                "subgroup_failed", "receipt subgroup evidence is insufficient"
+            )
+        exact_state = group.get("exact_state")
         lower = group.get("exact_state_wilson95_lower")
         if (
-            isinstance(lower, bool)
+            isinstance(exact_state, bool)
+            or not isinstance(exact_state, (int, float))
+            or not math.isfinite(float(exact_state))
+            or not 0 <= exact_state <= 1
+            or isinstance(lower, bool)
             or not isinstance(lower, (int, float))
             or not math.isfinite(float(lower))
             or not 0 <= lower <= 1
             or lower < MIN_SUBGROUP_EXACT_LCB
         ):
-            raise PromotionEvidenceError("subgroup_failed", "receipt subgroup accuracy is insufficient")
+            raise PromotionEvidenceError(
+                "subgroup_failed", "receipt subgroup accuracy is insufficient"
+            )
+        successes = integral_successes(float(exact_state), count, "subgroup exact rate")
+        if not math.isclose(
+            float(lower),
+            _wilson(successes, count, upper=False),
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            raise PromotionEvidenceError(
+                "subgroup_failed", "receipt subgroup confidence bound is incoherent"
+            )
+        subgroup_totals[subgroup_field_obj] += count
+        subgroup_successes[subgroup_field_obj] += successes
+    expected_context_subgroups = {
+        (field, _safe_group_ref(value))
+        for field, values in _CONTEXT_SUBGROUP_VALUES.items()
+        for value in values
+    }
+    if not expected_context_subgroups.issubset(seen_subgroups):
+        raise PromotionEvidenceError(
+            "subgroup_failed", "receipt omits a supported strategic-context subgroup"
+        )
+    expected_diversity = {
+        "source": counts["sources"],
+        "client": counts["clients"],
+        "theme": counts["themes"],
+        "deck": counts["decks"],
+        "resolution": counts["resolutions"],
+    }
+    expected_group_counts = {
+        **expected_diversity,
+        **{field: len(values) for field, values in _CONTEXT_SUBGROUP_VALUES.items()},
+    }
+    if any(
+        subgroup_totals[field] != total
+        or subgroup_successes[field] != exact_successes
+        or sum(1 for item in seen_subgroups if item[0] == field) != expected_group_counts[field]
+        for field in subgroup_fields
+    ):
+        raise PromotionEvidenceError(
+            "subgroup_failed", "receipt subgroup partitions are incoherent"
+        )
     generated_at = data.get("generated_at")
     try:
-        if not isinstance(generated_at, str) or datetime.strptime(generated_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC) > datetime.now(UTC):
+        if not isinstance(generated_at, str):
+            raise ValueError
+        generated = datetime.strptime(generated_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+        now = datetime.now(UTC)
+        if generated > now or now - generated > timedelta(days=RECEIPT_MAX_AGE_DAYS):
             raise ValueError
     except ValueError as exc:
-        raise PromotionEvidenceError("receipt_invalid", "receipt timestamp is invalid") from exc
+        raise PromotionEvidenceError(
+            "receipt_invalid", "receipt timestamp is invalid, future-dated or expired"
+        ) from exc
     return VerifiedPromotionEvidence(
         path=Path(path).resolve(),
         sha256=actual,
         artifact_sha256=artifact_sha256,
+        artifact_contract_sha256=artifact_contract_sha256,
         dataset_manifest_sha256=data["dataset_manifest_sha256"],
         observations_sha256=data["observations_sha256"],
     )

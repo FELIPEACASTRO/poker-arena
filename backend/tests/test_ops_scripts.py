@@ -112,7 +112,7 @@ def test_launchers_use_pid_managed_start_and_never_install_at_runtime():
     assert "dictionary[string, string]" in start
     assert "startswith('poker_'" in start
     assert "setenvironmentvariable('vite_api', $frontendapi, 'process')" in start
-    assert "$frontendapi = \"http://127.0.0.1:$backendport\"" in start
+    assert '$frontendapi = "http://127.0.0.1:$backendport"' in start
     assert "setenvironmentvariable('path', $safepath, 'process')" in start
     assert "pythonnousersite" in start
     assert "pythonsafepath" in start

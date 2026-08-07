@@ -28,13 +28,18 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
   const [pot, setPot] = useState(100)
   const [toCall, setToCall] = useState(40)
   const [stack, setStack] = useState(1000)
+  const [effectiveStack, setEffectiveStack] = useState(1000)
+  const [heroCurrentBet, setHeroCurrentBet] = useState(0)
+  const [minRaiseIncrement, setMinRaiseIncrement] = useState(40)
+  const [raiseReopened, setRaiseReopened] = useState(true)
   const [opp, setOpp] = useState(1)
+  const [tableSize, setTableSize] = useState(2)
   const [inPos, setInPos] = useState(true)
   const [position, setPosition] = useState<StandardPosition | ''>('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [res, setRes] = useState<CopilotResult | null>(null)
-  // aba "colar mão" (histórico PHH)
+  // aba "colar mão" (subconjunto PHH-NLHE inteiro)
   const [phh, setPhh] = useState('')
   const [player, setPlayer] = useState(1)
   const [review, setReview] = useState<HandReviewResult | null>(null)
@@ -55,6 +60,18 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
     setBusy(true)
     setError(null)
     return { sequence, controller }
+  }
+
+  const invalidateOutputs = () => {
+    requestSequence.current += 1
+    requestController.current?.abort()
+    requestController.current = null
+    setBusy(false)
+    setError(null)
+    setRes(null)
+    setReview(null)
+    setVision(null)
+    setVisionLatencyMs(null)
   }
 
   const chooseMode = (next: CopilotMode) => {
@@ -82,9 +99,15 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
         pot,
         to_call: toCall,
         my_stack: stack,
+        effective_stack: effectiveStack,
         num_opponents: opp,
         in_position: inPos,
         position: position || null,
+        table_size: tableSize,
+        hero_current_bet: heroCurrentBet,
+        current_bet: heroCurrentBet + toCall,
+        min_raise_increment: minRaiseIncrement,
+        raise_reopened: raiseReopened,
       }, controller.signal)
       if (sequence === requestSequence.current) setRes(r)
     } catch (e) {
@@ -113,19 +136,21 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
   }
 
   async function analyzeImage(file: File) {
+    // Toda nova seleção substitui semanticamente a anterior, inclusive quando o
+    // novo arquivo é inválido. Aborte primeiro para uma resposta antiga nunca
+    // reaparecer sob o erro ou preview da seleção mais recente.
+    invalidateOutputs()
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current)
+    previewRef.current = null
+    setImgPreview(null)
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
       setError('Use uma imagem PNG, JPG ou WebP.')
-      setVision(null)
-      setVisionLatencyMs(null)
       return
     }
     if (file.size > 5 * 1024 * 1024) {
       setError('A imagem excede o limite de 5 MB.')
-      setVision(null)
-      setVisionLatencyMs(null)
       return
     }
-    if (previewRef.current) URL.revokeObjectURL(previewRef.current)
     previewRef.current = URL.createObjectURL(file)
     setImgPreview(previewRef.current)
     const { sequence, controller } = beginRequest()
@@ -136,9 +161,14 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
       const next = await api.fromImage(file, {
         to_call: toCall,
         my_stack: stack,
+        effective_stack: effectiveStack,
         num_opponents: opp,
         in_position: inPos,
         position: position || undefined,
+        hero_current_bet: heroCurrentBet,
+        current_bet: heroCurrentBet + toCall,
+        min_raise_increment: minRaiseIncrement,
+        raise_reopened: raiseReopened,
       }, controller.signal)
       if (sequence === requestSequence.current) {
         setVision(next)
@@ -267,18 +297,34 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
               </label>
               <label className="cp-field">
                 <span>Custa pagar</span>
-                <input type="number" min={0} value={toCall} onChange={(e) => setToCall(safeNumber(e.currentTarget.valueAsNumber, toCall, 0))} />
+                <input type="number" min={0} value={toCall} onChange={(e) => { invalidateOutputs(); setToCall(safeNumber(e.currentTarget.valueAsNumber, toCall, 0)) }} />
               </label>
               <label className="cp-field">
                 <span>Seu stack</span>
-                <input type="number" min={1} value={stack} onChange={(e) => setStack(safeNumber(e.currentTarget.valueAsNumber, stack, 1))} />
+                <input type="number" min={1} value={stack} onChange={(e) => { invalidateOutputs(); setStack(safeNumber(e.currentTarget.valueAsNumber, stack, 1)) }} />
+              </label>
+              <label className="cp-field">
+                <span>Stack efetivo rival</span>
+                <input type="number" min={0} value={effectiveStack} onChange={(e) => { invalidateOutputs(); setEffectiveStack(safeNumber(e.currentTarget.valueAsNumber, effectiveStack, 0)) }} />
+              </label>
+              <label className="cp-field">
+                <span>Sua aposta nesta rua</span>
+                <input type="number" min={0} value={heroCurrentBet} onChange={(e) => { invalidateOutputs(); setHeroCurrentBet(safeNumber(e.currentTarget.valueAsNumber, heroCurrentBet, 0)) }} />
+              </label>
+              <label className="cp-field">
+                <span>Último aumento completo</span>
+                <input type="number" min={1} value={minRaiseIncrement} onChange={(e) => { invalidateOutputs(); setMinRaiseIncrement(safeNumber(e.currentTarget.valueAsNumber, minRaiseIncrement, 1)) }} />
+              </label>
+              <label className="cp-field cp-check">
+                <input type="checkbox" checked={raiseReopened} onChange={(e) => { invalidateOutputs(); setRaiseReopened(e.target.checked) }} />
+                <span>Ação reaberta</span>
               </label>
               <label className="cp-field">
                 <span>Oponentes</span>
-                <input type="number" min={1} max={8} value={opp} onChange={(e) => setOpp(safeNumber(e.currentTarget.valueAsNumber, opp, 1, 8))} />
+                <input type="number" min={1} max={8} value={opp} onChange={(e) => { invalidateOutputs(); setOpp(safeNumber(e.currentTarget.valueAsNumber, opp, 1, 8)) }} />
               </label>
               <label className="cp-field cp-check">
-                <input type="checkbox" checked={inPos} onChange={(e) => setInPos(e.target.checked)} />
+                <input type="checkbox" checked={inPos} onChange={(e) => { invalidateOutputs(); setInPos(e.target.checked) }} />
                 <span>Em posição</span>
               </label>
             </div>
@@ -312,10 +358,10 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
             aria-labelledby="copilot-tab-hand"
           >
             <label className="cp-field cp-wide">
-              <span>Cole o histórico da mão (formato PHH)</span>
+              <span>Cole o histórico da mão (PHH-NLHE com valores inteiros)</span>
               <textarea
                 value={phh}
-                onChange={(e) => setPhh(e.target.value)}
+                onChange={(e) => { invalidateOutputs(); setPhh(e.target.value) }}
                 rows={7}
                 placeholder={"variant = 'NT'\nblinds_or_straddles = [50, 100, 0, 0, 0, 0]\nstarting_stacks = [10000, ...]\nactions = ['d dh p1 AsKh', ...]\nplayers = ['Você', ...]"}
               />
@@ -328,7 +374,7 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
                   min={1}
                   max={9}
                   value={player}
-                  onChange={(e) => setPlayer(safeNumber(e.currentTarget.valueAsNumber, player, 1, 9))}
+                  onChange={(e) => { invalidateOutputs(); setPlayer(safeNumber(e.currentTarget.valueAsNumber, player, 1, 9)) }}
                 />
               </label>
               <button className="btn btn-accent" onClick={analyzeHand} disabled={busy || !phh.trim()}>
@@ -336,7 +382,7 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
               </button>
             </div>
             <p className="cp-hint">
-              O PHH é o padrão de pesquisa (ex.: as mãos do dataset do Pluribus). Só analisa mãos em
+              Este revisor cobre o subconjunto NLHE inteiro usado no exemplo do Pluribus; não todas as variantes do PHH. Só analisa mãos em
               que suas cartas aparecem — é <b>estudo pós-jogo</b>, como rever um PGN de xadrez.
             </p>
 
@@ -346,7 +392,7 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
               <div className="cp-review">
                 <div className="cp-review-sum">
                   Revisando <b>{review.hero}</b>: <b>{review.matched}/{review.total}</b> das suas
-                  jogadas bateram com a recomendação do copiloto.
+                  jogadas bateram exatamente em categoria e, quando houve raise, no sizing.
                 </div>
                 {review.decisions.map((d, i) => (
                   <div className={'cp-dec' + (d.matched ? ' is-ok' : ' is-diff')} key={i}>
@@ -358,7 +404,8 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
                       <span className="cp-dec-eq mono">equity {d.equity_pct}%</span>
                     </div>
                     <div className="cp-dec-verdict">
-                      Você: <b>{d.your_action}</b> · Copiloto: <b>{d.recommendation_label}</b>{' '}
+                      Você: <b>{d.your_action}{d.your_amount != null ? ` p/ ${d.your_amount}` : ''}</b>
+                      {' '}· Copiloto: <b>{d.recommendation_label}</b>{' '}
                       {d.matched ? '✅' : '⚠️ diferente'}
                     </div>
                     <p className="cp-dec-why">{d.headline}</p>
@@ -374,31 +421,77 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
         <div className="copilot-form">
           <label className="cp-field cp-wide">
             <span>Suas 2 cartas</span>
-            <input value={hole} onChange={(e) => setHole(e.target.value)} placeholder="As Ks" />
+            <input value={hole} onChange={(e) => { invalidateOutputs(); setHole(e.target.value) }} placeholder="As Ks" />
           </label>
           <label className="cp-field cp-wide">
             <span>Board (0/3/4/5 cartas)</span>
-            <input value={board} onChange={(e) => setBoard(e.target.value)} placeholder="Qs Js 2h" />
+            <input value={board} onChange={(e) => { invalidateOutputs(); setBoard(e.target.value) }} placeholder="Qs Js 2h" />
           </label>
           <label className="cp-field">
-            <span>Pote</span>
-            <input type="number" min={0} value={pot} onChange={(e) => setPot(safeNumber(e.currentTarget.valueAsNumber, pot, 0))} />
+            <span title="Exclua fichas não pagas e side pots que seu stack não pode disputar.">Pote elegível ao herói</span>
+            <input type="number" min={0} value={pot} onChange={(e) => { invalidateOutputs(); setPot(safeNumber(e.currentTarget.valueAsNumber, pot, 0)) }} />
           </label>
           <label className="cp-field">
             <span>Custa pagar</span>
-            <input type="number" min={0} value={toCall} onChange={(e) => setToCall(safeNumber(e.currentTarget.valueAsNumber, toCall, 0))} />
+            <input type="number" min={0} value={toCall} onChange={(e) => { invalidateOutputs(); setToCall(safeNumber(e.currentTarget.valueAsNumber, toCall, 0)) }} />
           </label>
           <label className="cp-field">
             <span>Seu stack</span>
-            <input type="number" min={1} value={stack} onChange={(e) => setStack(safeNumber(e.currentTarget.valueAsNumber, stack, 1))} />
+            <input type="number" min={1} value={stack} onChange={(e) => { invalidateOutputs(); setStack(safeNumber(e.currentTarget.valueAsNumber, stack, 1)) }} />
+          </label>
+          <label className="cp-field">
+            <span>Stack efetivo</span>
+            <input type="number" min={0} value={effectiveStack} onChange={(e) => { invalidateOutputs(); setEffectiveStack(safeNumber(e.currentTarget.valueAsNumber, effectiveStack, 0)) }} />
+          </label>
+          <label className="cp-field">
+            <span>Sua aposta nesta rua</span>
+            <input type="number" min={0} value={heroCurrentBet} onChange={(e) => { invalidateOutputs(); setHeroCurrentBet(safeNumber(e.currentTarget.valueAsNumber, heroCurrentBet, 0)) }} />
+          </label>
+          <label className="cp-field">
+            <span>Aposta-alvo atual</span>
+            <input type="number" value={heroCurrentBet + toCall} readOnly aria-readonly="true" />
+          </label>
+          <label className="cp-field">
+            <span>Último aumento completo</span>
+            <input type="number" min={1} value={minRaiseIncrement} onChange={(e) => { invalidateOutputs(); setMinRaiseIncrement(safeNumber(e.currentTarget.valueAsNumber, minRaiseIncrement, 1)) }} />
+          </label>
+          <label className="cp-field cp-check">
+            <input type="checkbox" checked={raiseReopened} onChange={(e) => { invalidateOutputs(); setRaiseReopened(e.target.checked) }} />
+            <span>Ação reaberta por aumento completo</span>
           </label>
           <label className="cp-field">
             <span>Oponentes</span>
-            <input type="number" min={1} max={8} value={opp} onChange={(e) => setOpp(safeNumber(e.currentTarget.valueAsNumber, opp, 1, 8))} />
+            <input
+              type="number"
+              min={1}
+              max={8}
+              value={opp}
+              onChange={(e) => {
+                invalidateOutputs()
+                const next = safeNumber(e.currentTarget.valueAsNumber, opp, 1, 8)
+                setOpp(next)
+                setTableSize((current) => Math.max(current, next + 1))
+              }}
+            />
+          </label>
+          <label className="cp-field">
+            <span>Tamanho original da mesa</span>
+            <input
+              type="number"
+              min={2}
+              max={9}
+              value={tableSize}
+              onChange={(e) => {
+                invalidateOutputs()
+                const next = safeNumber(e.currentTarget.valueAsNumber, tableSize, 2, 9)
+                setTableSize(next)
+                setOpp((current) => Math.min(current, next - 1))
+              }}
+            />
           </label>
           <label className="cp-field">
             <span>Sua posição (opcional)</span>
-            <select value={position} onChange={(e) => setPosition(canonicalPosition(e.currentTarget.value))}>
+            <select value={position} onChange={(e) => { invalidateOutputs(); setPosition(canonicalPosition(e.currentTarget.value)) }}>
               <option value="">— não sei —</option>
               {STANDARD_POSITIONS.map((p) => (
                 <option key={p} value={p}>
@@ -408,7 +501,7 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
             </select>
           </label>
           <label className="cp-field cp-check">
-            <input type="checkbox" checked={inPos} onChange={(e) => setInPos(e.target.checked)} />
+            <input type="checkbox" checked={inPos} onChange={(e) => { invalidateOutputs(); setInPos(e.target.checked) }} />
             <span>Em posição (ajo por último)</span>
           </label>
           <button className="btn btn-accent cp-go" onClick={analyze} disabled={busy}>
@@ -433,15 +526,26 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
               {res.position && <div><span>Posição</span><b>{res.position}</b></div>}
               {res.num_players ? <div><span>Participantes</span><b className="mono">{res.num_players}</b></div> : null}
               <div><span>Equity estimada</span><b className="mono">{res.equity_pct}%</b></div>
+              <div><span>IC95% amostral</span><b className="mono">{res.equity_ci95_lower_pct}%–{res.equity_ci95_upper_pct}%</b></div>
+              <div><span>Método</span><b>{res.equity_method === 'exact-river-heads-up' ? 'Exato HU river' : `Monte Carlo · ${res.equity_trials}`}</b></div>
               <div><span>Preço (pot odds)</span><b className="mono">{res.pot_odds_pct}%</b></div>
-              <div><span>EV de pagar</span><b className="mono">{res.ev_call >= 0 ? '+' : ''}{res.ev_call}</b></div>
+              {res.call_cost < res.to_call && (
+                <div><span>Call efetivo (all-in)</span><b className="mono">{res.call_cost}</b></div>
+              )}
+              <div title="Assume checkdown: sem apostas futuras nem realização imperfeita da equity."><span>EV simplificado (checkdown)</span><b className="mono">{res.ev_call >= 0 ? '+' : ''}{res.ev_call}</b></div>
               {res.mdf_pct != null && <div><span>Defesa mín. (MDF)</span><b className="mono">{res.mdf_pct}%</b></div>}
-              <div><span>Outs</span><b className="mono">{res.outs}</b></div>
+              <div title="Outs estruturais brutos; não descontam dominação ou redraws">
+                <span>Outs estruturais</span><b className="mono">{res.outs}</b>
+              </div>
               {res.nut && <div><span>A nut é</span><b>{res.nut}</b></div>}
               {res.texture && <div><span>Board</span><b>{res.texture}</b></div>}
               {res.spr != null && <div><span>SPR</span><b className="mono">{res.spr}</b></div>}
               <div><span>Realização</span><b>{res.realization}</b></div>
             </div>
+
+            <p className={res.recommendation_stable ? 'cp-hint' : 'cp-error'}>
+              {res.recommendation_stable ? '✓ ' : '⚠️ '}{res.decision_note}
+            </p>
 
             {res.draws.length > 0 && <p className="cp-draws">🎯 {res.draws.join(' · ')}</p>}
             {res.blockers.map((b, i) => (

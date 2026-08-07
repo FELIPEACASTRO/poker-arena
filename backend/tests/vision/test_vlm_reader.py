@@ -94,6 +94,28 @@ def test_disponivel_com_endpoint(monkeypatch):
     assert vlm_reader.vlm_available() is True
 
 
+def test_redaction_masks_only_configured_region_and_drops_metadata(monkeypatch):
+    monkeypatch.setenv("POKER_VLM_REDACT_REGIONS", "0,0,0.5,0.5")
+    image = Image.new("RGB", (10, 10), "white")
+    image.info["sensitive-source-metadata"] = "must-not-survive"
+
+    redacted = vlm_reader.redact_configured_regions(image)
+
+    assert redacted.getpixel((1, 1)) == (0, 0, 0)
+    assert redacted.getpixel((8, 8)) == (255, 255, 255)
+    assert redacted.info == {}
+
+
+def test_redaction_total_uses_union_not_duplicate_rectangle_sum(monkeypatch):
+    monkeypatch.setenv(
+        "POKER_VLM_REDACT_REGIONS",
+        "0,0,0.05,0.1;0,0,0.05,0.1",
+    )
+
+    with pytest.raises(vlm_reader.VlmPrivacyError, match="cobrir area material"):
+        vlm_reader.configured_redaction_policy()
+
+
 @pytest.mark.parametrize(
     "url",
     [
@@ -140,9 +162,7 @@ def test_endpoint_remoto_rejeita_resolucao_nao_publica(monkeypatch, resolved):
     monkeypatch.setattr(
         vlm_reader.socket,
         "getaddrinfo",
-        lambda *_args, **_kwargs: [
-            (socket.AF_INET, socket.SOCK_STREAM, 6, "", (resolved, 443))
-        ],
+        lambda *_args, **_kwargs: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (resolved, 443))],
     )
 
     assert vlm_reader.vlm_available() is False
@@ -534,6 +554,7 @@ def test_from_image_so_chama_vlm_com_consentimento_e_mantem_confianca_zero(monke
 
     monkeypatch.setenv("POKER_ENABLE_REMOTE_VLM", "1")
     monkeypatch.setenv("POKER_API_TOKEN", _API_TOKEN)
+    monkeypatch.setenv("POKER_VLM_REDACT_REGIONS", "0,0,0.5,0.5")
     seen: dict = {}
     # caminho rápido ABSTÉM: sem F2, e a F1 devolve um estado sem cartas (sanity reprova)
     monkeypatch.setattr(vision_pkg, "vision_model_available", lambda: False)
@@ -571,6 +592,8 @@ def test_from_image_so_chama_vlm_com_consentimento_e_mantem_confianca_zero(monke
     body = r.json()
     assert seen["context"].consent is True
     assert seen["context"].session_id == session_id
+    assert callable(seen["context"].redaction_hook)
+    assert seen["context"].redaction_policy.startswith("configured-mask-v1-")
     assert body["engine"] == "F3-vlm"
     assert body["detected"]["hole"] == ["As", "Kd"]
     assert body["detected"]["confidence"] == 0.0
@@ -622,6 +645,7 @@ def test_from_image_forca_abstain_mesmo_se_reader_remoto_reportar_confianca(monk
 
     monkeypatch.setenv("POKER_ENABLE_REMOTE_VLM", "1")
     monkeypatch.setenv("POKER_API_TOKEN", _API_TOKEN)
+    monkeypatch.setenv("POKER_VLM_REDACT_REGIONS", "0,0,0.5,0.5")
     monkeypatch.setattr(vision_pkg, "vision_model_available", lambda: False)
     monkeypatch.setattr(
         vision_pkg, "recognize_table", lambda *a, **k: RecognizedState(hole=[], board=[], pot=None)

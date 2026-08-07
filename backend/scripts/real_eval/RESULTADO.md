@@ -1,32 +1,32 @@
-# Visão em telas reais — registro diagnóstico, não prova universal
+# Visão em telas reais — execução diagnóstica de 2026-08-07, não prova universal
 
 > Este arquivo registra uma observação histórica. Uma ou duas telas não estimam acurácia,
 > e screenshots sem sidecar não contam como evidência. Reexecute `scripts/real_eval.py` para
 > obter exact-state com o código/gates atuais.
 
-Rodamos a visão (F1 template + F2 treinado + OCR) em **screenshots REAIS de um cliente de
-poker 2D** — o [PokerTH](https://www.pokerth.net/) (open-source, licença livre), que a F2
-**nunca viu**. É o domínio certo (cliente 2D digital), não fotos de cartas físicas.
+Rodamos `scripts/real_eval.py scripts/real_eval/imgs` no ambiente local atual sobre duas
+telas do PokerTH. O artefato F2 **não está instalado**, portanto esta execução não mede
+F2 nem sustenta qualquer alegação de generalização real.
 
-## Resultado honesto (PokerTH.png — gabarito: hero J♠6♥, board 6♠K♣6♣Q♣, pote $700)
+## Resultado executado
 
-| | hole | board | pote | jogadores | sanity |
-|---|---|---|---|---|---|
-| **F1** | — | 6c 7c 6c Jc (errado) | 9900 (stack) | 0 | **ABSTÉM** |
-| **F2** | — | 6s Qs Qd Qc Tc (errado) | 10425 (stack) | 5 | **ABSTÉM** |
-| gabarito | Js 6h | 6s Kc 6c Qc | 700 | ~9 | — |
+| tela | gabarito | F1 exact-state | F1 sanity | latência completa | F2 |
+|---|---|---:|---|---:|---|
+| `PokerTH.png` | sidecar presente | **0** | **ABSTÉM** | 10,08 s (**acima de 4 s**) | ausente |
+| `PokerTH04Screenshot.jpg` | ausente | não conta | **ABSTÉM** | 3,90 s | ausente |
+
+No único item rotulado, o F1 leu hole vazio, board incorreto/repetido e pote 9.900;
+o sanity bloqueou a saída. No segundo item também houve cartas repetidas e abstenção,
+mas sem sidecar não é possível classificar correção.
 
 ## As duas conclusões (as duas valiosas)
 
-1. **Neste exemplo**, o gate bloqueou as duas leituras erradas. Isso é um teste de regressão,
+1. **Nestas duas telas**, o gate bloqueou as leituras. Isso é diagnóstico,
    não prova “100% ou abstém” nem limita a taxa de falso aceite em outras telas.
 
-2. **Há gap sim→real neste exemplo.** A F2 treinada só em sintético não reconheceu
-   corretamente o PokerTH (as cartas têm gráfico/fonte próprios, layout diferente; o pote
-   fica noutra posição). Uma tela não estima a magnitude geral desse gap; ela mostra apenas
-   que, para este modelo e esta tela, desempenho sintético não bastou como evidência de
-   transferência. O valor de mAP citado em versões anteriores não está ligado ao hash do
-   ONNX por um relatório reproduzível.
+2. **Há evidência negativa de transferência do F1** no item rotulado e nenhuma evidência
+   atual do F2. Uma tela não estima a magnitude geral do gap; F2 ausente não pode receber
+   nota de acurácia. O estado de promoção visual permanece **NO-GO**.
 
 ## O caminho pra fechar (concreto, já preparado)
 

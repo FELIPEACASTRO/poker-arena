@@ -1,4 +1,5 @@
 from poker_arena.bots.observation import observation_for
+from poker_arena.engine.actions import ActionType
 from poker_arena.engine.game import Hand
 from poker_arena.engine.player import Player, PlayerStatus
 
@@ -43,3 +44,20 @@ def test_observation_counts_all_in_players_as_contesting():
 
     obs = observation_for(h)
     assert obs.num_active == 3
+
+
+def test_observation_pot_excludes_uncalled_excess_above_actor_cap():
+    players = [Player("Hero", 30), Player("Villain", 900)]
+    h = Hand(players, button=1, small_blind=10, big_blind=20, seed=1)
+    h._started = True
+    h.to_act = 0
+    h.current_bet = 100
+    h.pot = 120
+    players[0].current_bet = players[0].total_committed = 20
+    players[1].current_bet = players[1].total_committed = 100
+
+    obs = observation_for(h)
+
+    assert obs.to_call == 80
+    assert obs.pot == 70
+    assert obs.legal_actions == frozenset({ActionType.FOLD, ActionType.ALL_IN})

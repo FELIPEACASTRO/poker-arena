@@ -129,10 +129,14 @@ def test_public_request_has_no_auth_cookie_and_rejects_other_hosts() -> None:
 
 def test_public_opener_disables_proxies_and_redirects() -> None:
     opener = _build_public_opener()
-    proxy_handlers = [handler for handler in opener.handlers if isinstance(handler, _NoProxyHandler)]
+    proxy_handlers = [
+        handler for handler in opener.handlers if isinstance(handler, _NoProxyHandler)
+    ]
     assert len(proxy_handlers) == 1
     assert proxy_handlers[0].proxies == {}
-    redirect = next(handler for handler in opener.handlers if isinstance(handler, _NoRedirectHandler))
+    redirect = next(
+        handler for handler in opener.handlers if isinstance(handler, _NoRedirectHandler)
+    )
     assert redirect.redirect_request(None, None, 302, "Found", {}, "https://evil.test/") is None
 
 
@@ -272,9 +276,10 @@ def test_committed_live_snapshot_is_internally_consistent_and_sanitized() -> Non
     historical_hash = snapshot["collector"]["script_sha256"]
     assert re.fullmatch(r"[0-9a-f]{64}", historical_hash)
     assert hardening["historical_snapshot_collector_sha256"] == historical_hash
-    assert hardening["hardened_collector_sha256"] == hashlib.sha256(
-        script_path.read_bytes()
-    ).hexdigest()
+    assert (
+        hardening["hardened_collector_sha256"]
+        == hashlib.sha256(script_path.read_bytes()).hexdigest()
+    )
     assert hardening["evidence_boundary"].startswith(
         "This receipt records a post-collection hardening change."
     )

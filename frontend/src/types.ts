@@ -61,11 +61,19 @@ export interface CouncilEntry {
 
 export interface Analysis {
   equity: number
+  equity_method: string
+  equity_trials: number
+  equity_standard_error: number
+  equity_ci95_lower: number
+  equity_ci95_upper: number
+  recommendation_stable: boolean
+  equity_note: string
   win_probs: WinProb[]
   hand_name: string | null
   outs: number
   draws: string[]
   pot_odds: number
+  call_cost: number
   ev_call: number
   nut: string | null
   texture: string | null
@@ -98,6 +106,7 @@ export interface BotStat {
   level: string
   stack: number
   delta: number
+  buy_in_total: number
   hands_won: number
   hands_dealt: number
   vpip: number // 0..1 — % de mãos que entra (solto x apertado)
@@ -161,16 +170,28 @@ export interface CopilotRequest {
   pot: number
   to_call: number
   my_stack: number
+  effective_stack: number
   num_opponents: number
   in_position: boolean
   position?: StandardPosition | null
+  table_size: number
   big_blind?: number
+  hero_current_bet: number
+  current_bet: number
+  min_raise_increment: number
+  raise_reopened: boolean
 }
 export interface CopilotResult {
   hand_label: string | null
   equity_pct: number
+  equity_method: 'exact-river-heads-up' | 'monte-carlo-uniform-range'
+  equity_trials: number
+  equity_standard_error_pct: number
+  equity_ci95_lower_pct: number
+  equity_ci95_upper_pct: number
   pot: number
   to_call: number
+  call_cost: number
   pot_odds_pct: number
   ev_call: number
   mdf_pct: number | null
@@ -186,6 +207,9 @@ export interface CopilotResult {
   council: CouncilEntry[]
   recommendation: string
   recommendation_label: string
+  recommendation_amount: number | null
+  recommendation_stable: boolean
+  decision_note: string
   headline: string
   position?: StandardPosition | null
   num_players?: number
@@ -201,8 +225,10 @@ export interface HandReviewDecision {
   equity_pct: number
   recommendation: string
   recommendation_label: string
+  recommendation_amount: number | null
   headline: string
   your_action: string
+  your_amount: number | null
   matched: boolean
 }
 export interface HandReviewResult {
@@ -223,6 +249,8 @@ export interface FromImageResult {
     confidence: number
     n_players: number // participantes detectados na mesa (0 = não detectou)
     position: StandardPosition | ''
+    player_count_confidence?: number | null
+    position_confidence?: number | null
     stacks: Record<string, number> // fichas por assento (índice -> fichas), via OCR
     pot_source: string // 'ocr', 'template' ou 'skipped-card-gate' (abstenção precoce)
   }
@@ -334,6 +362,7 @@ export interface PageInfo {
 export interface GameList {
   games: GameSummary[]
   page: PageInfo
+  unreadable_logs: number
 }
 
 export interface CreateConfig {

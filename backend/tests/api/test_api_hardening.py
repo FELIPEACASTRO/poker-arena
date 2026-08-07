@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import struct
 import zlib
@@ -11,10 +12,27 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from starlette.websockets import WebSocketDisconnect
 
-from poker_arena.api.app import create_app
+from poker_arena.api.app import _ImageBodyLimitMiddleware, _WebSocketHub, create_app
 from poker_arena.api.dependencies import get_repository
 from poker_arena.application import InMemorySessionRepository
 from poker_arena.vision import RecognizedState
+
+VALID_COPILOT_PAYLOAD: dict[str, object] = {
+    "hole": ["As", "Kh"],
+    "board": [],
+    "pot": 10,
+    "to_call": 0,
+    "my_stack": 100,
+    "effective_stack": 100,
+    "num_opponents": 1,
+    "in_position": False,
+    "position": "SB",
+    "hero_current_bet": 0,
+    "current_bet": 0,
+    "min_raise_increment": 20,
+    "table_size": 2,
+    "raise_reopened": True,
+}
 
 
 @pytest.fixture
@@ -82,54 +100,53 @@ def test_create_table_rejects_semantically_invalid_payloads(
 
 
 @pytest.mark.parametrize(
-    "payload",
+    ("overrides", "error_field"),
     [
-        {
-            "hole": ["As"],
-            "board": [],
-            "pot": 10,
-            "my_stack": 100,
-        },
-        {
-            "hole": ["As", "Kh"],
-            "board": ["2c", "3d"],
-            "pot": 10,
-            "my_stack": 100,
-        },
-        {
-            "hole": ["As", "Kh"],
-            "board": [],
-            "pot": 10,
-            "my_stack": 100,
-            "num_opponents": 9,
-        },
-        {
-            "hole": ["As", "Kh"],
-            "board": [],
-            "pot": 10,
-            "my_stack": 100,
-            "position": "MARS",
-        },
-        {
-            "hole": ["As", "Kh"],
-            "board": [],
-            "pot": 10,
-            "my_stack": 100,
-            "unexpected": True,
-        },
-        {
-            "hole": ["As", "Kh"],
-            "board": [],
-            "pot": 1_000_000_001,
-            "my_stack": 100,
-        },
+        ({"hole": ["As"]}, "hole"),
+        ({"board": ["2c", "3d"]}, "board"),
+        ({"num_opponents": 9}, "num_opponents"),
+        ({"position": "MARS"}, "position"),
+        ({"unexpected": True}, "unexpected"),
+        ({"pot": 1_000_000_001}, "pot"),
+        ({"pot": True}, "pot"),
+        ({"pot": 10.0}, "pot"),
+        ({"pot": "10"}, "pot"),
+        ({"my_stack": True}, "my_stack"),
+        ({"num_opponents": True}, "num_opponents"),
     ],
 )
 def test_copilot_schema_rejects_invalid_or_unknown_fields(
-    client: TestClient, payload: dict[str, object]
+    client: TestClient, overrides: dict[str, object], error_field: str
 ) -> None:
+    payload = {**VALID_COPILOT_PAYLOAD, **overrides}
     response = client.post("/copilot", json=payload)
     assert response.status_code == 422, response.text
+    assert any(error["loc"][-1] == error_field for error in response.json()["detail"]), (
+        response.text
+    )
+
+
+def test_copilot_schema_requires_table_size_for_position_semantics(client: TestClient) -> None:
+    response = client.post(
+        "/copilot",
+        json={
+            "hole": ["As", "Kh"],
+            "board": [],
+            "pot": 30,
+            "to_call": 10,
+            "my_stack": 100,
+            "effective_stack": 100,
+            "num_opponents": 1,
+            "in_position": False,
+            "position": "UTG",
+            "hero_current_bet": 10,
+            "current_bet": 20,
+            "min_raise_increment": 20,
+            "raise_reopened": True,
+        },
+    )
+
+    assert response.status_code == 422
 
 
 def test_hand_review_rejects_unbounded_input(client: TestClient) -> None:
@@ -157,7 +174,7 @@ def test_from_image_is_strict_by_default(
         n_cards=5,
         confidence=0.50,
         n_players=2,
-        position="BTN",
+        position="SB",
         pot_source="ocr",
     )
     monkeypatch.setattr("poker_arena.vision.vision_model_available", lambda: False)
@@ -229,6 +246,67 @@ def test_from_image_rejects_oversized_upload(client: TestClient) -> None:
     assert response.status_code == 413
 
 
+def test_streaming_body_limit_rejects_chunked_upload_before_multipart_parser(monkeypatch) -> None:
+    monkeypatch.setenv("POKER_MAX_IMAGE_BYTES", "1")
+    entered = False
+    messages = iter(
+        [
+            {"type": "http.request", "body": b"x" * 150_000, "more_body": True},
+            {"type": "http.request", "body": b"x" * 150_000, "more_body": False},
+        ]
+    )
+    sent = []
+
+    async def receive():
+        return next(messages)
+
+    async def send(message):
+        sent.append(message)
+
+    async def inner(scope, receive_inner, send_inner):
+        nonlocal entered
+        entered = True
+        while True:
+            message = await receive_inner()
+            if not message.get("more_body", False):
+                break
+        await send_inner({"type": "http.response.start", "status": 200, "headers": []})
+        await send_inner({"type": "http.response.body", "body": b"ok"})
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/copilot/from-image",
+        "headers": [(b"content-type", b"multipart/form-data; boundary=x")],
+    }
+    asyncio.run(_ImageBodyLimitMiddleware(inner)(scope, receive, send))
+
+    assert entered is True
+    assert sent[0]["type"] == "http.response.start"
+    assert sent[0]["status"] == 413
+
+
+def test_concurrent_broadcasts_try_a_timed_out_peer_only_once() -> None:
+    class SlowWebSocket:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def send_json(self, _payload) -> None:
+            self.calls += 1
+            await asyncio.Event().wait()
+
+    async def scenario() -> tuple[int, bool]:
+        hub = _WebSocketHub(send_timeout=0.01)
+        websocket = SlowWebSocket()
+        peer = await hub.register("table", websocket)  # type: ignore[arg-type]
+        await asyncio.gather(*(hub.broadcast("table", {"version": index}) for index in range(10)))
+        return websocket.calls, peer.failed
+
+    calls, failed = asyncio.run(scenario())
+    assert calls == 1
+    assert failed is True
+
+
 def test_from_image_rejects_invalid_bytes_even_with_allowed_media(client: TestClient) -> None:
     response = client.post(
         "/copilot/from-image",
@@ -284,7 +362,10 @@ def test_from_image_never_authorizes_unvalidated_f1_baseline(
         position="BTN",
         pot_source="ocr",
     )
-    monkeypatch.setattr("poker_arena.vision.recognize_table_onnx", lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError()))
+    monkeypatch.setattr(
+        "poker_arena.vision.recognize_table_onnx",
+        lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError()),
+    )
     monkeypatch.setattr("poker_arena.vision.recognize_table", lambda *a, **k: plausible)
 
     response = client.post(
@@ -298,6 +379,155 @@ def test_from_image_never_authorizes_unvalidated_f1_baseline(
     assert body["sanity"]["ok"] is False
     assert body["decision"] is None
     assert any("não autoriza decisão" in problem for problem in body["sanity"]["problems"])
+
+
+def test_f2_uses_manual_active_opponents_not_detected_seated_count(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    detected = RecognizedState(
+        hole=["As", "Kh"],
+        board=["2c", "3d", "4h"],
+        pot=100,
+        n_cards=5,
+        confidence=0.99,
+        card_confidences=[0.99] * 5,
+        pot_confidence=0.99,
+        n_players=5,
+        position="BTN",
+        player_count_confidence=0.99,
+        position_confidence=0.99,
+        pot_source="ocr",
+    )
+    monkeypatch.setattr("poker_arena.vision.recognize_table_onnx", lambda *_a, **_k: detected)
+
+    response = client.post(
+        "/copilot/from-image",
+        files={"image": ("table.png", _png_bytes(), "image/png")},
+        data={
+            "num_opponents": "1",
+            "my_stack": "1000",
+            "effective_stack": "1000",
+            "to_call": "0",
+            "in_position": "true",
+            "hero_current_bet": "0",
+            "current_bet": "0",
+            "min_raise_increment": "20",
+            "raise_reopened": "true",
+        },
+    )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert body["engine"] == "F2-onnx"
+    assert body["detected"]["n_players"] == 5
+    assert body["decision"]["num_players"] == 2
+    assert any(
+        "contexto manual não verificado" in warning for warning in body["sanity"]["warnings"]
+    )
+
+
+def test_f2_forbids_aggression_when_manual_context_says_opponent_is_all_in(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    detected = RecognizedState(
+        hole=["As", "Ah"],
+        board=["2c", "3d", "4h"],
+        pot=100,
+        n_cards=5,
+        confidence=0.99,
+        card_confidences=[0.99] * 5,
+        pot_confidence=0.99,
+        n_players=2,
+        position="SB",
+        player_count_confidence=0.99,
+        position_confidence=0.99,
+        pot_source="ocr",
+    )
+    monkeypatch.setattr("poker_arena.vision.recognize_table_onnx", lambda *_a, **_k: detected)
+
+    response = client.post(
+        "/copilot/from-image",
+        files={"image": ("table.png", _png_bytes(), "image/png")},
+        data={
+            "num_opponents": "1",
+            "my_stack": "1000",
+            "effective_stack": "0",
+            "to_call": "0",
+            "in_position": "true",
+            "hero_current_bet": "0",
+            "current_bet": "0",
+            "min_raise_increment": "20",
+            "raise_reopened": "true",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["sanity"]["ok"] is True
+    assert response.json()["decision"]["recommendation"] == "check"
+    assert {item["action"] for item in response.json()["decision"]["options"]} == {"check"}
+
+
+def test_f2_abstains_when_manual_betting_context_is_incomplete(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    detected = RecognizedState(
+        hole=["As", "Ah"],
+        board=["2c", "3d", "4h"],
+        pot=100,
+        n_cards=5,
+        confidence=0.99,
+        card_confidences=[0.99] * 5,
+        pot_confidence=0.99,
+        n_players=2,
+        position="BTN",
+        player_count_confidence=0.99,
+        position_confidence=0.99,
+        pot_source="ocr",
+    )
+    monkeypatch.setattr("poker_arena.vision.recognize_table_onnx", lambda *_a, **_k: detected)
+
+    response = client.post(
+        "/copilot/from-image",
+        files={"image": ("table.png", _png_bytes(), "image/png")},
+        data={"num_opponents": "1", "my_stack": "1000", "to_call": "0"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["sanity"]["ok"] is False
+    assert response.json()["decision"] is None
+    assert any("contexto manual" in item for item in response.json()["sanity"]["problems"])
+
+
+def test_f2_abstains_when_strategic_context_confidence_is_low(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    detected = RecognizedState(
+        hole=["As", "Kh"],
+        board=["2c", "3d", "4h"],
+        pot=100,
+        n_cards=5,
+        confidence=0.99,
+        card_confidences=[0.99] * 5,
+        pot_confidence=0.99,
+        n_players=5,
+        position="BTN",
+        player_count_confidence=0.40,
+        position_confidence=0.99,
+        pot_source="ocr",
+    )
+    monkeypatch.setattr("poker_arena.vision.recognize_table_onnx", lambda *_a, **_k: detected)
+
+    response = client.post(
+        "/copilot/from-image",
+        files={"image": ("table.png", _png_bytes(), "image/png")},
+        data={"num_opponents": "1"},
+    )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert body["engine"] == "F2-onnx"
+    assert body["sanity"]["ok"] is False
+    assert body["decision"] is None
 
 
 @pytest.mark.parametrize(
@@ -399,24 +629,15 @@ def test_optional_api_token_protects_http_and_websocket(
 
     assert token_client.get("/health").status_code == 200
     assert token_client.get("/levels").status_code == 401
-    local_unauthorized = token_client.get(
-        "/levels", headers={"Origin": "http://127.0.0.1:4177"}
-    )
+    local_unauthorized = token_client.get("/levels", headers={"Origin": "http://127.0.0.1:4177"})
     assert local_unauthorized.status_code == 401
     assert local_unauthorized.json() == {"detail": "token de API ausente ou inválido"}
-    assert (
-        local_unauthorized.headers["access-control-allow-origin"]
-        == "http://127.0.0.1:4177"
-    )
+    assert local_unauthorized.headers["access-control-allow-origin"] == "http://127.0.0.1:4177"
     assert "origin" in local_unauthorized.headers["vary"].lower()
-    external_unauthorized = token_client.get(
-        "/levels", headers={"Origin": "https://evil.example"}
-    )
+    external_unauthorized = token_client.get("/levels", headers={"Origin": "https://evil.example"})
     assert external_unauthorized.status_code == 401
     assert "access-control-allow-origin" not in external_unauthorized.headers
-    assert (
-        token_client.get("/levels", headers={"X-Poker-Token": token}).status_code == 200
-    )
+    assert token_client.get("/levels", headers={"X-Poker-Token": token}).status_code == 200
     preflight = token_client.options(
         "/levels",
         headers={

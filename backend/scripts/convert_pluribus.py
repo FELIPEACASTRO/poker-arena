@@ -1,7 +1,7 @@
 """Converte mãos PHH (uoftcprg/phh-dataset, CC BY 4.0) pro formato da Auditoria.
 
 Uso:
-    uv run python scripts/convert_pluribus.py <pasta_com_phh> [saida.jsonl]
+    uv run python scripts/convert_pluribus.py <pasta_com_phh> <saida.jsonl> <upstream_git_commit>
 
 O PHH é TOML (1 mão por arquivo) com ações em tokens:
     d dh pN XxYy   -> distribui hole cards ao jogador N (1-indexado)
@@ -15,10 +15,14 @@ finishing_stacks do arquivo — a conversão só é aceita se a conta fechar.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 import sys
 import tomllib
 from pathlib import Path
+
+from pokerkit import HandHistory
 
 STREETS = ["preflop", "flop", "turn", "river"]
 _VALID_CARDS = frozenset(r + s for r in "23456789TJQKA" for s in "shdc")
@@ -31,6 +35,50 @@ def _cards(s: str) -> list[str]:
     if any(card not in _VALID_CARDS for card in cards):
         raise ValueError(f"carta inválida: {s!r}")
     return cards
+
+
+def _settlement_from_finishing(
+    *,
+    starts: list[int],
+    finishing: list[int],
+    committed: list[int],
+    folded: list[bool],
+    names: list[str],
+    hand_no: int,
+) -> tuple[int, list[dict], list[dict]]:
+    """Separate refunds/awards after ``convert_hand`` verifies the PokerKit replay."""
+
+    n = len(starts)
+    refunds = [0] * n
+    highest = max(committed, default=0)
+    leaders = [seat for seat, value in enumerate(committed) if value == highest]
+    if len(leaders) == 1:
+        second = max(
+            (value for seat, value in enumerate(committed) if seat != leaders[0]), default=0
+        )
+        refunds[leaders[0]] = max(0, highest - second)
+
+    gross_returns = [finishing[i] - starts[i] + committed[i] for i in range(n)]
+    awards = [gross_returns[i] - refunds[i] for i in range(n)]
+    pot = sum(committed) - sum(refunds)
+    if any(value < 0 for value in gross_returns + awards):
+        raise ValueError(f"mão {hand_no}: retorno/premiação negativo é impossível")
+    if sum(gross_returns) != sum(committed) or sum(awards) != pot:
+        raise ValueError(f"mão {hand_no}: liquidação diverge dos finishing_stacks")
+    if any(folded[seat] and awards[seat] > 0 for seat in range(n)):
+        raise ValueError(f"mão {hand_no}: jogador foldado recebeu pote contestável")
+
+    winners = [
+        {"seat": seat, "name": names[seat], "award": awards[seat]}
+        for seat in range(n)
+        if awards[seat] > 0
+    ]
+    uncalled_refunds = [
+        {"seat": seat, "name": names[seat], "amount": refunds[seat]}
+        for seat in range(n)
+        if refunds[seat] > 0
+    ]
+    return pot, winners, uncalled_refunds
 
 
 def convert_hand(raw: dict, hand_no: int) -> dict:
@@ -144,23 +192,36 @@ def convert_hand(raw: dict, hand_no: int) -> dict:
             }
         )
 
-    pot = sum(committed)
-    # validação: conservação de fichas contra os finishing_stacks oficiais
+    # Oracle independente: o parser/replay PHH oficial do PokerKit precisa chegar
+    # ao mesmo estado terminal. Assim ``finishing_stacks`` não é tratado como
+    # prova circular nem pode fabricar uma divisão de potes irrealizável.
+    try:
+        replay = list(HandHistory(**raw))
+    except (TypeError, ValueError, KeyError) as exc:
+        raise ValueError(f"mão {hand_no}: replay PokerKit rejeitou o PHH") from exc
+    if not replay or replay[-1].status or list(replay[-1].stacks) != finishing:
+        raise ValueError(f"mão {hand_no}: replay PokerKit diverge dos finishing_stacks")
+
+    # validação adicional: conservação de fichas contra o estado verificado
     deltas = [finishing[i] - starts[i] for i in range(n)]
     if sum(deltas) != 0:
         raise ValueError(f"mão {hand_no}: fichas não conservam ({deltas})")
-    losers_paid = -sum(d for d in deltas if d < 0)
-    if losers_paid > pot:
-        raise ValueError(f"mão {hand_no}: pote simulado ({pot}) < perdas ({losers_paid})")
-
-    winners = [{"seat": i, "name": names[i]} for i in range(n) if deltas[i] > 0]
+    pot, winners, uncalled_refunds = _settlement_from_finishing(
+        starts=starts,
+        finishing=finishing,
+        committed=committed,
+        folded=folded,
+        names=names,
+        hand_no=hand_no,
+    )
     result = [
         {"seat": i, "name": names[i], "end": finishing[i], "delta": deltas[i]} for i in range(n)
     ]
     return {
         "type": "hand",
         "hand": hand_no,
-        "ts": "2019-07-11T00:00:00",  # sessões publicadas com o paper (Science, 2019)
+        "ts": "2019-07-11T00:00:00Z",
+        "ts_semantics": "data de publicação do paper; horário da mão indisponível",
         "button": n - 1,  # PHH: p1 = small blind -> botão é o último
         "seats": [
             {"seat": i, "name": names[i], "level": levels[i], "start": starts[i]} for i in range(n)
@@ -169,39 +230,61 @@ def convert_hand(raw: dict, hand_no: int) -> dict:
         "board": board,
         "pot": pot,
         "winners": winners,
+        "uncalled_refunds": uncalled_refunds,
         "result": result,
     }
 
 
 def main() -> None:
+    if len(sys.argv) != 4 or re.fullmatch(r"[0-9a-f]{40}", sys.argv[3]) is None:
+        sys.exit(
+            "uso: convert_pluribus.py <pasta_com_phh> <saida.jsonl> <upstream_git_commit_sha1>"
+        )
     src = Path(sys.argv[1])
-    out = (
-        Path(sys.argv[2])
-        if len(sys.argv) > 2
-        else (Path(__file__).resolve().parents[1] / "poker_arena" / "data" / "pluribus.jsonl")
-    )
+    out = Path(sys.argv[2])
+    upstream_git_commit = sys.argv[3]
     out.parent.mkdir(parents=True, exist_ok=True)
-    files = sorted(src.glob("*.phh"))
+    files = sorted(src.rglob("*.phh"), key=lambda path: path.relative_to(src).as_posix())
     if not files:
         sys.exit(f"nenhum .phh em {src}")
+    source_digest = hashlib.sha256()
+    for source_file in files:
+        relative = source_file.relative_to(src).as_posix().encode("utf-8")
+        payload = source_file.read_bytes()
+        source_digest.update(len(relative).to_bytes(4, "big"))
+        source_digest.update(relative)
+        source_digest.update(hashlib.sha256(payload).digest())
+    converter_sha256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     lines = [
         json.dumps(
             {
                 "type": "meta",
                 "id": "pluribus",
-                "created": "2019-07-11T00:00:00",
+                "created": "2019-07-11T00:00:00Z",
+                "created_semantics": "data de publicação do paper; horário das mãos indisponível",
                 "mode": "pluribus",
                 "levels": ["pluribus", "pro"],
                 "source": "uoftcprg/phh-dataset (CC BY 4.0) — Pluribus vs pros, Science 2019",
+                "source_url": "https://github.com/uoftcprg/phh-dataset",
+                "upstream_git_commit": upstream_git_commit,
                 "license": "CC BY 4.0",
                 "converter": "backend/scripts/convert_pluribus.py",
+                "converter_sha256": converter_sha256,
+                "upstream_snapshot_sha256": source_digest.hexdigest(),
+                "upstream_file_count": len(files),
             },
             ensure_ascii=False,
         )
     ]
     for k, f in enumerate(files, start=1):
-        raw = tomllib.loads(f.read_text(encoding="utf-8"))
-        lines.append(json.dumps(convert_hand(raw, k), ensure_ascii=False))
+        payload = f.read_bytes()
+        raw = tomllib.loads(payload.decode("utf-8"))
+        converted = convert_hand(raw, k)
+        converted["source_file"] = f.relative_to(src).as_posix()
+        converted["source_sha256"] = hashlib.sha256(payload).hexdigest()
+        converted["blinds_or_straddles"] = raw["blinds_or_straddles"]
+        converted["antes"] = raw["antes"]
+        lines.append(json.dumps(converted, ensure_ascii=False))
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"OK: {len(files)} mãos -> {out}")
 

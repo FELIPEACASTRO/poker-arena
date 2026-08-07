@@ -138,9 +138,7 @@ def _assert_records_have_unique_urls(
     for index, record in enumerate(records):
         context = f"{receipt_name}.{collection_name}[{index}]"
         url_fields = {
-            key: value
-            for key, value in record.items()
-            if key == "url" or key.endswith("_url")
+            key: value for key, value in record.items() if key == "url" or key.endswith("_url")
         }
         assert url_fields, f"missing URL field: {context}"
         urls.extend(
@@ -346,10 +344,6 @@ def test_regional_supplement_covers_requested_regions_and_has_unique_findings() 
             )
 
     _assert_records_have_unique_ids(receipt, "retained_findings", REGIONAL_SUPPLEMENT_PATH.name)
-    _assert_records_have_unique_urls(
-        receipt, "retained_findings", REGIONAL_SUPPLEMENT_PATH.name
-    )
-    _assert_records_have_unique_ids(
-        receipt, "integrity_incidents", REGIONAL_SUPPLEMENT_PATH.name
-    )
+    _assert_records_have_unique_urls(receipt, "retained_findings", REGIONAL_SUPPLEMENT_PATH.name)
+    _assert_records_have_unique_ids(receipt, "integrity_incidents", REGIONAL_SUPPLEMENT_PATH.name)
     _assert_nonempty(receipt.get("decision_summary"), "regional.decision_summary")

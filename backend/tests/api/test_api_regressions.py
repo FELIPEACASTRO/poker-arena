@@ -28,9 +28,7 @@ def _create(client: TestClient, *, key: str | None = None):
     )
 
 
-def test_create_idempotency_eviction_rejects_without_duplicate(
-    tmp_path, monkeypatch
-):
+def test_create_idempotency_eviction_rejects_without_duplicate(tmp_path, monkeypatch):
     monkeypatch.setattr(api_app, "MAX_IDEMPOTENCY_KEYS", 2)
     client, repository = _client(tmp_path, monkeypatch)
 
@@ -60,9 +58,7 @@ def test_giant_if_match_is_a_bounded_400(tmp_path, monkeypatch):
     assert response.status_code == 400
 
 
-def test_websocket_rejects_deep_json_without_closing_connection(
-    tmp_path, monkeypatch
-):
+def test_websocket_rejects_deep_json_without_closing_connection(tmp_path, monkeypatch):
     client, _ = _client(tmp_path, monkeypatch)
     table_id = _create(client).json()["table_id"]
     nested = '{"type":' + "[" * 40 + '"fold"' + "]" * 40 + "}"
@@ -107,8 +103,7 @@ def test_rest_mutation_broadcasts_to_every_websocket_client(tmp_path, monkeypatc
 def test_game_routes_apply_bounded_pagination(tmp_path, monkeypatch):
     rows = [{"type": "meta", "id": "api-page", "created": "2026-01-01"}]
     rows.extend(
-        {"type": "hand", "hand": hand, "ts": f"2026-01-01T00:00:0{hand}"}
-        for hand in range(1, 5)
+        {"type": "hand", "hand": hand, "ts": f"2026-01-01T00:00:0{hand}"} for hand in range(1, 5)
     )
     (tmp_path / "api-page.jsonl").write_text(
         "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
@@ -126,8 +121,6 @@ def test_game_routes_apply_bounded_pagination(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("limit", [0, 201])
-def test_game_route_rejects_out_of_contract_page_limit(
-    tmp_path, monkeypatch, limit
-):
+def test_game_route_rejects_out_of_contract_page_limit(tmp_path, monkeypatch, limit):
     client, _ = _client(tmp_path, monkeypatch)
     assert client.get(f"/games?limit={limit}").status_code == 422

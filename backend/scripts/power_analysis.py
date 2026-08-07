@@ -25,10 +25,7 @@ def wilson_bound(events: int, total: int, *, upper: bool) -> float:
     center = (probability + Z_95**2 / (2 * total)) / denominator
     margin = (
         Z_95
-        * math.sqrt(
-            probability * (1 - probability) / total
-            + Z_95**2 / (4 * total**2)
-        )
+        * math.sqrt(probability * (1 - probability) / total + Z_95**2 / (4 * total**2))
         / denominator
     )
     return min(1.0, center + margin) if upper else max(0.0, center - margin)
@@ -37,9 +34,7 @@ def wilson_bound(events: int, total: int, *, upper: bool) -> float:
 def _binomial_tail(events: int, total: int, probability: float, *, upper: bool) -> float:
     values = range(events, total + 1) if upper else range(events + 1)
     return sum(
-        math.comb(total, value)
-        * probability**value
-        * (1 - probability) ** (total - value)
+        math.comb(total, value) * probability**value * (1 - probability) ** (total - value)
         for value in values
     )
 
@@ -124,6 +119,11 @@ def designs() -> dict[str, BinomialDesign]:
             floor=0.80,
             null_probability=0.80,
             target_probability=0.95,
+        ),
+        "session_exact_state": lower_bound_design(
+            floor=0.90,
+            null_probability=0.90,
+            target_probability=0.97,
         ),
     }
 

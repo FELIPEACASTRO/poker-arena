@@ -20,7 +20,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from .seats import derive_position
-from .synth import _RANK_DISP, _SUIT_SYM, CANONICAL, RANKS, SUITS, Style, _font
+from .synth import _RANK_DISP, _SUIT_SYM, CANONICAL, RANKS, STYLES, SUITS, Style, _font
 
 _TH = 150  # brilho acima disso = interior de carta (claro sobre feltro escuro)
 _TEMPL = (34, 26)  # tamanho canônico de template (h, w)
@@ -50,6 +50,8 @@ class RecognizedState:
     pot_confidence: float | None = None
     n_players: int = 0  # participantes na mesa (0 = não detectado)
     position: str = ""  # posição do herói (BTN/SB/BB/UTG/...) — "" se indefinida
+    player_count_confidence: float | None = None
+    position_confidence: float | None = None
     stacks: dict[int, int] | None = None  # fichas lidas por assento (OCR) — None se não leu
     stack_confidences: dict[int, float] | None = None
     pot_source: str = "template"  # de onde veio o pote: "ocr" (forte) ou "template" (fraco)
@@ -94,16 +96,49 @@ def _bounded_similarity(value: float) -> float:
 
 
 class _Templates:
-    """Templates de rank, naipe e dígito tirados de UM estilo canônico (F1)."""
+    """Banco de glifos sintéticos explicitamente calibrados para o baseline F1.
 
-    def __init__(self, style: Style = CANONICAL) -> None:
-        f_idx = _font(style.font, 48)
-        self.ranks = {r: _glyph(_RANK_DISP.get(r, r), f_idx) for r in RANKS}
-        self.suits = {s: _glyph(_SUIT_SYM[s], f_idx) for s in SUITS}
-        self.digits = {str(d): _glyph(str(d), _font(style.font, 40)) for d in range(10)}
+    Cada classe guarda um template por fonte conhecida. Isso reduz a fragilidade a
+    tipografia sem fingir transferência para clientes reais: o banco continua sendo
+    derivado do gerador sintético e precisa de avaliação externa separada.
+    """
+
+    def __init__(self, styles: Sequence[Style] = (CANONICAL,)) -> None:
+        if not styles:
+            raise ValueError("template bank requires at least one style")
+        index_fonts = tuple(_font(style.font, 48) for style in styles)
+        digit_fonts = tuple(_font(style.font, 40) for style in styles)
+        self.ranks = {
+            rank: tuple(_glyph(_RANK_DISP.get(rank, rank), font) for font in index_fonts)
+            for rank in RANKS
+        }
+        self.suits = {
+            suit: tuple(_glyph(_SUIT_SYM[suit], font) for font in index_fonts) for suit in SUITS
+        }
+        self.digits = {
+            str(digit): tuple(_glyph(str(digit), font) for font in digit_fonts)
+            for digit in range(10)
+        }
 
 
-_T = _Templates()
+_CANONICAL_T = _Templates((CANONICAL,))
+_T = _Templates(tuple(STYLES))
+
+
+def _best_template_match(
+    query: np.ndarray,
+    bank: dict[str, tuple[np.ndarray, ...]],
+    labels: Sequence[str] | None = None,
+) -> tuple[str, float]:
+    """Return the class whose best calibrated glyph has the highest ZNCC."""
+
+    candidates = labels if labels is not None else tuple(bank)
+    if not candidates:
+        raise ValueError("template match requires at least one candidate")
+    return max(
+        ((label, max(_zncc(query, template) for template in bank[label])) for label in candidates),
+        key=lambda item: item[1],
+    )
 
 
 def _components(mask: np.ndarray, min_area: int) -> list[tuple[int, int, int, int]]:
@@ -252,7 +287,11 @@ def _norm(a: np.ndarray) -> np.ndarray:
     return arr / (arr.max() or 1)
 
 
-def _read_card(rgb: np.ndarray, box: tuple[int, int, int, int]) -> tuple[str, float]:
+def _read_card(
+    rgb: np.ndarray,
+    box: tuple[int, int, int, int],
+    templates: _Templates = _T,
+) -> tuple[str, float]:
     x, y, w, h = box
     card = rgb[y : y + h, x : x + w]
     # RE-APERTA na carta real (o box pode ter margem de feltro): pega o retângulo
@@ -270,20 +309,24 @@ def _read_card(rgb: np.ndarray, box: tuple[int, int, int, int]) -> tuple[str, fl
     ih = int(h * 0.30)
     rank_g = 255 - gray[int(h * 0.03) : int(h * 0.03) + ih, int(w * 0.06) : int(w * 0.55)]
     rq = _norm(rank_g)
-    rank, rscore = max(((r, _zncc(rq, t)) for r, t in _T.ranks.items()), key=lambda kv: kv[1])
+    rank, rscore = _best_template_match(rq, templates.ranks)
     # naipe: cor (do índice, confiável) restringe; a FORMA decide entre os da mesma cor
-    # usando o naipe GRANDE do centro recortado LIMPO (y>0.52 já está abaixo do índice)
+    # usando o naipe GRANDE do centro recortado LIMPO (y>0.56 já está abaixo do índice)
     cc = _color_class(card[int(h * 0.27) : int(h * 0.50), int(w * 0.05) : int(w * 0.42)])
     cands = _SUIT_BY_COLOR.get(cc, SUITS)
     if len(cands) == 1:
         return rank + cands[0], _bounded_similarity(rscore)
-    big_g = 255 - gray[int(h * 0.52) : int(h * 0.94), int(w * 0.18) : int(w * 0.82)]
+    big_g = 255 - gray[int(h * 0.56) : int(h * 0.94), int(w * 0.18) : int(w * 0.82)]
     sq = _norm(big_g)
-    suit, sscore = max(((s, _zncc(sq, _T.suits[s])) for s in cands), key=lambda kv: kv[1])
+    suit, sscore = _best_template_match(sq, templates.suits, cands)
     return rank + suit, _bounded_similarity(min(rscore, sscore))
 
 
-def _read_pot(gray: np.ndarray, card_boxes: Sequence[Box] = ()) -> tuple[int | None, float]:
+def _read_pot(
+    gray: np.ndarray,
+    card_boxes: Sequence[Box] = (),
+    templates: _Templates = _T,
+) -> tuple[int | None, float]:
     """Lê o pote: região de texto claro na faixa central-superior (heurística F1).
 
     APAGA as cartas já detectadas antes de ler: o topo claro do board caía na faixa do
@@ -295,11 +338,23 @@ def _read_pot(gray: np.ndarray, card_boxes: Sequence[Box] = ()) -> tuple[int | N
         g[max(0, int(y)) : int(y + h), max(0, int(x)) : int(x + w)] = 0
     band = g[int(H * 0.18) : int(H * 0.40), int(W * 0.30) : int(W * 0.70)]
     mask = band > 170  # texto claro
-    cols = np.where(mask.any(0))[0]
-    rows = np.where(mask.any(1))[0]
-    if len(cols) == 0 or len(rows) == 0:
+    # Componentes altos ancoram a linha real de dígitos. O recorte guiado por essas
+    # âncoras descarta pontos/linhas distantes de cartas e assentos, mas mantém traços
+    # desconectados próximos dos glifos serifados (Times/Courier).
+    anchors = [
+        (x, y, w, h)
+        for x, y, w, h in _components(mask, min_area=1)
+        if 3 <= w <= max(8, int(W * 0.05)) and max(8, int(H * 0.013)) <= h <= max(12, int(H * 0.08))
+    ]
+    if not anchors:
         return None, 0.0
-    sub = band[rows.min() : rows.max() + 1, cols.min() : cols.max() + 1]
+    margin = max(2, int(H * 0.008))
+    x_margin = max(12, int(W * 0.018))
+    x0 = max(0, min(x for x, _, _, _ in anchors) - x_margin)
+    x1 = min(band.shape[1], max(x + w for x, _, w, _ in anchors) + x_margin)
+    y0 = max(0, min(y for _, y, _, _ in anchors) - margin)
+    y1 = min(band.shape[0], max(y + h for _, y, _, h in anchors) + margin)
+    sub = band[y0:y1, x0:x1]
     # segmenta dígitos por colunas com tinta
     colmask = np.asarray((sub > 170).any(axis=0), dtype=np.bool_)
     digits: list[np.ndarray] = []
@@ -318,7 +373,7 @@ def _read_pot(gray: np.ndarray, card_boxes: Sequence[Box] = ()) -> tuple[int | N
     scores: list[float] = []
     for seg in digits:
         q = _norm(seg.astype(np.float32))
-        d, sc = max(((d, _zncc(q, t)) for d, t in _T.digits.items()), key=lambda kv: kv[1])
+        d, sc = _best_template_match(q, templates.digits)
         out += d
         scores.append(sc)
     try:
@@ -334,6 +389,7 @@ def _read_numbers(
     seats: Sequence[Point],
     ocr_numbers: bool,
     deep_stacks: bool = False,
+    templates: _Templates = _T,
 ) -> tuple[int | None, float, dict[int, int] | None, dict[int, float] | None, str]:
     """Lê pote (+ stacks se `deep_stacks`). OCR forte quando pedido e disponível; senão o
     template (fraco). `deep_stacks=False` (padrão) = caminho de BAIXA LATÊNCIA (<=4s): só o
@@ -346,7 +402,7 @@ def _read_numbers(
             sn = ocr.read_screen(rgb, W, H, list(card_boxes), list(seats), deep_stacks=deep_stacks)
             if sn.pot is not None:
                 return sn.pot, sn.pot_conf, sn.stacks, sn.stack_confidences, "ocr"
-    pot, potc = _read_pot(gray, card_boxes)
+    pot, potc = _read_pot(gray, card_boxes, templates)
     return pot, potc, None, None, "template"
 
 
@@ -386,8 +442,9 @@ def _cards_force_abstention(
     )
 
 
-def recognize_table(
+def _recognize_table(
     img: Image.Image,
+    templates: _Templates,
     ocr_numbers: bool = False,
     deep_stacks: bool = False,
     fail_fast_abstain_below: float | None = None,
@@ -400,7 +457,7 @@ def recognize_table(
     gray = _gray(img)
     H = gray.shape[0]
     boxes = _find_cards(gray)
-    reads = [(*_read_card(rgb, b), b) for b in boxes]  # (card, score, box)
+    reads = [(*_read_card(rgb, b, templates), b) for b in boxes]  # (card, score, box)
 
     Wpx = gray.shape[1]
     hole_candidates, board_candidates = [], []
@@ -435,7 +492,7 @@ def recognize_table(
         pot, potc, stacks, stack_confs, src = None, 0.0, None, None, "skipped-card-gate"
     else:
         pot, potc, stacks, stack_confs, src = _read_numbers(
-            rgb, gray, boxes, seats, ocr_numbers, deep_stacks
+            rgb, gray, boxes, seats, ocr_numbers, deep_stacks, templates
         )
     confs = list(card_confs)
     if pot is not None:
@@ -454,4 +511,25 @@ def recognize_table(
         stacks=stacks,
         stack_confidences=stack_confs,
         pot_source=src,
+    )
+
+
+def recognize_table(
+    img: Image.Image,
+    ocr_numbers: bool = False,
+    deep_stacks: bool = False,
+    fail_fast_abstain_below: float | None = None,
+) -> RecognizedState:
+    """Read a table with the complete, explicitly calibrated synthetic style bank.
+
+    This improves robustness inside the known local presentation domain. It remains
+    an F1 synthetic baseline and is never evidence of real-client generalization.
+    """
+
+    return _recognize_table(
+        img,
+        _T,
+        ocr_numbers=ocr_numbers,
+        deep_stacks=deep_stacks,
+        fail_fast_abstain_below=fail_fast_abstain_below,
     )

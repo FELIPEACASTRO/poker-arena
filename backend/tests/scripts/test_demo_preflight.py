@@ -15,6 +15,7 @@ def test_demo_fixture_exercises_exact_recognition_and_fail_closed_decision(
         "POKER_API_TOKEN",
         "POKER_VLM_URL",
         "POKER_VLM_API_KEY",
+        "POKER_VLM_API_TOKEN",
         "POKER_ENABLE_REMOTE_VLM",
     ):
         monkeypatch.delenv(name, raising=False)
@@ -30,7 +31,13 @@ def test_demo_fixture_exercises_exact_recognition_and_fail_closed_decision(
 
 @pytest.mark.parametrize(
     "name",
-    ["POKER_API_TOKEN", "POKER_VLM_URL", "POKER_VLM_API_KEY", "POKER_ENABLE_REMOTE_VLM"],
+    [
+        "POKER_API_TOKEN",
+        "POKER_VLM_URL",
+        "POKER_VLM_API_KEY",
+        "POKER_VLM_API_TOKEN",
+        "POKER_ENABLE_REMOTE_VLM",
+    ],
 )
 def test_demo_profile_rejects_remote_or_authenticated_configuration(
     monkeypatch: pytest.MonkeyPatch, name: str

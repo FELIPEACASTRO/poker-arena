@@ -20,6 +20,7 @@ from poker_arena.ml.external_validation import (
     PromotionEvidenceError,
     verify_promotion_receipt,
 )
+from poker_arena.ml.promotion_contract import promotion_contract_sha256
 from poker_arena.model_artifacts import ModelArtifactUnavailable, verify_evaluation_candidate
 
 
@@ -54,6 +55,7 @@ def build_promoted_manifest(
             receipt_path,
             expected_sha256=receipt_digest,
             artifact_sha256=candidate.sha256,
+            artifact_contract_sha256=promotion_contract_sha256(candidate.entry),
         )
     except PromotionEvidenceError as exc:
         raise PromotionRejected("scientific receipt did not pass the mandatory profile") from exc
@@ -93,6 +95,7 @@ def build_promoted_manifest(
         "path": relative_text,
         "sha256": receipt_digest,
         "profile_revision": PROFILE_REVISION,
+        "artifact_contract_sha256": promotion_contract_sha256(candidate.entry),
     }
     raw["snapshot_date"] = datetime.now(UTC).date().isoformat()
     return raw

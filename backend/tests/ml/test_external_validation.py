@@ -4,11 +4,12 @@ import gc
 import hashlib
 import hmac
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from PIL import Image
+from PIL import Image, PngImagePlugin
 
 from poker_arena.ml import data_manifest, external_validation
 from poker_arena.ml.external_validation import (
@@ -31,8 +32,8 @@ def _trusted_runtime_fixture(monkeypatch: pytest.MonkeyPatch) -> None:
                 "hole": ["As", "Kd"],
                 "board": ["2h", "6c", "Tc"],
                 "pot": 700,
-                "n_players": None,
-                "position": None,
+                "n_players": 2,
+                "position": "SB",
             },
             0.99,
             True,
@@ -40,6 +41,7 @@ def _trusted_runtime_fixture(monkeypatch: pytest.MonkeyPatch) -> None:
         )
 
     monkeypatch.setattr(external_validation, "_candidate_runner", factory)
+    monkeypatch.setattr(external_validation, "_candidate_contract_binding", lambda *_args: "3" * 64)
 
 
 def _sha(path: Path) -> str:
@@ -127,16 +129,32 @@ def _fixture(
     train = tmp_path / "train.png"
     Image.new("RGB", (10, 10), "black").save(train)
     external = tmp_path / "external.png"
-    image = Image.new("RGB", (11, 11), "black" if near_duplicate else "white")
+    image = (
+        Image.new("RGB", (10, 10), "black")
+        if near_duplicate
+        else Image.new("RGB", (11, 11), "white")
+    )
     if not near_duplicate:
         for index in range(11):
             image.putpixel((index, index), (0, 0, 0))
+        image.save(external)
     else:
-        image.putpixel((0, 0), (1, 1, 1))
-    image.save(external)
+        # Same decoded pixels/signature but different file bytes: this is a genuine
+        # cross-split perceptual duplicate, not an exact SHA-256 duplicate.
+        metadata = PngImagePlugin.PngInfo()
+        metadata.add_text("session", "external-copy")
+        image.save(external, pnginfo=metadata)
     truth = tmp_path / "truth.json"
     truth.write_text(
-        json.dumps({"hole": ["As", "Kd"], "board": ["2h", "6c", "Tc"], "pot": 700}),
+        json.dumps(
+            {
+                "hole": ["As", "Kd"],
+                "board": ["2h", "6c", "Tc"],
+                "pot": 700,
+                "n_players": 2,
+                "position": "SB",
+            }
+        ),
         encoding="utf-8",
     )
     protocol = tmp_path / "annotation-protocol.json"
@@ -156,6 +174,7 @@ def _fixture(
                 "schema_version": external_validation.SCHEMA_VERSION,
                 "profile_revision": external_validation.PROFILE_REVISION,
                 "artifact_sha256": _sha(artifact),
+                "artifact_contract_sha256": "3" * 64,
                 "pipeline": external_validation.current_pipeline_binding(),
                 "annotation_protocol": {
                     "id": "double-blind-v1",
@@ -200,10 +219,59 @@ def test_one_real_screen_can_never_authorize_promotion(tmp_path: Path) -> None:
         "insufficient_diversity",
         "insufficient_accepted_predictions",
         "subgroup_too_small",
+        "context_subgroup_coverage_incomplete",
+        "session_cluster_accuracy_below_floor",
     }.issubset(codes)
     assert receipt["counts"]["total"] == 1
     assert receipt["execution_environment"]["execution_provider"] == "CPUExecutionProvider"
     assert receipt["execution_environment"]["warmup_discarded"] is False
+    assert receipt["execution_environment"]["processor"]
+    assert receipt["execution_environment"]["numpy"] != "not-installed"
+    assert receipt["execution_environment"]["rapidocr_onnxruntime"] != "not-installed"
+
+
+def test_pipeline_binding_conservatively_covers_manifest_and_complete_package(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = external_validation._sha256_file
+    seen: set[str] = set()
+
+    def capture(path: Path, *, limit: int) -> str:
+        seen.add(path.as_posix())
+        return original(path, limit=limit)
+
+    monkeypatch.setattr(external_validation, "_sha256_file", capture)
+    binding = external_validation.current_pipeline_binding()
+
+    package_root = Path(external_validation.__file__).resolve().parents[1]
+    expected = {path.as_posix() for path in package_root.rglob("*.py")}
+    assert expected <= seen
+    assert any(path.endswith("/ml/data_manifest.py") for path in seen)
+    assert len(binding["source_receipt_sha256"]) == 64
+
+
+def test_promotion_truth_requires_complete_strategic_visual_context() -> None:
+    incomplete = json.dumps(
+        {"hole": ["As", "Kd"], "board": ["2h", "6c", "Tc"], "pot": 700}
+    ).encode()
+
+    with pytest.raises(ScientificGateError, match="unsupported schema"):
+        external_validation._truth(incomplete)
+
+
+def test_promotion_truth_rejects_position_impossible_for_table_size() -> None:
+    impossible = json.dumps(
+        {
+            "hole": ["As", "Kd"],
+            "board": ["2h", "6c", "Tc"],
+            "pot": 700,
+            "n_players": 2,
+            "position": "UTG",
+        }
+    ).encode()
+
+    with pytest.raises(ScientificGateError, match="impossible"):
+        external_validation._truth(impossible)
 
 
 def test_near_duplicate_across_development_and_external_splits_blocks(tmp_path: Path) -> None:
@@ -215,9 +283,7 @@ def test_near_duplicate_across_development_and_external_splits_blocks(tmp_path: 
         artifact, candidate_manifest, manifest, tmp_path, observations
     )
 
-    assert "near_duplicate_leakage" in {
-        failure["code"] for failure in receipt["failures"]
-    }
+    assert "near_duplicate_leakage" in {failure["code"] for failure in receipt["failures"]}
 
 
 def test_annotation_without_two_annotators_fails_before_metrics(tmp_path: Path) -> None:
@@ -227,9 +293,7 @@ def test_annotation_without_two_annotators_fails_before_metrics(tmp_path: Path) 
     observations.write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(ScientificGateError, match="annotation"):
-        evaluate_external_holdout(
-            artifact, candidate_manifest, manifest, tmp_path, observations
-        )
+        evaluate_external_holdout(artifact, candidate_manifest, manifest, tmp_path, observations)
 
 
 def test_failed_scientific_receipt_is_never_valid_promotion_evidence(tmp_path: Path) -> None:
@@ -245,6 +309,7 @@ def test_failed_scientific_receipt_is_never_valid_promotion_evidence(tmp_path: P
             receipt_path,
             expected_sha256=digest,
             artifact_sha256=_sha(artifact),
+            artifact_contract_sha256="3" * 64,
         )
 
     assert raised.value.code == "receipt_failed"
@@ -259,6 +324,7 @@ def test_hash_pinned_pass_receipt_verifier_detects_tampering(tmp_path: Path) -> 
         receipt,
         expected_sha256=evidence["sha256"],
         artifact_sha256=_sha(artifact),
+        artifact_contract_sha256=evidence["artifact_contract_sha256"],
     )
     assert verified.sha256 == evidence["sha256"]
 
@@ -268,6 +334,7 @@ def test_hash_pinned_pass_receipt_verifier_detects_tampering(tmp_path: Path) -> 
             receipt,
             expected_sha256=evidence["sha256"],
             artifact_sha256=_sha(artifact),
+            artifact_contract_sha256=evidence["artifact_contract_sha256"],
         )
     assert raised.value.code == "receipt_sha256_mismatch"
 
@@ -287,9 +354,96 @@ def test_pass_receipt_requires_complete_execution_environment(tmp_path: Path) ->
             replacement,
             expected_sha256=digest,
             artifact_sha256=_sha(artifact),
+            artifact_contract_sha256=evidence["artifact_contract_sha256"],
         )
 
     assert raised.value.code == "receipt_invalid"
+
+
+def test_pass_receipt_requires_exact_current_execution_environment(tmp_path: Path) -> None:
+    artifact = tmp_path / "model.onnx"
+    artifact.write_bytes(b"test-model")
+    evidence = promotion_evidence_fixture(artifact)
+    receipt = json.loads((tmp_path / evidence["path"]).read_text(encoding="utf-8"))
+    receipt["execution_environment"]["python"] = "0.0-foreign-runtime"
+    replacement = tmp_path / "foreign-environment.json"
+    digest = write_receipt(replacement, receipt)
+
+    with pytest.raises(PromotionEvidenceError) as raised:
+        verify_promotion_receipt(
+            replacement,
+            expected_sha256=digest,
+            artifact_sha256=_sha(artifact),
+            artifact_contract_sha256=evidence["artifact_contract_sha256"],
+        )
+
+    assert raised.value.code == "environment_mismatch"
+
+
+def test_pass_receipt_expires_under_mandatory_revalidation_policy(tmp_path: Path) -> None:
+    artifact = tmp_path / "model.onnx"
+    artifact.write_bytes(b"test-model")
+    evidence = promotion_evidence_fixture(artifact)
+    receipt = json.loads((tmp_path / evidence["path"]).read_text(encoding="utf-8"))
+    receipt["generated_at"] = (
+        datetime.now(UTC) - timedelta(days=external_validation.RECEIPT_MAX_AGE_DAYS + 1)
+    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    replacement = tmp_path / "expired.json"
+    digest = write_receipt(replacement, receipt)
+
+    with pytest.raises(PromotionEvidenceError) as raised:
+        verify_promotion_receipt(
+            replacement,
+            expected_sha256=digest,
+            artifact_sha256=_sha(artifact),
+            artifact_contract_sha256=evidence["artifact_contract_sha256"],
+        )
+
+    assert raised.value.code == "receipt_invalid"
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_code"),
+    [
+        ("lower_above_one", "receipt_invalid"),
+        ("negative_latency", "receipt_invalid"),
+        ("accepted_above_total", "receipt_invalid"),
+        ("incoherent_coverage", "receipt_invalid"),
+        ("impossible_subgroup_rate", "subgroup_failed"),
+        ("incoherent_subgroup_partition", "subgroup_failed"),
+    ],
+)
+def test_pass_receipt_rejects_impossible_numeric_evidence(
+    tmp_path: Path, mutation: str, expected_code: str
+) -> None:
+    artifact = tmp_path / "model.onnx"
+    artifact.write_bytes(b"test-model")
+    evidence = promotion_evidence_fixture(artifact)
+    receipt = json.loads((tmp_path / evidence["path"]).read_text(encoding="utf-8"))
+    if mutation == "lower_above_one":
+        receipt["metrics"]["exact_state_wilson95_lower"] = 1.1
+    elif mutation == "negative_latency":
+        receipt["metrics"]["latency_p95_ms"] = -1
+    elif mutation == "accepted_above_total":
+        receipt["counts"]["accepted"] = receipt["counts"]["total"] + 1
+    elif mutation == "incoherent_coverage":
+        receipt["metrics"]["coverage"] = 0.99
+    elif mutation == "impossible_subgroup_rate":
+        receipt["subgroups"][0]["exact_state"] = 1.1
+    else:
+        receipt["subgroups"][0]["count"] += 1
+    mutated = tmp_path / f"{mutation}.json"
+    digest = write_receipt(mutated, receipt)
+
+    with pytest.raises(PromotionEvidenceError) as raised:
+        verify_promotion_receipt(
+            mutated,
+            expected_sha256=digest,
+            artifact_sha256=_sha(artifact),
+            artifact_contract_sha256=evidence["artifact_contract_sha256"],
+        )
+
+    assert raised.value.code == expected_code
 
 
 def test_pass_receipt_is_invalidated_by_runtime_pipeline_change(
@@ -308,6 +462,7 @@ def test_pass_receipt_is_invalidated_by_runtime_pipeline_change(
             receipt,
             expected_sha256=evidence["sha256"],
             artifact_sha256=_sha(artifact),
+            artifact_contract_sha256=evidence["artifact_contract_sha256"],
         )
 
     assert raised.value.code == "pipeline_mismatch"
@@ -319,6 +474,28 @@ def test_banded_near_duplicate_search_is_bounded_fail_closed() -> None:
         "leakage",
         "ambiguous",
     }
+
+
+def test_near_duplicate_inside_external_holdout_is_detected() -> None:
+    signatures = [(0, "external-test"), (0, "external-test")]
+
+    assert (
+        external_validation._near_duplicate_status(
+            signatures,
+            reject_within_split=frozenset({"external-test"}),
+        )
+        == "leakage"
+    )
+
+
+def test_promotion_manifest_must_reject_within_split_duplicates(tmp_path: Path) -> None:
+    artifact, candidate_manifest, manifest, observations, _protocol = _fixture(tmp_path)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    payload["policy"]["reject_duplicates_within_split"] = False
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ScientificGateError, match="duplicates within every split"):
+        evaluate_external_holdout(artifact, candidate_manifest, manifest, tmp_path, observations)
 
 
 def test_oversized_image_is_rejected_before_pixel_load(
@@ -350,9 +527,7 @@ def test_stale_pipeline_binding_is_rejected_before_evaluation(tmp_path: Path) ->
     observations.write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(ScientificGateError, match="stale"):
-        evaluate_external_holdout(
-            artifact, candidate_manifest, manifest, tmp_path, observations
-        )
+        evaluate_external_holdout(artifact, candidate_manifest, manifest, tmp_path, observations)
 
 
 @pytest.mark.parametrize(
@@ -380,9 +555,7 @@ def test_sample_change_after_manifest_validation_is_detected(
     monkeypatch.setattr(external_validation, "validate_manifest", validate_then_change)
 
     with pytest.raises(ScientificGateError, match="digest differs"):
-        evaluate_external_holdout(
-            artifact, candidate_manifest, manifest, tmp_path, observations
-        )
+        evaluate_external_holdout(artifact, candidate_manifest, manifest, tmp_path, observations)
 
 
 def test_gate_retains_only_constant_number_of_sample_payloads(
@@ -449,10 +622,12 @@ def test_trusted_runner_latency_covers_decode_inference_and_sanity(
                 board=[],
                 pot=10,
                 n_players=2,
-                position="BTN",
+                position="SB",
                 confidence=0.99,
                 card_confidences=[0.99, 0.99],
                 pot_confidence=0.99,
+                player_count_confidence=0.99,
+                position_confidence=0.99,
             )
 
     def sanity(_state, **_kwargs):
@@ -462,6 +637,7 @@ def test_trusted_runner_latency_covers_decode_inference_and_sanity(
     artifact = SimpleNamespace(
         path=tmp_path / "candidate.onnx",
         manifest_path=tmp_path / "MANIFEST.candidate.json",
+        entry={"classes": [f"class-{index}" for index in range(54)]},
     )
     monkeypatch.setattr(external_validation.Image, "open", checked_open)
     monkeypatch.setattr(artifacts_module, "verify_evaluation_candidate", lambda *_a, **_k: artifact)
@@ -470,9 +646,7 @@ def test_trusted_runner_latency_covers_decode_inference_and_sanity(
     image = tmp_path / "tiny.png"
     Image.new("RGB", (4, 4), "white").save(image)
 
-    runner = _REAL_CANDIDATE_RUNNER(
-        artifact.path, artifact.manifest_path, _clock=clock
-    )
+    runner = _REAL_CANDIDATE_RUNNER(artifact.path, artifact.manifest_path, _clock=clock)
     _prediction, _confidence, accepted, latency_ms = runner(image.read_bytes())
 
     assert accepted is True

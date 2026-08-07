@@ -64,6 +64,19 @@ def test_recognizer_high_accuracy_on_canonical_style():
     assert acc >= 0.90, f"acurácia canônica caiu para {acc:.0%} (esperado >=90%)"
 
 
+def test_known_style_bank_preserves_exact_cards_outside_evidence_seeds():
+    from poker_arena.vision.synth import STYLES
+
+    exact = total = 0
+    for style in STYLES:
+        for seed in range(12):
+            img, truth = render_table(seed=31000 + seed, style=style, with_seats=True, noise=0.15)
+            state = recognize_table(img)
+            exact += set(state.hole) == set(truth["hole"]) and state.board == truth["board"]
+            total += 1
+    assert exact / total >= 0.98
+
+
 def test_recognizer_is_resolution_agnostic():
     # cada aluno tem um monitor/tela diferente -> a MESMA mesa em resoluções variadas
     for size in [(900, 600), (1280, 853), (1600, 1067)]:
@@ -220,6 +233,48 @@ def test_sanity_rejects_ten_handed_state_outside_project_contract():
     result = check_state(st)
     assert result.ok is False
     assert any("2 a 9" in problem for problem in result.problems)
+
+
+def test_sanity_rejects_noncanonical_or_orphaned_position():
+    invalid = RecognizedState(
+        hole=["As", "Kd"], pot=10, confidence=0.99, n_players=6, position="DEALER"
+    )
+    orphaned = RecognizedState(
+        hole=["As", "Kd"], pot=10, confidence=0.99, n_players=0, position="BTN"
+    )
+
+    assert not check_state(invalid).ok
+    assert not check_state(orphaned).ok
+
+
+def test_sanity_rejects_position_impossible_for_player_count():
+    impossible = RecognizedState(
+        hole=["As", "Kd"], pot=10, confidence=0.99, n_players=2, position="UTG"
+    )
+
+    result = check_state(impossible)
+    assert not result.ok
+    assert any("impossível" in problem for problem in result.problems)
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        RecognizedState(hole=["As", "Kd"], pot=1_000_000_001, confidence=0.99),
+        RecognizedState(hole=["As", "Kd"], pot=1.5, confidence=0.99),
+        RecognizedState(hole=["As", "Kd"], pot=10, confidence=float("nan")),
+        RecognizedState(hole=["As", "Kd"], pot=10, confidence=0.99, stacks={9: 10}),
+        RecognizedState(
+            hole=["As", "Kd"],
+            pot=10,
+            confidence=0.99,
+            stacks={0: 10},
+            stack_confidences={1: 0.99},
+        ),
+    ],
+)
+def test_sanity_rejects_out_of_contract_numeric_and_stack_state(state):
+    assert check_state(state).ok is False
 
 
 def test_sanity_fails_closed_on_low_confidence_or_missing_pot():

@@ -1,5 +1,8 @@
 # Evidência de QA e limites — 2026-07-18
 
+> **Evidência histórica:** descreve exclusivamente o checkout de 2026-07-18 e o perfil v2.
+> Não deve ser usada como evidência do HEAD ou do gate científico v3 de 2026-08-07.
+
 Este documento registra a validação final do checkout `Poker Arena 0.2.0`. Ele separa
 resultado observado de inferência: um gate aprovado demonstra que os contratos testados
 passaram nesta máquina; não demonstra desempenho GTO, acurácia em imagens reais nem

@@ -1,5 +1,9 @@
 # Relatório final de auditoria e prontidão para banca — 2026-08-07
 
+> **SUPERADO:** este snapshot anterior é mantido apenas como histórico. O parecer vigente,
+> com o protocolo Omega v3 e a refutação independente posterior, está em
+> `RELATORIO_OMEGA_AUDITORIA_20260807.md`. Contagens e nota abaixo não descrevem o HEAD atual.
+
 ## Parecer executivo
 
 **Escopo avaliado:** execução exclusivamente local e offline, em uma apresentação
@@ -90,8 +94,9 @@ de validade externa como “confiança alta”.
 **Achado:** os mínimos históricos do holdout não sustentavam conjuntamente os limites
 pretendidos para exatidão, falso aceite e subgrupos.
 
-**Correção:** o perfil externo v2 exige ao menos 200 observações, 142 previsões aceitas, 40
-itens por subgrupo, três fontes/clientes/resoluções, dois temas/decks e vinte sessões. O gate
+**Correção (histórica, superada pelo perfil v3):** o perfil externo v2 exigia ao menos 200
+observações, 142 previsões aceitas, 40 itens por subgrupo, três fontes/clientes/resoluções,
+dois temas/decks e vinte sessões. O gate
 usa limites Wilson de 95%, mede estado exato global e por subgrupo, falso aceite, ECE, Brier e
 P95. O cálculo reproduzível comprova poder >= 0,80 para as alternativas pré-declaradas.
 O receipt passou a registrar SO, arquitetura, CPU, bibliotecas, provider, ciclo da sessão,

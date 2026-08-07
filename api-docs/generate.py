@@ -221,10 +221,16 @@ JSON_EXAMPLES: dict[tuple[str, str], dict[str, Any]] = {
         "pot": 100,
         "to_call": 20,
         "my_stack": 1000,
+        "effective_stack": 1000,
         "num_opponents": 1,
+        "table_size": 2,
         "in_position": True,
-        "position": "BTN",
+        "position": "SB",
         "big_blind": 20,
+        "hero_current_bet": 0,
+        "current_bet": 20,
+        "min_raise_increment": 20,
+        "raise_reopened": True,
     },
     ("POST", "/copilot/review-hand"): {
         "phh": (
@@ -234,7 +240,9 @@ JSON_EXAMPLES: dict[tuple[str, str], dict[str, Any]] = {
             "min_bet = 2\n"
             "starting_stacks = [100, 100]\n"
             "players = ['Alice', 'Bob']\n"
-            "actions = ['d dh p1 AsKd', 'd dh p2 QsQh', 'p1 cc', 'p2 cc']"
+            "actions = ['d dh p1 AsKd', 'd dh p2 QsQh', 'p2 cc', 'p1 cc', "
+            "'d db 2c3d4h', 'p1 cc', 'p2 cc', 'd db 5s', 'p1 cc', 'p2 cc', "
+            "'d db 6c', 'p1 cc', 'p2 cc']"
         ),
         "player": 1,
     },

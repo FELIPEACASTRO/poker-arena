@@ -90,9 +90,9 @@
       "_type": "request",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"big_blind\": 20,\n  \"board\": [\n    \"Kd\",\n    \"7c\",\n    \"2s\"\n  ],\n  \"hole\": [\n    \"As\",\n    \"Ah\"\n  ],\n  \"in_position\": true,\n  \"my_stack\": 1000,\n  \"num_opponents\": 1,\n  \"position\": \"BTN\",\n  \"pot\": 100,\n  \"to_call\": 20\n}"
+        "text": "{\n  \"big_blind\": 20,\n  \"board\": [\n    \"Kd\",\n    \"7c\",\n    \"2s\"\n  ],\n  \"current_bet\": 20,\n  \"effective_stack\": 1000,\n  \"hero_current_bet\": 0,\n  \"hole\": [\n    \"As\",\n    \"Ah\"\n  ],\n  \"in_position\": true,\n  \"min_raise_increment\": 20,\n  \"my_stack\": 1000,\n  \"num_opponents\": 1,\n  \"position\": \"SB\",\n  \"pot\": 100,\n  \"raise_reopened\": true,\n  \"table_size\": 2,\n  \"to_call\": 20\n}"
       },
-      "description": "Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)\ne devolve a leitura completa: equity real, pot odds, EV, MDF, outs, a nut,\ntextura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o\nconselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos\nlocais e não acessa sites de poker. É destinado a estudo e revisão pós-jogo.",
+      "description": "Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)\ne devolve a leitura completa: equity modelada, pot odds, EV simplificado de checkdown,\nMDF, outs, a nut,\ntextura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o\nconselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos\nlocais e não acessa sites de poker. É destinado a estudo e revisão pós-jogo.",
       "headers": [
         {
           "name": "Content-Type",
@@ -138,26 +138,51 @@
           {
             "disabled": true,
             "name": "to_call",
-            "value": "0"
+            "value": ""
           },
           {
             "disabled": true,
             "name": "my_stack",
-            "value": "1000"
+            "value": ""
+          },
+          {
+            "disabled": true,
+            "name": "effective_stack",
+            "value": ""
           },
           {
             "disabled": true,
             "name": "num_opponents",
-            "value": "1"
+            "value": ""
           },
           {
             "disabled": true,
             "name": "in_position",
-            "value": "true"
+            "value": ""
           },
           {
             "disabled": true,
             "name": "position",
+            "value": ""
+          },
+          {
+            "disabled": true,
+            "name": "hero_current_bet",
+            "value": ""
+          },
+          {
+            "disabled": true,
+            "name": "current_bet",
+            "value": ""
+          },
+          {
+            "disabled": true,
+            "name": "min_raise_increment",
+            "value": ""
+          },
+          {
+            "disabled": true,
+            "name": "raise_reopened",
             "value": ""
           },
           {
@@ -288,9 +313,9 @@
       "_type": "request",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"phh\": \"variant = 'NT'\\nantes = [0, 0]\\nblinds_or_straddles = [1, 2]\\nmin_bet = 2\\nstarting_stacks = [100, 100]\\nplayers = ['Alice', 'Bob']\\nactions = ['d dh p1 AsKd', 'd dh p2 QsQh', 'p1 cc', 'p2 cc']\",\n  \"player\": 1\n}"
+        "text": "{\n  \"phh\": \"variant = 'NT'\\nantes = [0, 0]\\nblinds_or_straddles = [1, 2]\\nmin_bet = 2\\nstarting_stacks = [100, 100]\\nplayers = ['Alice', 'Bob']\\nactions = ['d dh p1 AsKd', 'd dh p2 QsQh', 'p2 cc', 'p1 cc', 'd db 2c3d4h', 'p1 cc', 'p2 cc', 'd db 5s', 'p1 cc', 'p2 cc', 'd db 6c', 'p1 cc', 'p2 cc']\",\n  \"player\": 1\n}"
       },
-      "description": "Cole o histórico da mão (formato PHH — o texto que o jogo exporta ao FIM da\nmão) e escolha qual jogador é você. O copiloto reproduz a mão e revisa CADA\ndecisão sua, comparando com a recomendação. É estudo pós-jogo (como rever um\nPGN de xadrez), executado localmente — não lê tela de jogo ao vivo.",
+      "description": "Cole o histórico da mão (subconjunto PHH variant='NT', valores inteiros —\no texto que o jogo exporta ao FIM da\nmão) e escolha qual jogador é você. O copiloto reproduz a mão e revisa CADA\ndecisão sua, comparando com a recomendação. É estudo pós-jogo (como rever um\nPGN de xadrez), executado localmente — não lê tela de jogo ao vivo.",
       "headers": [
         {
           "name": "Content-Type",
@@ -317,7 +342,7 @@
       ],
       "metaSortKey": 5000,
       "method": "POST",
-      "name": "Copiloto: revisar uma MÃO inteira (cole o histórico PHH)",
+      "name": "Copiloto: revisar uma mão do subconjunto PHH-NLHE inteiro",
       "parentId": "fld_f71742ee75856fe3",
       "url": "{{ _.base_url }}/copilot/review-hand"
     },

@@ -187,7 +187,9 @@ def _request(url: str, method: str, timeout: float) -> tuple[int, str]:
                 response.read(1024)
                 continue
             if response.status >= 400:
-                raise HTTPError(current_url, response.status, response.reason, response.headers, None)
+                raise HTTPError(
+                    current_url, response.status, response.reason, response.headers, None
+                )
             if current_method == "GET":
                 response.read(1024)
             return int(response.status), current_url
@@ -307,10 +309,14 @@ def main(argv: list[str] | None = None) -> int:
     platforms = parse_platforms(args.source.read_text(encoding="utf-8-sig"))
     if not platforms:
         parser.error("no platforms found in sections 1-12")
-    probes = _probe_all(platforms, workers=args.workers, timeout=args.timeout) if args.probe else None
+    probes = (
+        _probe_all(platforms, workers=args.workers, timeout=args.timeout) if args.probe else None
+    )
     receipt = build_receipt(args.source, platforms, probes=probes)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     print(json.dumps({"platform_count": len(platforms), "probed": probes is not None}))
     return 0
 

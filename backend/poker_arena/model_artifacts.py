@@ -30,6 +30,7 @@ from poker_arena.ml.external_validation import (
     PromotionEvidenceError,
     verify_promotion_receipt,
 )
+from poker_arena.ml.promotion_contract import promotion_contract_sha256
 
 ArtifactKind = Literal["expert", "vision", "card_reader"]
 ArtifactUsage = Literal["deployment", "evaluation"]
@@ -42,6 +43,7 @@ _GOVERNANCE_STATUSES: Final = frozenset({"verified", "unresolved"})
 _POLICY_STATES: Final = frozenset({"approved", "promoted", "unapproved"})
 _MAX_MANIFEST_BYTES: Final = 2 * 1024 * 1024
 _MAX_ARTIFACT_BYTES: Final = 16 * 1024 * 1024 * 1024
+_MAX_ONNX_PROTO_INSPECTION_BYTES: Final = 512 * 1024 * 1024
 _MAX_ARTIFACTS: Final = 256
 _MAX_ARTIFACT_PATH_CHARS: Final = 512
 _MAX_TEXT_CHARS: Final = 1024
@@ -115,7 +117,9 @@ _TRAINING_CONTEXT_FIELDS: Final = frozenset(
 _INFERENCE_POLICY_FIELDS: Final = frozenset(
     {"state", "temperature", "min_prob_ratio", "sizing_jitter"}
 )
-_PROMOTION_RECEIPT_FIELDS: Final = frozenset({"path", "sha256", "profile_revision"})
+_PROMOTION_RECEIPT_FIELDS: Final = frozenset(
+    {"path", "sha256", "profile_revision", "artifact_contract_sha256"}
+)
 _WINDOWS_RESERVED_PATH_STEMS: Final = frozenset(
     {
         "CON",
@@ -307,6 +311,47 @@ def _sha256_file(path: Path) -> str:
             "artifact_unreadable", "artifact bytes could not be read"
         ) from None
     return digest.hexdigest()
+
+
+def _reject_external_onnx_data(path: Path, size: int) -> None:
+    """Forbid mutable ONNX sidecars that are not covered by the artifact digest."""
+
+    if size > _MAX_ONNX_PROTO_INSPECTION_BYTES:
+        raise ModelArtifactUnavailable(
+            "artifact_too_large_for_inspection",
+            "ONNX exceeds the bounded self-contained-data inspection profile",
+        )
+    try:
+        import onnx
+
+        model = onnx.load_model(path, load_external_data=False)
+    except Exception as exc:  # noqa: BLE001 - parser/library failures must fail closed
+        raise ModelArtifactUnavailable(
+            "artifact_uninspectable",
+            "ONNX could not be parsed while verifying its self-contained data contract",
+        ) from exc
+
+    def walk(message: Any) -> None:
+        descriptor = getattr(message, "DESCRIPTOR", None)
+        if descriptor is not None and descriptor.full_name == "onnx.TensorProto":
+            external = int(getattr(message, "data_location", 0)) == int(
+                onnx.TensorProto.EXTERNAL
+            ) or bool(getattr(message, "external_data", ()))
+            if external:
+                raise ModelArtifactUnavailable(
+                    "external_data_forbidden",
+                    "ONNX external-data sidecars are not allowed; package one self-contained file",
+                )
+        for field_descriptor, value in message.ListFields():
+            if field_descriptor.type != field_descriptor.TYPE_MESSAGE:
+                continue
+            if field_descriptor.is_repeated:
+                for child in value:
+                    walk(child)
+            else:
+                walk(value)
+
+    walk(model)
 
 
 def _freeze_json(value: Any) -> Any:
@@ -649,6 +694,11 @@ def _validate_promotion_receipt_shape(raw: object) -> None:
         raise ModelArtifactUnavailable(
             "promotion_evidence_invalid", "promotion receipt digest is invalid"
         )
+    contract_digest = raw.get("artifact_contract_sha256")
+    if not isinstance(contract_digest, str) or _SHA256_RE.fullmatch(contract_digest) is None:
+        raise ModelArtifactUnavailable(
+            "promotion_evidence_invalid", "promotion contract digest is invalid"
+        )
     if raw.get("profile_revision") != PROMOTION_PROFILE_REVISION:
         raise ModelArtifactUnavailable(
             "promotion_evidence_invalid", "promotion receipt profile is unsupported"
@@ -663,11 +713,17 @@ def _verify_promotion_entry(
     if not isinstance(raw, dict):  # pragma: no cover - narrowed by validator
         raise ModelArtifactUnavailable("promotion_evidence_invalid", "receipt is invalid")
     receipt_path = _canonical_declared_artifact_path(raw["path"], manifest_path.parent.resolve())
+    contract_digest = promotion_contract_sha256(entry)
+    if raw["artifact_contract_sha256"] != contract_digest:
+        raise ModelArtifactUnavailable(
+            "promotion_evidence_invalid", "manifest contract differs from promotion evidence"
+        )
     try:
         verify_promotion_receipt(
             receipt_path,
             expected_sha256=raw["sha256"],
             artifact_sha256=artifact_sha256,
+            artifact_contract_sha256=contract_digest,
         )
     except PromotionEvidenceError as exc:
         raise ModelArtifactUnavailable(
@@ -1049,9 +1105,7 @@ def _verify_model_artifact(
                 and manifest_hash == cached.receipt.manifest_sha256
             ):
                 if usage == "deployment" and kind == "vision":
-                    _verify_promotion_entry(
-                        cached.receipt.entry, canonical_manifest, artifact_hash
-                    )
+                    _verify_promotion_entry(cached.receipt.entry, canonical_manifest, artifact_hash)
                 return cached.receipt
         _RECEIPT_CACHE.pop(cache_key, None)
 
@@ -1085,6 +1139,7 @@ def _verify_model_artifact(
             raise ModelArtifactUnavailable(
                 "sha256_mismatch", "artifact digest differs from the manifest"
             )
+        _reject_external_onnx_data(canonical_path, artifact_before.size)
         if usage == "deployment" and kind == "vision":
             _verify_promotion_entry(entry, canonical_manifest, actual_sha)
 

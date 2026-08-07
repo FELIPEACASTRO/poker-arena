@@ -7,7 +7,9 @@ import scripts.scan_secrets as scanner
 from scripts.scan_secrets import main, scan
 
 
-def test_scanner_detects_provider_and_generic_secrets_without_storing_values(tmp_path: Path) -> None:
+def test_scanner_detects_provider_and_generic_secrets_without_storing_values(
+    tmp_path: Path,
+) -> None:
     provider_secret = "hf_" + "A1b2C3d4E5f6G7h8I9j0K1l2"
     generic_secret = "RealCredentialValue987654321"
     source = tmp_path / "leak.txt"
@@ -22,7 +24,9 @@ def test_scanner_detects_provider_and_generic_secrets_without_storing_values(tmp
         ("huggingface_token", "leak.txt", 1),
         ("credential_assignment", "leak.txt", 2),
     }
-    assert all(provider_secret not in repr(item) and generic_secret not in repr(item) for item in findings)
+    assert all(
+        provider_secret not in repr(item) and generic_secret not in repr(item) for item in findings
+    )
 
 
 def test_scanner_accepts_placeholders_and_ignores_dependency_tree(tmp_path: Path) -> None:
@@ -46,6 +50,62 @@ def test_scanner_accepts_placeholders_and_ignores_dependency_tree(tmp_path: Path
 
     assert scan(tmp_path) == []
     assert main(["--root", str(tmp_path)]) == 0
+
+
+def test_placeholder_waiver_requires_complete_strict_syntax(tmp_path: Path) -> None:
+    values = [
+        "{RealProductionCredential123456",
+        "[RealProductionCredential123456",
+        "${prefix}RealSecret123456",
+        "<ActualSecretValue123456",
+    ]
+    (tmp_path / "secrets.env").write_text(
+        "\n".join(f"POKER_API_TOKEN={value}" for value in values) + "\n",
+        encoding="utf-8",
+    )
+
+    assert (
+        len([finding for finding in scan(tmp_path) if finding.kind == "credential_assignment"]) == 4
+    )
+
+
+def test_runtime_secret_reference_waiver_rejects_appended_literal(tmp_path: Path) -> None:
+    assignment_name = "API_" + "TOKEN"
+    (tmp_path / "unsafe.py").write_text(
+        f"{assignment_name} = _required_secret('{assignment_name}') + "
+        "'ActualProductionSuffix123456'\n",
+        encoding="utf-8",
+    )
+
+    assert [(item.kind, item.path) for item in scan(tmp_path)] == [
+        ("credential_assignment", "unsafe.py")
+    ]
+
+
+def test_balanced_delimiters_do_not_waive_production_looking_values(tmp_path: Path) -> None:
+    values = [
+        "<ActualProductionPassword123456>",
+        "{ActualProductionPassword123456}",
+        "[ActualProductionPassword123456]",
+        "(ActualProductionPassword123456)",
+    ]
+    (tmp_path / "secrets.env").write_text(
+        "\n".join(f"POKER_API_TOKEN={value}" for value in values) + "\n",
+        encoding="utf-8",
+    )
+
+    assert (
+        len([finding for finding in scan(tmp_path) if finding.kind == "credential_assignment"]) == 4
+    )
+
+
+def test_scanner_covers_compose_list_assignment(tmp_path: Path) -> None:
+    (tmp_path / "compose.yaml").write_text(
+        "services:\n  api:\n    environment:\n      - POKER_API_TOKEN=ActualProductionPassword123456\n",
+        encoding="utf-8",
+    )
+
+    assert [(item.kind, item.line) for item in scan(tmp_path)] == [("credential_assignment", 4)]
 
 
 def test_scanner_ignores_only_named_generated_runtime_directories(tmp_path: Path) -> None:
@@ -74,9 +134,7 @@ def test_scanner_does_not_skip_cache_lookalike_directories(tmp_path: Path) -> No
     secret = "CacheLookalikeCredential987654321"
     lookalike = tmp_path / ".npm-cache-malicious"
     lookalike.mkdir()
-    (lookalike / "settings.env").write_text(
-        f"POKER_API_TOKEN={secret}\n", encoding="utf-8"
-    )
+    (lookalike / "settings.env").write_text(f"POKER_API_TOKEN={secret}\n", encoding="utf-8")
 
     assert ("credential_assignment", ".npm-cache-malicious/settings.env") in {
         (item.kind, item.path) for item in scan(tmp_path)
@@ -145,21 +203,19 @@ def test_scanner_rejects_source_reparse_point_without_following_it(
 
 
 def test_scanner_covers_python_json_xml_jwt_and_utf16(tmp_path: Path) -> None:
-    opaque = "OpaquePokerCredential9876543210"
+    runtime_secret = "OpaquePokerCredential9876543210"
     jwt = "eyJ" + "A" * 12 + "." + "B" * 12 + "." + "C" * 12
     (tmp_path / "settings.py").write_text(
-        f'POKER_API_TOKEN = "{opaque}"\n', encoding="utf-8"
+        f'POKER_API_TOKEN = "{runtime_secret}"\n', encoding="utf-8"
     )
     (tmp_path / "settings.json").write_text(
-        f'{{"POKER_API_TOKEN":"{opaque}"}}', encoding="utf-8"
+        f'{{"POKER_API_TOKEN":"{runtime_secret}"}}', encoding="utf-8"
     )
     (tmp_path / "settings.xml").write_text(
-        f"<config><API_TOKEN>{opaque}</API_TOKEN></config>", encoding="utf-8"
+        f"<config><API_TOKEN>{runtime_secret}</API_TOKEN></config>", encoding="utf-8"
     )
     (tmp_path / "authorization.md").write_text(f"Authorization: Bearer {jwt}", encoding="utf-8")
-    (tmp_path / "windows.txt").write_text(
-        f"POKER_API_TOKEN={opaque}\n", encoding="utf-16"
-    )
+    (tmp_path / "windows.txt").write_text(f"POKER_API_TOKEN={runtime_secret}\n", encoding="utf-16")
 
     found = {(item.kind, item.path) for item in scan(tmp_path)}
 
@@ -223,9 +279,7 @@ def test_scanner_covers_short_provider_js_process_env_and_extensionless_sources(
         f'const API_KEY = "{javascript}";\nprocess.env.OPENROUTER_API_KEY = "{router}";\n',
         encoding="utf-8",
     )
-    (tmp_path / "Makefile").write_text(
-        f"DATABASE_URL={database}\n", encoding="utf-8"
-    )
+    (tmp_path / "Makefile").write_text(f"DATABASE_URL={database}\n", encoding="utf-8")
 
     found = {(item.kind, item.path, item.line) for item in scan(tmp_path)}
 
@@ -242,15 +296,9 @@ def test_scanner_does_not_waive_low_diversity_substrings_or_spoofed_binary_suffi
 ) -> None:
     repetitive = "T" * 32
     marker_substring = "prod-" + "example-company-credential-42"
-    (tmp_path / "repetitive.conf").write_text(
-        f"POKER_API_TOKEN={repetitive}\n", encoding="utf-8"
-    )
-    (tmp_path / "substring.conf").write_text(
-        f"API_KEY={marker_substring}\n", encoding="utf-8"
-    )
-    (tmp_path / "renamed.png").write_text(
-        f"CLOUDFLARE_API_TOKEN={repetitive}\n", encoding="utf-8"
-    )
+    (tmp_path / "repetitive.conf").write_text(f"POKER_API_TOKEN={repetitive}\n", encoding="utf-8")
+    (tmp_path / "substring.conf").write_text(f"API_KEY={marker_substring}\n", encoding="utf-8")
+    (tmp_path / "renamed.png").write_text(f"CLOUDFLARE_API_TOKEN={repetitive}\n", encoding="utf-8")
     (tmp_path / "real.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 64)
 
     found = {(item.kind, item.path) for item in scan(tmp_path)}

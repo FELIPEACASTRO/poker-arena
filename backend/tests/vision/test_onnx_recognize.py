@@ -87,10 +87,7 @@ def test_button_selection_prefers_highest_confidence_and_abstains_on_conflict():
         100.0,
         100.0,
     )
-    assert (
-        _select_button([(0.95, 100.0, 100.0), (0.90, 800.0, 500.0)], (900, 600))
-        is None
-    )
+    assert _select_button([(0.95, 100.0, 100.0), (0.90, 800.0, 500.0)], (900, 600)) is None
 
 
 def test_decode_recupera_coordenadas_e_classes_originais():

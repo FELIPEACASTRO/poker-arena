@@ -9,11 +9,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import platform
 import statistics
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from importlib.metadata import distributions
 from pathlib import Path
 from typing import Any, Final
@@ -22,6 +23,7 @@ from poker_arena.application.copilot import review_spot
 
 P95_BUDGET_MS: Final = 2_500.0
 RECEIPT_MAX_AGE_DAYS: Final = 30
+CANONICAL_RECEIPT_ITERATIONS: Final = 7
 SCENARIOS: Final = (
     {
         "name": "river-heads-up-exact",
@@ -75,6 +77,27 @@ SCENARIOS: Final = (
     },
 )
 BACKEND_ROOT: Final = Path(__file__).resolve().parents[1]
+RECEIPT_PATH: Final = Path(__file__).with_name("copilot_performance_evidence") / "metrics.json"
+
+
+def _reject_duplicate_receipt_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("receipt de desempenho contém chave JSON duplicada")
+        result[key] = value
+    return result
+
+
+def _reject_nonfinite_receipt_constant(value: str) -> None:
+    raise ValueError(f"receipt de desempenho contém número não finito: {value}")
+
+
+def _parse_finite_receipt_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError("receipt de desempenho contém número não finito")
+    return parsed
 
 
 def _bound_paths() -> tuple[Path, ...]:
@@ -129,6 +152,98 @@ def execution_environment() -> dict[str, Any]:
     }
 
 
+def _scenarios_sha256() -> str:
+    return hashlib.sha256(
+        json.dumps(SCENARIOS, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def validate_versioned_receipt(
+    path: Path = RECEIPT_PATH, *, now: datetime | None = None
+) -> dict[str, Any]:
+    """Validate the release receipt without relying on optimized-away assertions."""
+
+    try:
+        receipt = json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=_reject_duplicate_receipt_keys,
+            parse_constant=_reject_nonfinite_receipt_constant,
+            parse_float=_parse_finite_receipt_float,
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError, OverflowError) as exc:
+        raise ValueError("receipt de desempenho ausente ou inválido") from exc
+    if not isinstance(receipt, dict) or receipt.get("schema_version") != 5:
+        raise ValueError("schema do receipt de desempenho é inválido")
+    if receipt.get("implementation_binding") != implementation_binding():
+        raise ValueError("receipt de desempenho não corresponde ao código atual")
+    if receipt.get("scenarios_sha256") != _scenarios_sha256():
+        raise ValueError("receipt de desempenho não corresponde aos cenários atuais")
+    if receipt.get("environment") != execution_environment():
+        raise ValueError("receipt de desempenho não corresponde ao ambiente instalado")
+    try:
+        created = datetime.fromisoformat(receipt["created_at_utc"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("timestamp do receipt de desempenho é inválido") from exc
+    reference = now or datetime.now(UTC)
+    if created.tzinfo is None or not timedelta(0) <= reference - created <= timedelta(
+        days=RECEIPT_MAX_AGE_DAYS
+    ):
+        raise ValueError("receipt de desempenho está no futuro ou expirado")
+    if receipt.get("scope") != "local_post_hand_latency_only_not_strategy_quality":
+        raise ValueError("escopo do receipt de desempenho é inválido")
+    if receipt.get("p95_budget_ms") != P95_BUDGET_MS:
+        raise ValueError("budget do receipt de desempenho é inválido")
+    if receipt.get("warmup_runs_per_scenario") != 1:
+        raise ValueError("política de warm-up do receipt de desempenho é inválida")
+    scenarios = receipt.get("scenarios")
+    if not isinstance(scenarios, list) or len(scenarios) != len(SCENARIOS):
+        raise ValueError("cenários do receipt de desempenho estão incompletos")
+    if [row.get("name") for row in scenarios if isinstance(row, dict)] != [
+        scenario["name"] for scenario in SCENARIOS
+    ]:
+        raise ValueError("identidade/ordem dos cenários de desempenho divergiu")
+    derived_acceptance: list[bool] = []
+    for row in scenarios:
+        if not isinstance(row, dict) or row.get("iterations") != CANONICAL_RECEIPT_ITERATIONS:
+            raise ValueError("amostragem do receipt de desempenho é inválida")
+        samples = row.get("samples_ms")
+        if (
+            not isinstance(samples, list)
+            or len(samples) != CANONICAL_RECEIPT_ITERATIONS
+            or any(
+                not isinstance(value, (int, float))
+                or isinstance(value, bool)
+                or not math.isfinite(value)
+                or value < 0
+                for value in samples
+            )
+        ):
+            raise ValueError("amostras brutas do receipt de desempenho são inválidas")
+        latency = row.get("latency_ms")
+        expected_latency = {
+            "min": min(samples),
+            "median": round(statistics.median(samples), 3),
+            "p95_nearest_rank": round(nearest_rank_p95(samples), 3),
+            "max": max(samples),
+        }
+        if latency != expected_latency:
+            raise ValueError("resumo de latência não corresponde às amostras brutas")
+        within_budget = expected_latency["p95_nearest_rank"] <= P95_BUDGET_MS
+        if row.get("within_p95_budget") is not within_budget:
+            raise ValueError("flag de latência não corresponde às amostras brutas")
+        if not within_budget:
+            raise ValueError("cenário excede o contrato de latência")
+        derived_acceptance.append(within_budget)
+    acceptance = receipt.get("acceptance")
+    if (
+        not isinstance(acceptance, dict)
+        or acceptance.get("all_scenarios_within_budget") is not all(derived_acceptance)
+        or not all(derived_acceptance)
+    ):
+        raise ValueError("receipt de desempenho não foi aprovado")
+    return receipt
+
+
 def nearest_rank_p95(values: list[float]) -> float:
     """Return the deterministic nearest-rank P95 used by the receipt."""
     if not values:
@@ -152,15 +267,17 @@ def _run_scenario(scenario: dict[str, Any], iterations: int) -> dict[str, Any]:
         latencies.append((time.perf_counter() - started) * 1_000)
     if view is None:  # defensive: benchmark() already rejects a zero iteration count
         raise RuntimeError("no measured copilot result")
-    p95 = nearest_rank_p95(latencies)
+    samples = [round(value, 3) for value in latencies]
+    p95 = nearest_rank_p95(samples)
     return {
         "name": scenario["name"],
         "iterations": iterations,
+        "samples_ms": samples,
         "latency_ms": {
-            "min": round(min(latencies), 3),
-            "median": round(statistics.median(latencies), 3),
+            "min": min(samples),
+            "median": round(statistics.median(samples), 3),
             "p95_nearest_rank": round(p95, 3),
-            "max": round(max(latencies), 3),
+            "max": max(samples),
         },
         "equity_method": view.equity_method,
         "equity_trials": view.equity_trials,
@@ -177,14 +294,12 @@ def benchmark(iterations: int) -> dict[str, Any]:
         raise RuntimeError("machine and processor identity must be reported for latency evidence")
     rows = [_run_scenario(dict(scenario), iterations) for scenario in SCENARIOS]
     return {
-        "schema_version": 4,
+        "schema_version": 5,
         "created_at_utc": datetime.now(UTC).isoformat(),
         "scope": "local_post_hand_latency_only_not_strategy_quality",
         "environment": environment,
         "implementation_binding": implementation_binding(),
-        "scenarios_sha256": hashlib.sha256(
-            json.dumps(SCENARIOS, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest(),
+        "scenarios_sha256": _scenarios_sha256(),
         "warmup_runs_per_scenario": 1,
         "p95_budget_ms": P95_BUDGET_MS,
         "scenarios": rows,
@@ -200,7 +315,7 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path(__file__).with_name("copilot_performance_evidence") / "metrics.json",
+        default=RECEIPT_PATH,
     )
     args = parser.parse_args()
     receipt = benchmark(args.iterations)

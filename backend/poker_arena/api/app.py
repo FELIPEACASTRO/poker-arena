@@ -102,6 +102,11 @@ MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_MULTIPART_OVERHEAD_BYTES = 256 * 1024
 MAX_IMAGE_PIXELS = 16_000_000
 ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp"}
+IMAGE_FORMAT_BY_MEDIA_TYPE = {
+    "image/png": "PNG",
+    "image/jpeg": "JPEG",
+    "image/webp": "WEBP",
+}
 LOCAL_ORIGIN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 PROXY_USER_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9@._+:-]{0,253}$")
 MAX_WEBSOCKET_MESSAGE_BYTES = 4096
@@ -120,6 +125,10 @@ MAX_API_TOKEN_LENGTH = 512
 
 
 class _RequestBodyTooLarge(Exception):
+    pass
+
+
+class _ImageMediaTypeMismatch(ValueError):
     pass
 
 
@@ -400,15 +409,35 @@ def _configured_limit(name: str, default: int) -> int:
     except ValueError:
         LOGGER.warning("Ignoring invalid %s=%r", name, raw)
         return default
-    return value if value > 0 else default
+    # Overrides may lower an audited resource limit, but never raise its hard ceiling.
+    # A huge Python integer would otherwise reach ``UploadFile.read`` and overflow its
+    # C-sized argument, turning a tiny request into HTTP 500 while disabling the guard.
+    if not 0 < value <= default:
+        LOGGER.warning("Ignoring unsafe %s=%r; hard maximum is %d", name, raw, default)
+        return default
+    return value
 
 
-def _decode_image(data: bytes) -> PILImage:
+def _configured_bool(name: str, *, default: bool) -> bool:
+    raw = os.environ.get(name, "1" if default else "0")
+    if raw not in {"0", "1"}:
+        raise RuntimeError(f"{name} deve ser 0 ou 1")
+    return raw == "1"
+
+
+def _decode_image(data: bytes, media_type: str) -> PILImage:
     from PIL import Image as PILImage
     from PIL import UnidentifiedImageError
 
     try:
         with PILImage.open(io.BytesIO(data)) as source:
+            expected_format = IMAGE_FORMAT_BY_MEDIA_TYPE[media_type]
+            if source.format != expected_format:
+                raise _ImageMediaTypeMismatch(
+                    f"conteúdo {source.format or 'desconhecido'} diverge do tipo {media_type}"
+                )
+            if getattr(source, "n_frames", 1) != 1:
+                raise ValueError("screenshots animados ou com múltiplos frames não são aceitos")
             width, height = source.size
             if width <= 0 or height <= 0:
                 raise ValueError("imagem sem dimensões válidas")
@@ -488,7 +517,11 @@ def _review_image(
         if baseline_problem not in sanity.problems:
             sanity.problems.append(baseline_problem)
 
-    remote_vlm_enabled = os.environ.get("POKER_ENABLE_REMOTE_VLM", "0") == "1"
+    try:
+        remote_vlm_enabled = _configured_bool("POKER_ENABLE_REMOTE_VLM", default=False)
+    except RuntimeError as exc:
+        remote_vlm_enabled = False
+        sanity.warnings.append(f"fallback VLM remoto bloqueado: {exc}")
     if not sanity.ok and remote_vlm_enabled:
         if _configured_api_token() is None:
             sanity.warnings.append(
@@ -636,10 +669,7 @@ def _review_image(
 
 
 def _public_deployment_enabled() -> bool:
-    raw = os.environ.get("POKER_PUBLIC_DEPLOYMENT", "0")
-    if raw not in {"0", "1"}:
-        raise RuntimeError("POKER_PUBLIC_DEPLOYMENT deve ser 0 ou 1")
-    return raw == "1"
+    return _configured_bool("POKER_PUBLIC_DEPLOYMENT", default=False)
 
 
 def _configured_browser_origins(*, public: bool) -> tuple[str, ...]:
@@ -960,7 +990,7 @@ def _warmup_vision() -> None:
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Aquece a visão num thread daemon ao subir (não bloqueia o boot; some com o processo).
     Desligável com POKER_WARMUP=0 (ex.: testes que não tocam na visão)."""
-    if os.environ.get("POKER_WARMUP", "1") != "0":
+    if _configured_bool("POKER_WARMUP", default=True):
         threading.Thread(target=_warmup_vision, name="vision-warmup", daemon=True).start()
     yield
 
@@ -1143,7 +1173,12 @@ def create_app() -> FastAPI:
         from ..application.match_log import MatchLogCorruptionError, audit_log_health
         from ..vision import vision_model_available
 
-        remote_vlm_enabled = os.environ.get("POKER_ENABLE_REMOTE_VLM", "0") == "1"
+        try:
+            remote_vlm_enabled = _configured_bool("POKER_ENABLE_REMOTE_VLM", default=False)
+            remote_vlm_flag_ready = True
+        except RuntimeError:
+            remote_vlm_enabled = False
+            remote_vlm_flag_ready = False
         token_source_configured = bool(
             os.environ.get("POKER_API_TOKEN") or os.environ.get("POKER_API_TOKEN_FILE")
         )
@@ -1157,8 +1192,9 @@ def create_app() -> FastAPI:
         except ValueError:
             remote_consent_ttl_ready = False
         remote_provider_ready = _remote_vlm_provider_available() if remote_vlm_enabled else False
-        remote_vlm_ready = not remote_vlm_enabled or (
-            remote_provider_ready and remote_api_token_ready and remote_consent_ttl_ready
+        remote_vlm_ready = remote_vlm_flag_ready and (
+            not remote_vlm_enabled
+            or (remote_provider_ready and remote_api_token_ready and remote_consent_ttl_ready)
         )
         try:
             audit_health = audit_log_health()
@@ -1176,7 +1212,7 @@ def create_app() -> FastAPI:
                 "configured"
                 if remote_vlm_enabled and remote_vlm_ready
                 else "misconfigured"
-                if remote_vlm_enabled
+                if remote_vlm_enabled or not remote_vlm_flag_ready
                 else "disabled"
             ),
             "remote_vlm_api_token": (
@@ -1269,7 +1305,11 @@ def create_app() -> FastAPI:
         """Issue a bounded, process-local nonce after explicit consent and authentication."""
 
         del req  # Literal[True] validation is the consent gate.
-        if os.environ.get("POKER_ENABLE_REMOTE_VLM", "0") != "1":
+        try:
+            remote_vlm_enabled = _configured_bool("POKER_ENABLE_REMOTE_VLM", default=False)
+        except RuntimeError as exc:
+            raise HTTPException(503, str(exc)) from exc
+        if not remote_vlm_enabled:
             raise HTTPException(503, "fallback VLM remoto está desabilitado")
         if _configured_api_token() is None:
             raise HTTPException(503, "POKER_API_TOKEN remoto ausente ou inválido")
@@ -1369,7 +1409,8 @@ def create_app() -> FastAPI:
         máquina, a imagem passa pela redação configurada; qualquer falha mantém abstain."""
         if strict is not True:
             raise HTTPException(422, "strict deve permanecer true")
-        if image.content_type not in ALLOWED_IMAGE_TYPES:
+        media_type = image.content_type
+        if media_type not in ALLOWED_IMAGE_TYPES:
             raise HTTPException(415, "tipo de imagem não permitido")
 
         limit = _configured_limit("POKER_MAX_IMAGE_BYTES", MAX_IMAGE_BYTES)
@@ -1378,7 +1419,9 @@ def create_app() -> FastAPI:
         if len(data) > limit:
             raise HTTPException(413, "imagem excede o limite de upload")
         try:
-            img = await run_in_threadpool(_decode_image, data)
+            img = await run_in_threadpool(_decode_image, data, media_type)
+        except _ImageMediaTypeMismatch as exc:
+            raise HTTPException(415, str(exc)) from exc
         except OverflowError as exc:
             raise HTTPException(413, str(exc)) from exc
         except (ValueError, OSError) as exc:

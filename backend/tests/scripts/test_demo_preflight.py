@@ -38,6 +38,11 @@ def test_release_decision_is_go_only_for_the_declared_local_scope(
     monkeypatch.setattr(demo_preflight, "scan", lambda _root: [])
     monkeypatch.setattr(
         demo_preflight,
+        "_require_performance_receipt",
+        lambda: {"max_p95_ms": 1_000.0, "budget_ms": 2_500.0},
+    )
+    monkeypatch.setattr(
+        demo_preflight,
         "_exercise_real_image_route",
         lambda: {"exact_state": True, "decision_blocked": True},
     )
@@ -54,6 +59,24 @@ def test_release_decision_is_go_only_for_the_declared_local_scope(
         "REAL_MONEY_PLAY",
     ]
     assert result["vision"]["decision_blocked"] is True
+    assert result["performance"]["max_p95_ms"] == 1_000.0
+
+
+def test_preflight_blocks_an_expired_or_source_stale_performance_receipt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(demo_preflight, "_require_local_offline_profile", lambda: None)
+    monkeypatch.setattr(demo_preflight, "_require_local_dependencies", lambda: None)
+    monkeypatch.setattr(demo_preflight, "validate_distribution", lambda *args, **kwargs: None)
+    monkeypatch.setattr(demo_preflight, "scan", lambda _root: [])
+    monkeypatch.setattr(
+        demo_preflight,
+        "validate_versioned_receipt",
+        lambda _path: (_ for _ in ()).throw(ValueError("receipt de desempenho está expirado")),
+    )
+
+    with pytest.raises(demo_preflight.DemoPreflightError, match="expirado"):
+        demo_preflight.run_preflight()
 
 
 def test_failed_preflight_emits_blocked_release_decision(
@@ -91,6 +114,26 @@ def test_demo_profile_rejects_remote_or_authenticated_configuration(
 
     with pytest.raises(demo_preflight.DemoPreflightError, match="local"):
         demo_preflight._require_local_offline_profile()
+
+
+@pytest.mark.parametrize("value", ["", "00", "false", "talvez"])
+def test_demo_profile_rejects_ambiguous_remote_vlm_flag(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("POKER_ENABLE_REMOTE_VLM", value)
+
+    with pytest.raises(demo_preflight.DemoPreflightError, match="POKER_ENABLE_REMOTE_VLM"):
+        demo_preflight._require_local_offline_profile()
+
+
+@pytest.mark.parametrize("value", ["", "yes", "talvez"])
+def test_demo_profile_rejects_ambiguous_warmup_flag(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("POKER_WARMUP", value)
+
+    with pytest.raises(demo_preflight.DemoPreflightError, match="POKER_WARMUP deve ser 0 ou 1"):
+        demo_preflight.run_preflight()
 
 
 @pytest.mark.parametrize("corruption", ["extra-field", "external-claim", "digest"])

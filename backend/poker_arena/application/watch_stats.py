@@ -31,6 +31,8 @@ from collections import deque
 _AGGR = {"raise", "all_in"}  # ações agressivas
 _VPIP = {"call", "raise", "all_in"}  # entrou voluntariamente no pote
 _POSTFLOP = {"flop", "turn", "river"}
+_STREETS = {"preflop", *_POSTFLOP}
+_ACTIONS = {"fold", "check", "call", "raise", "all_in"}
 LIVE_TIMELINE_LIMIT = 500
 
 # regiões da mesa (agrega posições p/ amostras estatisticamente úteis)
@@ -91,6 +93,8 @@ class WatchStats:
         self._pfr_hand: set[str] = set()
         self._saw_flop_hand: set[str] = set()
         self._bucket_hand: dict[str, str] = {}  # player_id -> região nesta mão
+        self._hand_player_ids: set[str] = set()
+        self._hand_open = False
 
     def _ensure(self, player_id: str, name: str, level: str, seat: int) -> None:
         if player_id not in self.per:
@@ -103,6 +107,19 @@ class WatchStats:
         }  # cadeira mais recente
 
     def begin_hand(self, seats: list[dict]) -> None:
+        if self._hand_open:
+            raise ValueError("uma nova mão estatística não pode substituir a mão ainda aberta")
+        seat_numbers = [seat.get("seat") for seat in seats]
+        if any(
+            not isinstance(seat, int) or isinstance(seat, bool) or seat < 0 for seat in seat_numbers
+        ) or len(seat_numbers) != len(set(seat_numbers)):
+            raise ValueError("uma mão estatística exige cadeiras inteiras, únicas e não negativas")
+        if any(type(seat.get("start")) is not int or seat["start"] < 0 for seat in seats):
+            raise ValueError("stack inicial deve ser inteiro não negativo")
+        player_ids = [_player_key(seat) for seat in seats]
+        if len(player_ids) != len(set(player_ids)):
+            raise ValueError("uma mão estatística não pode repetir a identidade de jogador")
+        self._hand_player_ids = set(player_ids)
         self._vpip_hand.clear()
         self._pfr_hand.clear()
         self._saw_flop_hand.clear()
@@ -121,18 +138,29 @@ class WatchStats:
             self._bucket_hand[player_id] = bucket
             p["pos"][bucket][0] += 1
         self._start_set = True
+        self._hand_open = True
 
     def record_rebuy(self, player_id: str, amount: int) -> None:
         """Registra capital novo antes de restaurar o stack de um jogador quebrado."""
-        if player_id in self.per:
-            self.per[player_id]["buy_in_total"] += amount
+        if self._hand_open:
+            raise ValueError("recompra não pode ser registrada durante uma mão aberta")
+        if player_id not in self.per:
+            raise ValueError("recompra recebida para jogador desconhecido")
+        if type(amount) is not int or amount <= 0:
+            raise ValueError("valor de recompra deve ser inteiro positivo")
+        self.per[player_id]["buy_in_total"] += amount
 
     def street_started(self, street: str, contenders: list[str]) -> None:
         """Marca o flop pelo evento da mesa, ainda que um sobrevivente não volte a agir."""
+        if not self._hand_open:
+            raise ValueError("rua recebida sem uma mão estatística aberta")
+        if street not in _POSTFLOP:
+            raise ValueError("rua estatística inválida")
+        unknown = set(contenders) - self._hand_player_ids
+        if unknown:
+            raise ValueError("rua recebida para jogador desconhecido")
         if street == "flop":
-            self._saw_flop_hand.update(
-                player_id for player_id in contenders if player_id in self.per
-            )
+            self._saw_flop_hand.update(contenders)
 
     def action(
         self,
@@ -142,9 +170,15 @@ class WatchStats:
         *,
         aggressive: bool | None = None,
     ) -> None:
-        p = self.per.get(player_id)
-        if p is None:
-            return
+        if not self._hand_open:
+            raise ValueError("ação recebida sem uma mão estatística aberta")
+        if player_id not in self._hand_player_ids:
+            raise ValueError("ação recebida para jogador ausente da mão atual")
+        if action_type not in _ACTIONS or street not in _STREETS:
+            raise ValueError("ação ou rua estatística inválida")
+        if aggressive is not None and type(aggressive) is not bool:
+            raise ValueError("flag de agressão deve ser booleana")
+        p = self.per[player_id]
         is_aggressive = action_type in _AGGR if aggressive is None else aggressive
         p["actions"] += 1
         if is_aggressive:
@@ -167,6 +201,32 @@ class WatchStats:
         showdown: bool,
         contenders: list[str] | None = None,
     ) -> None:
+        if not self._hand_open:
+            raise ValueError("finalização recebida sem uma mão estatística aberta")
+        if type(pot) is not int or pot < 0 or type(showdown) is not bool:
+            raise ValueError("pote/showdown da finalização são inválidos")
+        winner_ids = [_player_key(winner) for winner in winners]
+        result_ids = [_player_key(item) for item in result]
+        contender_ids = list(contenders or [])
+        if len(winner_ids) != len(set(winner_ids)) or len(contender_ids) != len(set(contender_ids)):
+            raise ValueError("finalização repete vencedor ou contender")
+        referenced_ids = {*winner_ids, *result_ids, *contender_ids}
+        if referenced_ids - self._hand_player_ids:
+            raise ValueError("finalização recebida para jogador ausente da mão atual")
+        if len(result_ids) != len(set(result_ids)) or set(result_ids) != self._hand_player_ids:
+            raise ValueError("resultado final não cobre exatamente os jogadores da mão atual")
+        for item in [*winners, *result]:
+            player_id = _player_key(item)
+            expected = self.info[player_id]
+            if item.get("seat") != expected["seat"] or item.get("name") != expected["name"]:
+                raise ValueError("finalização não corresponde à identidade/seat da mão atual")
+        if any(
+            type(item.get("end")) is not int
+            or item["end"] < 0
+            or type(item.get("delta")) is not int
+            for item in result
+        ):
+            raise ValueError("stack/delta finais devem ser inteiros e o stack não negativo")
         self.hands += 1
         if showdown:
             self.showdowns += 1
@@ -175,9 +235,7 @@ class WatchStats:
             self.biggest_pot_winner = winners[0]["name"] if winners else None
         # quem foi all-in cedo pode não ter agido pós-flop, mas disputou o showdown
         if showdown and contenders:
-            self._saw_flop_hand.update(
-                player_id for player_id in contenders if player_id in self.per
-            )
+            self._saw_flop_hand.update(contenders)
         for player_id in self._vpip_hand:
             if player_id in self.per:
                 self.per[player_id]["vpip"] += 1
@@ -193,12 +251,12 @@ class WatchStats:
         for player_id in self._saw_flop_hand:
             if player_id in self.per:
                 self.per[player_id]["saw_flop"] += 1
-        winner_ids = {_player_key(w) for w in winners}
+        winner_ids_set = set(winner_ids)
         if showdown and contenders:
             for player_id in contenders:
                 if player_id in self.per:
                     self.per[player_id]["wtsd"] += 1
-                    if player_id in winner_ids:
+                    if player_id in winner_ids_set:
                         self.per[player_id]["wsd"] += 1
         for w in winners:
             player_id = _player_key(w)
@@ -206,6 +264,7 @@ class WatchStats:
                 self.per[player_id]["hands_won"] += 1
         for r in result:
             player_id = _player_key(r)
-            if player_id in self.per:
-                self.per[player_id]["stack"] = r["end"]
+            self.per[player_id]["stack"] = r["end"]
         self.timeline.append({"stacks": {_player_key(r): r["end"] for r in result}})
+        self._hand_player_ids.clear()
+        self._hand_open = False

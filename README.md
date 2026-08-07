@@ -176,10 +176,11 @@ autoriza uso multi-tenant entre partes mutuamente desconfiadas.
 | `WS` | `/tables/{id}/ws` | estado em tempo real (push a cada ação) |
 
 Erros do domínio viram HTTP: inexistente → **404**; ação ilegal/inválida → **400**;
-conflito de versão/idempotência → **409**. Upload de imagem rejeitado por tamanho ou tipo
-retorna **413** ou **415**; mutação cross-site de navegador retorna **403**. `/ready` e o
-recurso de consentimento podem retornar **503** quando o VLM remoto foi habilitado, mas
-está incompleto. Corpos, parâmetros e cabeçalhos que não satisfazem o schema
+conflito de versão/idempotência → **409**. Upload acima do teto retorna **413**; MIME não
+permitido ou divergente dos bytes decodificados retorna **415**; screenshot animado/multiframe
+retorna **400**. Overrides podem somente reduzir os tetos auditados. Mutação cross-site de
+navegador retorna **403**. `/ready` e o recurso de consentimento podem retornar **503** quando
+o VLM remoto foi habilitado, está incompleto ou sua flag é ambígua. Corpos, parâmetros e cabeçalhos que não satisfazem o schema
 OpenAPI retornam **422**; esse erro de contrato é distinto de uma ação de poker ilegal.
 Criação e mutações de mesa aceitam `Idempotency-Key`; nas mutações de uma mesa existente,
 `If-Match` protege contra versão obsoleta e a resposta expõe `ETag`/versão. `POST /tables`

@@ -3308,7 +3308,7 @@
                 }
               }
             },
-            "description": "Tipo de imagem não permitido; use PNG, JPEG ou WebP.",
+            "description": "Tipo de imagem não permitido ou conteúdo decodificado divergente do MIME declarado; use PNG, JPEG ou WebP.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/CacheControl"

@@ -6,6 +6,8 @@
 - Tilt: Palomäki et al. (2014) — agressão sobe nas mãos seguintes a perda grande.
 """
 
+import pytest
+
 from poker_arena.application.analysis import _blockers, _realization
 from poker_arena.application.reasoning import _gto_numbers
 from poker_arena.application.watch_stats import LIVE_TIMELINE_LIMIT, WatchStats, bucket_of
@@ -76,6 +78,10 @@ def _seats():
     ]
 
 
+def _results(seats):
+    return [{**seat, "end": seat["start"], "delta": 0} for seat in seats]
+
+
 def test_watch_stats_uses_player_identity_when_a_name_is_reused():
     ws = WatchStats()
     first = {
@@ -102,6 +108,84 @@ def test_watch_stats_uses_player_identity_when_a_name_is_reused():
     assert ws.per[replacement["player_id"]]["hands_dealt"] == 1
     assert ws.per[replacement["player_id"]]["hands_won"] == 0
     assert ws.per[replacement["player_id"]]["start"] == 500
+
+
+def test_watch_stats_rejects_out_of_order_or_unknown_events_instead_of_dropping_them():
+    ws = WatchStats()
+
+    duplicate_seat = [{**_seats()[0]}, {**_seats()[1], "seat": 0}]
+    with pytest.raises(ValueError, match="cadeiras inteiras, únicas"):
+        ws.begin_hand(duplicate_seat)
+    with pytest.raises(ValueError, match="stack inicial"):
+        ws.begin_hand([{**_seats()[0], "start": float("nan")}])
+
+    with pytest.raises(ValueError, match="ação recebida sem"):
+        ws.action("missing", "check", "preflop")
+
+    ws.begin_hand(_seats()[:2])
+    with pytest.raises(ValueError, match="não pode substituir"):
+        ws.begin_hand(_seats()[:2])
+    with pytest.raises(ValueError, match="ausente da mão atual"):
+        ws.action("missing", "check", "preflop")
+    with pytest.raises(ValueError, match="ausente da mão atual"):
+        ws.finish_hand([], 0, [{"name": "missing", "end": 0}], showdown=False)
+    with pytest.raises(ValueError, match="durante uma mão aberta"):
+        ws.record_rebuy("A", 1000)
+    with pytest.raises(ValueError, match="ação ou rua estatística inválida"):
+        ws.action("A", "teleport", "preflop")
+    with pytest.raises(ValueError, match="rua estatística inválida"):
+        ws.street_started("showdown", ["A", "B"])
+    repeated_winner = {"seat": 0, "name": "A"}
+    with pytest.raises(ValueError, match="repete vencedor ou contender"):
+        ws.finish_hand(
+            [repeated_winner, repeated_winner],
+            0,
+            _results(_seats()[:2]),
+            showdown=False,
+        )
+    with pytest.raises(ValueError, match="repete vencedor ou contender"):
+        ws.finish_hand(
+            [],
+            0,
+            _results(_seats()[:2]),
+            showdown=True,
+            contenders=["A", "A"],
+        )
+    with pytest.raises(ValueError, match="identidade/seat"):
+        ws.finish_hand(
+            [{"seat": 99, "name": "Mallory", "player_id": "A"}],
+            10,
+            _results(_seats()[:2]),
+            showdown=False,
+        )
+    with pytest.raises(ValueError, match="pote/showdown"):
+        ws.finish_hand([], -1, _results(_seats()[:2]), showdown=False)
+    invalid_result = _results(_seats()[:2])
+    invalid_result[0]["end"] = float("nan")
+    with pytest.raises(ValueError, match="stack/delta finais"):
+        ws.finish_hand([], 0, invalid_result, showdown=False)
+
+    ws.finish_hand([], 0, _results(_seats()[:2]), showdown=False)
+    with pytest.raises(ValueError, match="inteiro positivo"):
+        ws.record_rebuy("A", -1)
+    with pytest.raises(ValueError, match="recompra recebida para jogador desconhecido"):
+        ws.record_rebuy("missing", 1000)
+
+
+def test_watch_stats_rejects_historical_player_absent_from_current_hand():
+    ws = WatchStats()
+    ws.begin_hand(_seats()[:2])
+    ws.finish_hand([], 0, _results(_seats()[:2]), showdown=False)
+    ws.begin_hand(_seats()[:1])
+
+    with pytest.raises(ValueError, match="ausente da mão atual"):
+        ws.action("B", "check", "preflop")
+    with pytest.raises(ValueError, match="jogador desconhecido"):
+        ws.street_started("flop", ["B"])
+    with pytest.raises(ValueError, match="ausente da mão atual"):
+        ws.finish_hand([], 0, _results(_seats()[:2]), showdown=False)
+
+    ws.finish_hand([], 0, _results(_seats()[:1]), showdown=False)
 
 
 def test_watch_stats_live_timeline_is_bounded_without_losing_total_hands():
@@ -155,7 +239,7 @@ def test_all_in_call_is_vpip_but_not_aggression_or_pfr():
     ws = WatchStats()
     ws.begin_hand(_seats())
     ws.action("A", "all_in", "preflop", aggressive=False)
-    ws.finish_hand([], 60, [], showdown=False)
+    ws.finish_hand([], 60, _results(_seats()), showdown=False)
 
     assert ws.per["A"]["vpip"] == 1
     assert ws.per["A"]["pfr"] == 0
@@ -165,7 +249,7 @@ def test_all_in_call_is_vpip_but_not_aggression_or_pfr():
 def test_late_joiner_uses_its_buy_in_as_profit_baseline():
     ws = WatchStats()
     ws.begin_hand(_seats()[:2])
-    ws.finish_hand([], 0, [], showdown=False)
+    ws.finish_hand([], 0, _results(_seats()[:2]), showdown=False)
 
     joined = {"seat": 2, "name": "D", "level": "random", "start": 500, "position": "BB"}
     ws.begin_hand([*_seats()[:2], joined])

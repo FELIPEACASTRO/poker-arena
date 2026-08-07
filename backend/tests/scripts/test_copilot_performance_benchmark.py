@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-import hashlib
 import json
-from datetime import UTC, datetime, timedelta
-from pathlib import Path
+from copy import deepcopy
+from datetime import datetime, timedelta
 
 import pytest
 
 from scripts.copilot_performance_benchmark import (
     RECEIPT_MAX_AGE_DAYS,
+    RECEIPT_PATH,
     SCENARIOS,
     benchmark,
-    execution_environment,
     implementation_binding,
     installed_distribution_versions,
     nearest_rank_p95,
+    validate_versioned_receipt,
 )
 
 
@@ -39,7 +39,7 @@ def test_scenarios_cover_exact_sampled_heads_up_and_nine_max():
 def test_performance_receipt_is_bound_to_implementation_and_scenarios():
     receipt = benchmark(3)
 
-    assert receipt["schema_version"] == 4
+    assert receipt["schema_version"] == 5
     assert receipt["implementation_binding"] == implementation_binding()
     assert receipt["environment"]["installed_distributions"] == installed_distribution_versions()
     assert receipt["environment"]["processor"] != "not-reported"
@@ -47,23 +47,52 @@ def test_performance_receipt_is_bound_to_implementation_and_scenarios():
 
 
 def test_versioned_performance_receipt_matches_current_source_and_contract():
-    backend_root = Path(__file__).resolve().parents[2]
-    receipt = json.loads(
-        (backend_root / "scripts" / "copilot_performance_evidence" / "metrics.json").read_text(
-            encoding="utf-8"
-        )
-    )
-    scenarios_sha256 = hashlib.sha256(
-        json.dumps(SCENARIOS, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    receipt = validate_versioned_receipt()
 
-    assert receipt["schema_version"] == 4
+    assert receipt["schema_version"] == 5
     assert receipt["implementation_binding"] == implementation_binding()
-    assert receipt["scenarios_sha256"] == scenarios_sha256
-    assert receipt["environment"] == execution_environment()
+
+
+def test_versioned_performance_receipt_rejects_expiry(tmp_path):
+    receipt = validate_versioned_receipt()
     created = datetime.fromisoformat(receipt["created_at_utc"])
-    assert created.tzinfo is not None
-    assert timedelta(0) <= datetime.now(UTC) - created <= timedelta(days=RECEIPT_MAX_AGE_DAYS)
-    assert receipt["scope"] == "local_post_hand_latency_only_not_strategy_quality"
-    assert receipt["acceptance"]["all_scenarios_within_budget"] is True
-    assert all(row["within_p95_budget"] for row in receipt["scenarios"])
+
+    with pytest.raises(ValueError, match="expirado"):
+        validate_versioned_receipt(now=created + timedelta(days=RECEIPT_MAX_AGE_DAYS + 1))
+
+
+@pytest.mark.parametrize(
+    "mutation, message",
+    [
+        (lambda row: row["latency_ms"].__setitem__("p95_nearest_rank", 0), "amostras brutas"),
+        (lambda row: row.__setitem__("within_p95_budget", False), "flag de latência"),
+        (lambda row: row.__setitem__("name", "outro"), "identidade/ordem"),
+        (lambda row: row.__setitem__("iterations", 3), "amostragem"),
+    ],
+)
+def test_versioned_performance_receipt_recomputes_claims(tmp_path, mutation, message):
+    receipt = deepcopy(validate_versioned_receipt())
+    mutation(receipt["scenarios"][0])
+    candidate = tmp_path / "tampered.json"
+    candidate.write_text(json.dumps(receipt), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=message):
+        validate_versioned_receipt(candidate)
+
+
+def test_versioned_performance_receipt_rejects_duplicate_and_nonfinite_json(tmp_path):
+    original = RECEIPT_PATH.read_text(encoding="utf-8")
+    duplicate = tmp_path / "duplicate.json"
+    duplicate.write_text(
+        original.replace('"schema_version": 5', '"schema_version": 5,\n  "schema_version": 5', 1),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="ausente ou inválido"):
+        validate_versioned_receipt(duplicate)
+
+    nonfinite = tmp_path / "nonfinite.json"
+    nonfinite.write_text(
+        original.replace('"p95_budget_ms": 2500.0', '"p95_budget_ms": NaN', 1), encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="ausente ou inválido"):
+        validate_versioned_receipt(nonfinite)

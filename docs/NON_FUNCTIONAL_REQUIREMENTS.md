@@ -7,6 +7,11 @@ comprovadas, nunca como aprovadas.
 
 - A API aceita apenas hosts/origens locais autorizados, impõe limites de corpo e imagem,
   normaliza bombas de descompressão para HTTP 413 e nunca registra o conteúdo capturado.
+  Overrides podem apenas reduzir os tetos auditados; o formato decodificado deve coincidir
+  com o MIME PNG/JPEG/WebP declarado e screenshots com múltiplos frames são rejeitados.
+- Flags booleanas operacionais aceitam exclusivamente `0` ou `1`. Valor ausente usa o
+  default documentado; valor presente ambíguo degrada readiness ou bloqueia a inicialização,
+  jamais é convertido silenciosamente em habilitado/desabilitado.
 - Captura visual só prossegue quando `displaySurface` prova `window`; ausência, `unknown`,
   `browser` e `monitor` falham fechados.
 - VLM remoto permanece desligado por padrão e exige token, opt-in da requisição e
@@ -41,21 +46,29 @@ comprovadas, nunca como aprovadas.
 - Fronteira de confiança: o pacote local não assina receipts nem atesta a identidade do
   operador. Um autor com escrita no manifesto/holdout pode fabricar um novo conjunto
   internamente coerente; revisão independente dos dados brutos e custódia externa são
-  obrigatórias antes de qualquer uso fora da banca. Receipts não expiram automaticamente,
-  embora mudança no pipeline/lock os invalide.
+  obrigatórias antes de qualquer uso fora da banca. Receipts de promoção F2 e de desempenho
+  expiram após 30 dias; mudança no pipeline, código ligado, ambiente ou lock os invalida antes.
 
 ## Desempenho e disponibilidade
 
 - O endpoint de saúde deve responder sem carregar modelos pesados. Readiness degrada de
   modo explícito quando fronteiras remotas ou artefatos obrigatórios estão inválidos.
+- O preflight da banca executa o lifecycle real do FastAPI e recusa configuração local
+  ambígua antes de emitir `release_decision=GO`.
 - Inferência OCR sobre o singleton é serializada para impedir corridas internas. Uploads,
   JSON, replay, histórico e paginação possuem limites definidos no código e cobertos por testes.
+- Eventos sem mão aberta, dupla abertura, recompra durante a mão, roster/seat divergentes,
+  ação/street/board inválidos, resultado incompleto, JSON duplicado/vazio/BOM, números fora
+  do contrato e logs sem metadados falham explicitamente. A sequência integral de streets é imposta pelo
+  `GameSession`; os coletores não duplicam essa máquina para chamadores legados.
+  Readiness contabiliza arquivos de auditoria ilegíveis; nenhum pode desaparecer do diagnóstico.
 - Metas de latência da visão valem somente para o ambiente descrito no recibo; extrapolações
   para outra máquina ou provider são hipóteses, não evidência.
 - A revisão local pós-mão do copiloto tem meta P95 <= 2.500 ms nos cinco cenários
-  congelados (equity exata/amostrada, HU/6-max/9-max). O recibo separa latência de
-  qualidade estratégica, liga medição aos hashes de implementação/cenários/lock e
-  passar tempo não prova que a recomendação seja ótima.
+  congelados (equity exata/amostrada, HU/6-max/9-max). O receipt v5 preserva sete amostras
+  brutas por cenário; o validador recompõe min/mediana/P95/máximo e o aceite, liga a medição
+  aos hashes de implementação/cenários/lock e é reexecutado pelo preflight. Passar tempo
+  não prova que a recomendação seja ótima.
 
 ## Manutenibilidade, rastreabilidade e liberação
 

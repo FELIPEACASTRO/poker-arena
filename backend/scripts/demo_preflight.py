@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from poker_arena.api.app import create_app
+from scripts.copilot_performance_benchmark import RECEIPT_PATH, validate_versioned_receipt
 from scripts.scan_secrets import scan
 from scripts.validate_distribution import validate_distribution
 
@@ -41,7 +42,12 @@ def _require_local_offline_profile() -> None:
         "POKER_VLM_API_KEY",
     )
     present = [name for name in forbidden_when_present if os.environ.get(name)]
-    if os.environ.get("POKER_ENABLE_REMOTE_VLM", "0") == "1":
+    warmup = os.environ.get("POKER_WARMUP")
+    if warmup is not None and warmup not in {"0", "1"}:
+        raise DemoPreflightError("POKER_WARMUP deve ser 0 ou 1 no perfil da banca")
+    # The defense profile is a strict binary contract.  Treat typos/unknown values as
+    # incompatible instead of silently translating them to "disabled" and issuing GO.
+    if os.environ.get("POKER_ENABLE_REMOTE_VLM", "0") != "0":
         present.append("POKER_ENABLE_REMOTE_VLM")
     if present:
         raise DemoPreflightError(
@@ -57,12 +63,28 @@ def _require_local_dependencies() -> None:
         PROJECT_ROOT / "frontend" / "dist" / "index.html",
         PROJECT_ROOT / "api-docs" / "openapi.json",
         PROJECT_ROOT / "docs" / "GUIA_DE_NAVEGACAO_POKER_ARENA.pdf",
+        RECEIPT_PATH,
         DEMO_IMAGE,
         DEMO_RECEIPT,
     )
     missing = [path.relative_to(PROJECT_ROOT).as_posix() for path in required if not path.is_file()]
     if missing:
         raise DemoPreflightError(f"dependências/artefatos locais ausentes: {missing}")
+
+
+def _require_performance_receipt() -> dict[str, Any]:
+    try:
+        receipt = validate_versioned_receipt(RECEIPT_PATH)
+    except ValueError as exc:
+        raise DemoPreflightError(str(exc)) from exc
+    scenarios = receipt["scenarios"]
+    return {
+        "receipt_sha256": hashlib.sha256(RECEIPT_PATH.read_bytes()).hexdigest(),
+        "scenario_count": len(scenarios),
+        "iterations_per_scenario": scenarios[0]["iterations"],
+        "max_p95_ms": max(row["latency_ms"]["p95_nearest_rank"] for row in scenarios),
+        "budget_ms": receipt["p95_budget_ms"],
+    }
 
 
 def _exercise_real_image_route() -> dict[str, Any]:
@@ -125,25 +147,25 @@ def _exercise_real_image_route() -> dict[str, Any]:
         or truth["position"] not in {"BTN", "SB", "BB", "UTG", "UTG+1", "MP", "LJ", "HJ", "CO"}
     ):
         raise DemoPreflightError("conteúdo do gabarito da fixture da banca é inválido")
-    client = TestClient(create_app())
+    with TestClient(create_app()) as client:
 
-    def request() -> tuple[dict[str, Any], float]:
-        started = time.perf_counter()
-        response = client.post(
-            "/copilot/from-image",
-            files={"image": (DEMO_IMAGE.name, image_bytes, "image/png")},
-            data={"strict": "true", "my_stack": "1000"},
-        )
-        elapsed = time.perf_counter() - started
-        if response.status_code != 200:
-            raise DemoPreflightError(f"rota visual retornou HTTP {response.status_code}")
-        body = response.json()
-        if not isinstance(body, dict):
-            raise DemoPreflightError("rota visual retornou payload inválido")
-        return body, elapsed
+        def request() -> tuple[dict[str, Any], float]:
+            started = time.perf_counter()
+            response = client.post(
+                "/copilot/from-image",
+                files={"image": (DEMO_IMAGE.name, image_bytes, "image/png")},
+                data={"strict": "true", "my_stack": "1000"},
+            )
+            elapsed = time.perf_counter() - started
+            if response.status_code != 200:
+                raise DemoPreflightError(f"rota visual retornou HTTP {response.status_code}")
+            body = response.json()
+            if not isinstance(body, dict):
+                raise DemoPreflightError("rota visual retornou payload inválido")
+            return body, elapsed
 
-    request()  # cold start is reported by the complete validator, not used as warm latency.
-    body, warm_seconds = request()
+        request()  # cold start is reported by the complete validator, not used as warm latency.
+        body, warm_seconds = request()
     detected = body.get("detected")
     sanity = body.get("sanity")
     if not isinstance(detected, dict) or not isinstance(sanity, dict):
@@ -183,6 +205,7 @@ def run_preflight() -> dict[str, Any]:
     findings = scan(WORKSPACE_ROOT)
     if findings:
         raise DemoPreflightError(f"scanner de segredos bloqueou a banca: {len(findings)} achado(s)")
+    performance = _require_performance_receipt()
     vision = _exercise_real_image_route()
     return {
         "release_decision": "GO",
@@ -193,6 +216,7 @@ def run_preflight() -> dict[str, Any]:
         "git_clean": True,
         "secret_findings": 0,
         "out_of_scope": list(OUT_OF_SCOPE_CAPABILITIES),
+        "performance": performance,
         "vision": vision,
     }
 

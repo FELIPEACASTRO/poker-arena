@@ -265,6 +265,7 @@ def test_exported_security_errors_and_concurrency_headers_match_runtime_contract
 
     image_responses = openapi["paths"]["/copilot/from-image"]["post"]["responses"]
     assert {"400", "401", "403", "413", "415", "422"} <= set(image_responses)
+    assert "divergente do MIME declarado" in image_responses["415"]["description"]
 
     for method, _path, operation in _operation_rows(openapi):
         if method in {"POST", "PUT", "PATCH", "DELETE"}:

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import re
 import stat
@@ -35,6 +36,9 @@ _FILE_ATTRIBUTE_REPARSE_POINT = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x
 _OPEN_BINARY = getattr(os, "O_BINARY", 0)
 _OPEN_NOINHERIT = getattr(os, "O_NOINHERIT", 0)
 _OPEN_NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+_LOG_ACTIONS = {"fold", "check", "call", "raise", "all_in"}
+_BOARD_SIZE_BY_STREET = {"preflop": 0, "flop": 3, "turn": 4, "river": 5}
+_CARD = re.compile(r"[2-9TJQKA][cdhs]")
 LOGGER = logging.getLogger(__name__)
 
 
@@ -48,6 +52,113 @@ class MatchLogCheckpoint:
 
 class MatchLogCorruptionError(ValueError):
     """A persisted audit file violates the bounded JSONL contract."""
+
+
+def _reject_duplicate_log_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise MatchLogCorruptionError("registro de auditoria contém chave JSON duplicada")
+        result[key] = value
+    return result
+
+
+def _reject_nonfinite_log_number(value: str) -> None:
+    raise MatchLogCorruptionError(f"registro de auditoria contém número não finito: {value}")
+
+
+def _parse_finite_log_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise MatchLogCorruptionError(f"registro de auditoria contém número não finito: {value}")
+    return parsed
+
+
+def _parse_bounded_log_int(value: str) -> int:
+    digits = value.removeprefix("-")
+    if len(digits) > 19:
+        raise MatchLogCorruptionError("registro de auditoria contém inteiro fora do limite")
+    return int(value)
+
+
+def _validate_log_json_value(value: object) -> None:
+    if value is None or isinstance(value, (str, bool)):
+        return
+    if isinstance(value, int):
+        if len(str(abs(value))) > 19:
+            raise MatchLogCorruptionError("registro de auditoria contém inteiro fora do limite")
+        return
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise MatchLogCorruptionError("registro de auditoria contém número não finito")
+        return
+    if isinstance(value, list):
+        for item in value:
+            _validate_log_json_value(item)
+        return
+    if isinstance(value, dict):
+        if any(not isinstance(key, str) for key in value):
+            raise MatchLogCorruptionError("registro de auditoria contém chave não textual")
+        for item in value.values():
+            _validate_log_json_value(item)
+        return
+    raise MatchLogCorruptionError("registro de auditoria contém tipo não serializável")
+
+
+def _hand_roster(seats: object) -> dict[int, dict]:
+    if not isinstance(seats, list):
+        raise MatchLogCorruptionError("mão de auditoria não contém uma lista de assentos")
+    roster: dict[int, dict] = {}
+    player_ids: set[str] = set()
+    for raw in seats:
+        if not isinstance(raw, dict):
+            raise MatchLogCorruptionError("assento de auditoria inválido")
+        seat = raw.get("seat")
+        player_id = raw.get("player_id")
+        if (
+            not isinstance(seat, int)
+            or isinstance(seat, bool)
+            or seat < 0
+            or not isinstance(player_id, str)
+            or not player_id
+        ):
+            raise MatchLogCorruptionError("assento de auditoria sem identidade válida")
+        if (
+            not isinstance(raw.get("name"), str)
+            or not isinstance(raw.get("level"), str)
+            or type(raw.get("start")) is not int
+            or raw["start"] < 0
+        ):
+            raise MatchLogCorruptionError("assento de auditoria contém dados inválidos")
+        if seat in roster or player_id in player_ids:
+            raise MatchLogCorruptionError("mão de auditoria repete assento ou identidade")
+        roster[seat] = raw
+        player_ids.add(player_id)
+    return roster
+
+
+def _validate_roster_reference(item: object, roster: dict[int, dict], *, label: str) -> None:
+    if not isinstance(item, dict):
+        raise MatchLogCorruptionError(f"{label} de auditoria inválido")
+    seat = item.get("seat")
+    expected = roster.get(seat) if isinstance(seat, int) and not isinstance(seat, bool) else None
+    if (
+        expected is None
+        or item.get("player_id") != expected.get("player_id")
+        or item.get("name") != expected.get("name")
+    ):
+        raise MatchLogCorruptionError(f"{label} não corresponde ao roster da mão")
+
+
+def _validate_board(board: object, *, street: str | None = None) -> None:
+    if not isinstance(board, list):
+        raise MatchLogCorruptionError("board de auditoria deve ser uma lista")
+    if any(not isinstance(card, str) or _CARD.fullmatch(card) is None for card in board):
+        raise MatchLogCorruptionError("board de auditoria contém carta inválida")
+    if len(board) != len(set(board)) or len(board) not in {0, 3, 4, 5}:
+        raise MatchLogCorruptionError("board de auditoria tem tamanho/duplicata inválido")
+    if street is not None and len(board) != _BOARD_SIZE_BY_STREET.get(street):
+        raise MatchLogCorruptionError("street e board de auditoria divergem")
 
 
 def _is_reparse_or_link(file_stat: os.stat_result) -> bool:
@@ -264,6 +375,12 @@ class MatchLogger:
             raise ValueError("session_id contém caracteres inválidos")
         if retention is not None:
             _validate_retention(retention)
+        reserved_meta = {"type", "id", "created"} & set(meta)
+        if reserved_meta:
+            raise ValueError(
+                f"metadados não podem sobrescrever campos reservados: {sorted(reserved_meta)}"
+            )
+        _validate_log_json_value(meta)
         self._dir = log_dir or _log_dir()
         self._dir = _validated_directory(self._dir, create=True)
         self.path = self._dir / f"{session_id}.jsonl"
@@ -275,7 +392,11 @@ class MatchLogger:
             prune_old_games(keep=retention, log_dir=self._dir)
 
     def _append(self, obj: dict) -> None:
-        payload = (json.dumps(obj, ensure_ascii=False) + "\n").encode("utf-8")
+        _validate_log_json_value(obj)
+        try:
+            payload = (json.dumps(obj, ensure_ascii=False, allow_nan=False) + "\n").encode("utf-8")
+        except ValueError as exc:
+            raise MatchLogCorruptionError("registro de auditoria contém número não finito") from exc
         if len(payload) > _MAX_LOG_LINE_BYTES:
             raise MatchLogCorruptionError("registro de auditoria excede o limite")
         with self._lock:
@@ -327,12 +448,22 @@ class MatchLogger:
                 os.close(descriptor)
 
     def begin_hand(self, hand: int, button: int, seats: list[dict]) -> None:
+        if self._cur is not None:
+            raise MatchLogCorruptionError(
+                "uma nova mão não pode substituir um registro de auditoria ainda aberto"
+            )
+        _validate_log_json_value(seats)
+        roster = _hand_roster(seats)
+        if type(hand) is not int or hand <= 0:
+            raise MatchLogCorruptionError("número da mão deve ser inteiro positivo")
+        if type(button) is not int or button < 0 or (roster and button not in roster):
+            raise MatchLogCorruptionError("button não corresponde ao roster da mão")
         self._cur = {
             "type": "hand",
             "hand": hand,
             "ts": _now(),
             "button": button,
-            "seats": seats,  # [{seat, name, level, start}]
+            "seats": deepcopy(seats),  # [{seat, player_id, name, level, start}]
             "actions": [],
         }
 
@@ -349,7 +480,24 @@ class MatchLogger:
         insight: dict | None,
     ) -> None:
         if self._cur is None:
-            return
+            raise MatchLogCorruptionError("ação recebida sem uma mão de auditoria aberta")
+        roster = _hand_roster(self._cur.get("seats"))
+        expected = roster.get(seat) if type(seat) is int else None
+        if (
+            expected is None
+            or expected.get("player_id") != player_id
+            or expected.get("name") != name
+            or expected.get("level") != level
+        ):
+            raise MatchLogCorruptionError("ação não corresponde ao roster da mão")
+        if action_type not in _LOG_ACTIONS or street not in _BOARD_SIZE_BY_STREET:
+            raise MatchLogCorruptionError("ação ou street de auditoria inválida")
+        if type(amount) is not int or amount < 0:
+            raise MatchLogCorruptionError("valor da ação deve ser inteiro não negativo")
+        _validate_board(board, street=street)
+        if insight is not None and not isinstance(insight, dict):
+            raise MatchLogCorruptionError("insight de auditoria deve ser objeto ou nulo")
+        _validate_log_json_value(insight)
         self._cur["actions"].append(
             {
                 "seat": seat,
@@ -368,7 +516,30 @@ class MatchLogger:
         self, board: list[str], pot: int, winners: list[dict], result: list[dict]
     ) -> None:
         if self._cur is None:
-            return
+            raise MatchLogCorruptionError("finalização recebida sem uma mão de auditoria aberta")
+        _validate_board(board)
+        if type(pot) is not int or pot < 0:
+            raise MatchLogCorruptionError("pote final deve ser inteiro não negativo")
+        _validate_log_json_value(winners)
+        _validate_log_json_value(result)
+        roster = _hand_roster(self._cur.get("seats"))
+        for winner in winners:
+            _validate_roster_reference(winner, roster, label="vencedor")
+        for row in result:
+            _validate_roster_reference(row, roster, label="resultado")
+        winner_ids = [winner.get("player_id") for winner in winners]
+        result_ids = [row.get("player_id") for row in result]
+        if len(winner_ids) != len(set(winner_ids)):
+            raise MatchLogCorruptionError("finalização repete vencedor")
+        if len(result_ids) != len(set(result_ids)) or set(result_ids) != {
+            row["player_id"] for row in roster.values()
+        }:
+            raise MatchLogCorruptionError("resultado não cobre exatamente o roster da mão")
+        if any(
+            type(row.get("end")) is not int or row["end"] < 0 or type(row.get("delta")) is not int
+            for row in result
+        ):
+            raise MatchLogCorruptionError("stack/delta finais da auditoria são inválidos")
         self._cur.update({"board": list(board), "pot": pot, "winners": winners, "result": result})
         self._append(self._cur)
         self._cur = None
@@ -401,10 +572,24 @@ def _iter_records(path: Path) -> Iterator[dict]:
                         f"linha {line_number} excede o limite de auditoria"
                     )
                 if not payload.strip():
-                    continue
+                    raise MatchLogCorruptionError(
+                        f"linha {line_number} vazia no arquivo de auditoria"
+                    )
+                if payload.startswith(b"\xef\xbb\xbf"):
+                    raise MatchLogCorruptionError(
+                        f"linha {line_number} contém BOM UTF-8 não permitido"
+                    )
                 try:
-                    record = json.loads(payload)
-                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                    record = json.loads(
+                        payload,
+                        object_pairs_hook=_reject_duplicate_log_keys,
+                        parse_constant=_reject_nonfinite_log_number,
+                        parse_float=_parse_finite_log_float,
+                        parse_int=_parse_bounded_log_int,
+                    )
+                except MatchLogCorruptionError:
+                    raise
+                except (UnicodeDecodeError, json.JSONDecodeError, ValueError, OverflowError) as exc:
                     raise MatchLogCorruptionError(
                         f"linha {line_number} não contém JSON UTF-8 válido"
                     ) from exc
@@ -436,10 +621,12 @@ def _summary_of(path: Path) -> dict | None:
             hands += 1
             last = str(record.get("ts") or last or "")
     if not meta:
-        return None
+        raise MatchLogCorruptionError("arquivo de auditoria não contém metadados")
     game_id = meta.get("id")
     if not isinstance(game_id, str) or _SAFE_SESSION_ID.fullmatch(game_id) is None:
         raise MatchLogCorruptionError("metadados não contêm um id de partida válido")
+    if game_id != path.stem:
+        raise MatchLogCorruptionError("id dos metadados diverge do nome canônico do arquivo")
     return {
         "id": game_id,
         "created": str(meta.get("created") or ""),
@@ -588,7 +775,10 @@ def _read_game_records(path: Path, *, offset: int, limit: int | None) -> dict | 
             hands.append(record)
         total += 1
     if meta is None:
-        return None
+        raise MatchLogCorruptionError("arquivo de auditoria não contém metadados")
+    game_id = meta.get("id")
+    if not isinstance(game_id, str) or game_id != path.stem:
+        raise MatchLogCorruptionError("id dos metadados diverge do nome canônico do arquivo")
     result = {"meta": meta, "hands": hands}
     if limit is not None:
         result["page"] = _page(offset, limit, total, len(hands))

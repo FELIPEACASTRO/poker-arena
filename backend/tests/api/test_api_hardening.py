@@ -238,6 +238,42 @@ def test_from_image_rejects_wrong_media_type(client: TestClient) -> None:
     assert response.status_code == 415
 
 
+def test_from_image_rejects_bytes_that_do_not_match_declared_media_type(
+    client: TestClient,
+) -> None:
+    payload = io.BytesIO()
+    Image.new("RGB", (64, 64), "white").save(payload, format="BMP")
+
+    response = client.post(
+        "/copilot/from-image",
+        files={"image": ("forged.png", payload.getvalue(), "image/png")},
+    )
+
+    assert response.status_code == 415
+    assert "diverge do tipo image/png" in response.json()["detail"]
+
+
+def test_from_image_rejects_multiframe_screenshot(client: TestClient) -> None:
+    payload = io.BytesIO()
+    frames = [Image.new("RGB", (64, 64), color) for color in ("white", "black")]
+    frames[0].save(
+        payload,
+        format="PNG",
+        save_all=True,
+        append_images=frames[1:],
+        duration=100,
+        loop=0,
+    )
+
+    response = client.post(
+        "/copilot/from-image",
+        files={"image": ("animated.png", payload.getvalue(), "image/png")},
+    )
+
+    assert response.status_code == 400
+    assert "múltiplos frames" in response.json()["detail"]
+
+
 def test_from_image_rejects_oversized_upload(client: TestClient) -> None:
     response = client.post(
         "/copilot/from-image",
@@ -284,6 +320,19 @@ def test_streaming_body_limit_rejects_chunked_upload_before_multipart_parser(mon
     assert entered is True
     assert sent[0]["type"] == "http.response.start"
     assert sent[0]["status"] == 413
+
+
+def test_image_limit_override_can_only_lower_the_hard_ceiling(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("POKER_MAX_IMAGE_BYTES", "9" * 100)
+
+    response = client.post(
+        "/copilot/from-image",
+        files={"image": ("fake.png", b"not-a-png", "image/png")},
+    )
+
+    assert response.status_code == 400
 
 
 def test_concurrent_broadcasts_try_a_timed_out_peer_only_once() -> None:
@@ -790,6 +839,38 @@ def test_readiness_degrades_when_enabled_remote_vlm_has_no_valid_inbound_token(
     assert response.status_code == 503
     assert response.json()["status"] == "degraded"
     assert response.json()["checks"]["remote_vlm_api_token"] == "missing-or-invalid"
+
+
+def test_invalid_remote_vlm_flag_is_not_reported_as_disabled_and_ready(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("POKER_WARMUP", "0")
+    monkeypatch.setenv("POKER_ENABLE_REMOTE_VLM", "talvez")
+
+    client = TestClient(create_app())
+    response = client.get("/ready")
+
+    assert response.status_code == 503
+    assert response.json()["status"] == "degraded"
+    assert response.json()["checks"]["remote_vlm"] == "misconfigured"
+
+    image_response = client.post(
+        "/copilot/from-image",
+        files={"image": ("table.png", _png_bytes(), "image/png")},
+    )
+    assert image_response.status_code == 200
+    assert image_response.json()["decision"] is None
+    assert any(
+        "POKER_ENABLE_REMOTE_VLM deve ser 0 ou 1" in warning
+        for warning in image_response.json()["sanity"]["warnings"]
+    )
+
+    consent_response = client.post(
+        "/copilot/remote-vlm/consent-sessions",
+        json={"consent": True},
+    )
+    assert consent_response.status_code == 503
+    assert "POKER_ENABLE_REMOTE_VLM deve ser 0 ou 1" in consent_response.json()["detail"]
 
 
 def test_readiness_accepts_complete_remote_vlm_boundary(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -25,7 +25,10 @@ ERROR_DESCRIPTIONS = {
         "`Idempotency-Key`. Uma chave expirada é rejeitada sem repetir o efeito."
     ),
     "413": "Imagem maior que o limite configurado de bytes ou pixels.",
-    "415": "Tipo de imagem não permitido; use PNG, JPEG ou WebP.",
+    "415": (
+        "Tipo de imagem não permitido ou conteúdo decodificado divergente do MIME declarado; "
+        "use PNG, JPEG ou WebP."
+    ),
 }
 
 SECURITY_RESPONSE_HEADERS = {

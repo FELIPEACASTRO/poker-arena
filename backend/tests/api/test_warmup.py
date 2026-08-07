@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import threading
 
+import pytest
 from fastapi.testclient import TestClient
 
 from poker_arena.api import app as app_module
@@ -21,6 +22,15 @@ def test_boot_com_warmup_desligado_sobe_e_responde(monkeypatch):
     monkeypatch.setenv("POKER_WARMUP", "0")
     with TestClient(create_app()) as c:  # `with` dispara o lifespan (startup + shutdown)
         assert c.get("/health").json() == {"status": "ok"}
+
+
+def test_boot_rejeita_flag_de_warmup_ambigua(monkeypatch):
+    monkeypatch.setenv("POKER_WARMUP", "talvez")
+    with (
+        pytest.raises(RuntimeError, match="POKER_WARMUP deve ser 0 ou 1"),
+        TestClient(create_app()),
+    ):
+        pass
 
 
 def test_boot_ligado_dispara_o_thread_de_warmup_sem_quebrar(monkeypatch):

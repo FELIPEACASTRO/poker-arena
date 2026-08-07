@@ -55,8 +55,17 @@ def test_prune_idempotent_and_respects_keep(tmp_path):
 def test_matchlogger_does_not_prune_history_without_explicit_retention(tmp_path):
     for i in range(12):
         lg = MatchLogger(f"s{i:02d}", {"mode": "watch", "levels": []}, log_dir=tmp_path)
-        lg.begin_hand(1, 0, [{"seat": 0, "name": "A", "level": "random", "start": 1000}])
-        lg.finish_hand([], 0, [], [{"seat": 0, "name": "A", "end": 1000, "delta": 0}])
+        lg.begin_hand(
+            1,
+            0,
+            [{"seat": 0, "player_id": "p0", "name": "A", "level": "random", "start": 1000}],
+        )
+        lg.finish_hand(
+            [],
+            0,
+            [],
+            [{"seat": 0, "player_id": "p0", "name": "A", "end": 1000, "delta": 0}],
+        )
     assert len(list(tmp_path.glob("*.jsonl"))) == 12
 
 
@@ -114,6 +123,91 @@ def test_matchlogger_creates_session_file_exclusively(tmp_path):
 
     with pytest.raises(MatchLogCorruptionError, match="ja existe"):
         MatchLogger("same-session", {"mode": "watch"}, log_dir=tmp_path)
+
+
+def test_logger_rejects_out_of_order_events_instead_of_silently_omitting_them(tmp_path):
+    logger = MatchLogger("ordered-events", {"mode": "watch"}, log_dir=tmp_path)
+
+    with pytest.raises(MatchLogCorruptionError, match="ação recebida sem"):
+        logger.action(0, "p0", "A", "random", "check", 0, "preflop", [], None)
+    with pytest.raises(MatchLogCorruptionError, match="finalização recebida sem"):
+        logger.finish_hand([], 0, [], [])
+
+    logger.begin_hand(1, 0, [])
+    with pytest.raises(MatchLogCorruptionError, match="não pode substituir"):
+        logger.begin_hand(2, 1, [])
+
+
+def test_logger_binds_actions_and_results_to_the_current_hand_roster(tmp_path):
+    logger = MatchLogger("bound-roster", {"mode": "watch"}, log_dir=tmp_path)
+    seat = {"seat": 0, "player_id": "p0", "name": "A", "level": "random", "start": 1000}
+    with pytest.raises(MatchLogCorruptionError, match="número da mão"):
+        logger.begin_hand(True, 0, [seat])
+    with pytest.raises(MatchLogCorruptionError, match="button"):
+        logger.begin_hand(1, 99, [seat])
+    logger.begin_hand(1, 0, [seat])
+
+    with pytest.raises(MatchLogCorruptionError, match="ação não corresponde"):
+        logger.action(0, "other", "A", "random", "check", 0, "preflop", [], None)
+    with pytest.raises(MatchLogCorruptionError, match="inteiro não negativo"):
+        logger.action(0, "p0", "A", "random", "check", True, "preflop", [], None)
+    with pytest.raises(MatchLogCorruptionError, match="street e board"):
+        logger.action(0, "p0", "A", "random", "check", 0, "river", [], None)
+    with pytest.raises(MatchLogCorruptionError, match="resultado não corresponde"):
+        logger.finish_hand(
+            [],
+            0,
+            [],
+            [{"seat": 0, "player_id": "other", "name": "A", "end": 1000, "delta": 0}],
+        )
+    winner = {"seat": 0, "player_id": "p0", "name": "A"}
+    with pytest.raises(MatchLogCorruptionError, match="repete vencedor"):
+        logger.finish_hand(
+            [],
+            0,
+            [winner, winner],
+            [{"seat": 0, "player_id": "p0", "name": "A", "end": 1000, "delta": 0}],
+        )
+    with pytest.raises(MatchLogCorruptionError, match="pote final"):
+        logger.finish_hand(
+            [],
+            -1,
+            [],
+            [{"seat": 0, "player_id": "p0", "name": "A", "end": 1000, "delta": 0}],
+        )
+    with pytest.raises(MatchLogCorruptionError, match="stack/delta finais"):
+        logger.finish_hand(
+            [],
+            0,
+            [],
+            [{"seat": 0, "player_id": "p0", "name": "A", "end": "x", "delta": None}],
+        )
+
+    logger.action(0, "p0", "A", "random", "check", 0, "preflop", [], None)
+    logger.finish_hand(
+        [],
+        0,
+        [],
+        [{"seat": 0, "player_id": "p0", "name": "A", "end": 1000, "delta": 0}],
+    )
+
+    bool_seat_logger = MatchLogger("bool-seat", {"mode": "watch"}, log_dir=tmp_path)
+    seat_one = {"seat": 1, "player_id": "p1", "name": "B", "level": "random", "start": 1000}
+    bool_seat_logger.begin_hand(1, 1, [seat_one])
+    with pytest.raises(MatchLogCorruptionError, match="ação não corresponde"):
+        bool_seat_logger.action(True, "p1", "B", "random", "check", 0, "preflop", [], None)
+
+
+def test_matchlogger_rejects_reserved_metadata_identity_fields(tmp_path):
+    with pytest.raises(ValueError, match="campos reservados"):
+        MatchLogger("canonical", {"id": "other"}, log_dir=tmp_path)
+
+
+def test_matchlogger_never_writes_an_integer_its_reader_would_reject(tmp_path):
+    with pytest.raises(MatchLogCorruptionError, match="inteiro fora do limite"):
+        MatchLogger("huge-int", {"large": 10**19}, log_dir=tmp_path)
+
+    assert not (tmp_path / "huge-int.jsonl").exists()
 
 
 def test_matchlogger_detects_file_replacement_before_next_append(tmp_path):
@@ -238,16 +332,100 @@ def test_corrupt_json_object_is_explicit_and_does_not_hide_healthy_game(tmp_path
     assert "corrupção" in caplog.text
 
 
+@pytest.mark.parametrize(
+    "payload, message",
+    [
+        ("", "não contém metadados"),
+        ('{"type":"meta","id":"first","id":"second"}\n', "chave JSON duplicada"),
+        ('{"type":"meta","id":"bad-number","score":NaN}\n', "número não finito"),
+        ('{"type":"meta","id":"silent-corruption"}\n\n', "linha 2 vazia"),
+        ('\ufeff{"type":"meta","id":"silent-corruption"}\n', "BOM UTF-8"),
+        ('{"type":"meta","id":"silent-corruption","score":1e400}\n', "número não finito"),
+        (
+            '{"type":"meta","id":"silent-corruption","score":' + "9" * 5000 + "}\n",
+            "inteiro fora do limite",
+        ),
+    ],
+)
+def test_empty_or_duplicate_key_log_is_never_silently_omitted(tmp_path, payload, message):
+    path = tmp_path / "silent-corruption.jsonl"
+    path.write_text(payload, encoding="utf-8")
+
+    with pytest.raises(MatchLogCorruptionError, match=message):
+        read_game("silent-corruption", log_dir=tmp_path)
+
+    listing = list_games_page(log_dir=tmp_path)
+    assert listing["unreadable_logs"] == 1
+    assert "silent-corruption" not in {game["id"] for game in listing["games"]}
+
+
+def test_log_metadata_identity_must_match_the_addressed_filename(tmp_path):
+    (tmp_path / "alias.jsonl").write_text('{"type":"meta","id":"other"}\n', encoding="utf-8")
+
+    with pytest.raises(MatchLogCorruptionError, match="nome canônico"):
+        read_game("alias", log_dir=tmp_path)
+
+    listing = list_games_page(log_dir=tmp_path)
+    assert listing["unreadable_logs"] == 1
+
+
+def test_writer_rejects_nonfinite_json_before_persisting_hand(tmp_path):
+    logger = MatchLogger("finite-only", {"mode": "watch"}, log_dir=tmp_path)
+    logger.begin_hand(
+        1,
+        0,
+        [{"seat": 0, "player_id": "p0", "name": "A", "level": "random", "start": 1000}],
+    )
+    size_before = logger.path.stat().st_size
+
+    with pytest.raises(MatchLogCorruptionError, match="número não finito"):
+        logger.finish_hand(
+            [],
+            0,
+            [],
+            [
+                {
+                    "seat": 0,
+                    "player_id": "p0",
+                    "name": "A",
+                    "end": 1000,
+                    "delta": 0,
+                    "payload": float("nan"),
+                }
+            ],
+        )
+
+    assert logger.path.stat().st_size == size_before
+
+
 def test_writer_refuses_append_before_file_crosses_reader_quota(tmp_path, monkeypatch):
     import poker_arena.application.match_log as module
 
     monkeypatch.setattr(module, "_MAX_LOG_FILE_BYTES", 240)
     logger = MatchLogger("bounded", {"mode": "watch"}, log_dir=tmp_path)
     size_before = logger.path.stat().st_size
-    logger.begin_hand(1, 0, [])
+    logger.begin_hand(
+        1,
+        0,
+        [{"seat": 0, "player_id": "p0", "name": "A", "level": "random", "start": 1000}],
+    )
 
     with pytest.raises(MatchLogCorruptionError, match="cota antes da escrita"):
-        logger.finish_hand([], 0, [], [{"payload": "x" * 300}])
+        logger.finish_hand(
+            [],
+            0,
+            [],
+            [
+                {
+                    "seat": 0,
+                    "player_id": "p0",
+                    "name": "A",
+                    "end": 1000,
+                    "delta": 0,
+                    "payload": "x" * 300,
+                }
+            ],
+        )
 
     assert logger.path.stat().st_size == size_before
 

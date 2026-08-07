@@ -23,8 +23,10 @@ dinheiro não integram esta release; são `N/A` para o aceite local e não são 
 ## 2. Escopo real auditado
 
 - Raiz canônica: `C:\Users\davis\Workspace\POKER\CODEX`.
-- Prompt Omega imutável: SHA-256
-  `F8CA98829545A5F69F5F7A2457B273D973F5D68DB249F9B37E3F7C23B45314CF`.
+- Prompt Omega externo, fornecido em
+  `C:\Users\davis\Downloads\PROMPT_OMEGA_AUDITORIA_UNIVERSAL_TODOS_TIPOS_ERROS_TECNOLOGIA_TRIPLE_CHECK_20260807.md`:
+  SHA-256 `F8CA98829545A5F69F5F7A2457B273D973F5D68DB249F9B37E3F7C23B45314CF`.
+  O arquivo não integra a distribuição `CODEX`; o hash preserva a identidade do input auditado.
 - Fixture PHH canônico `pluribus.jsonl`: SHA-256
   `A2DDF222081561896DE2535F6CB96CE4098C423F9F9199F0A4C4025709269662`.
 - Inventário final esperado: 346 arquivos visíveis a `rg --files`, incluindo este relatório;
@@ -77,11 +79,13 @@ falham fechados. O perfil da banca opera em loopback, sem token e sem VLM remoto
 Foram usadas bases complementares, não uma “taxonomia universal” única:
 
 - [ISO/IEC 25010:2023](https://www.iso.org/standard/78176.html),
-  [NIST SSDF](https://csrc.nist.gov/Projects/ssdf/publications),
-  [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/),
+  [NIST SSDF 1.1 e revisão 1.2 em rascunho](https://csrc.nist.gov/Projects/ssdf/publications),
+  [OWASP ASVS 5.0.0](https://owasp.org/www-project-application-security-verification-standard/),
   [MITRE CWE Top 25 2025](https://cwe.mitre.org/top25/archive/2025/2025_cwe_top25.html),
   [NIST AI RMF](https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf) e
-  [NIST AI TEVV](https://www.nist.gov/ai-test-evaluation-validation-and-verification-tevv).
+  [NIST AI TEVV](https://www.nist.gov/ai-test-evaluation-validation-and-verification-tevv),
+  além da taxonomia final de ataques e mitigações de ML
+  [NIST AI 100-2e2025](https://csrc.nist.gov/pubs/ai/100/2/e2025/final).
 - [WCAG 2.2](https://www.w3.org/TR/WCAG22/) para interface e acessibilidade.
 - [PHH specification](https://phh.readthedocs.io/en/stable/spec.html),
   [PHH reference repository](https://github.com/uoftcprg/phh-std) e
@@ -102,8 +106,8 @@ Foram usadas bases complementares, não uma “taxonomia universal” única:
 
 Taxonomias específicas adicionadas: **P01 regras NLHE e reabertura**, **P02 PHH/replay**,
 **P03 qualidade de estratégia/equity**, **V01 estado visual exato**, **V02 abstenção e
-calibração**, **V03 independência por sessão**, **M01 promoção/linhagem ONNX** e **D01
-honestidade de demonstração acadêmica**.
+calibração**, **V03 independência por sessão**, **M01 promoção/linhagem ONNX**, **A01
+manipulação adversarial de entrada/imagem** e **D01 honestidade de demonstração acadêmica**.
 
 ## 6. Achados comprovados e correções
 
@@ -162,14 +166,32 @@ outro defeito da mesma classe.
 | Ω46 | P1 | Primeiro gate clean-tree excedeu 600 s no coverage e o E2E rejeitou o novo fingerprint de redação | timeout não acompanhou a suíte ampliada; stub congelara `configured-mask-v1` sem digest | timeout 900 s sujeito a conclusão real; stub deriva/valida o digest exato da região; E2E isolado 9/9 |
 | Ω47 | P1 | Parecer local `GO` coexistia com rótulos de reprovação externa e `vision.decision_blocked`, permitindo interpretar abstenção aprovada como reprovação da release | decisão de release, autoridade estratégica e escopos de pesquisa compartilhavam a mesma palavra “decisão” | contrato separa `release_decision=GO`, `release_scope=LOCAL_MASTER_DEFENSE` e `vision.decision_blocked=true`; externos são `N/A`; wrapper só emite GO após filho exit 0; UI explica a proteção aprovada |
 | Ω48 | P1 | Gate clean-tree do candidato Ω47 reprovou backend porque o receipt de performance não correspondia mais ao hash de `app.py` | o binding v4 detectou corretamente a mudança textual no pacote após a última medição | falha reproduzida no teste exato; benchmark real reexecutado em 7×5 no código atual; novo receipt aprovado e vinculado antes de repetir o gate integral |
+| Ω49 | P1 | Override decimal enorme de `POKER_MAX_IMAGE_BYTES` transformava upload mínimo em HTTP 500 e removia o teto auditado | inteiro Python arbitrário chegava a `UploadFile.read`, limitado por `Py_ssize_t` | override agora só pode reduzir o hard ceiling; valor inválido/maior volta ao teto seguro; regressão prova resposta 400, não 500 |
+| Ω50 | P1 | Bytes BMP declarados como PNG e APNG multiframe eram aceitos com HTTP 200; no segundo caso só o primeiro frame era usado | contrato validava apenas o header multipart, sem ligar MIME ao decoder nem exigir frame único | formato Pillow deve coincidir com PNG/JPEG/WebP declarado; multiframe é rejeitado; regressões 415/400 |
+| Ω51 | P1 | `POKER_ENABLE_REMOTE_VLM=talvez` aparecia como VLM desabilitado e `/ready` saudável | comparação booleana permissiva traduzia qualquer valor diferente de `1` em falso | parser booleano canônico aceita só `0`/`1`; readiness degrada, consentimento falha e imagem mantém recomendação suprimida com aviso |
+| Ω52 | P1 | `MatchLogger` descartava ação/finalização sem mão aberta e substituía mão ainda aberta | retornos silenciosos e ausência de invariante de lifecycle | evento sem mão e dupla abertura levantam `MatchLogCorruptionError`; progressão de streets permanece no `GameSession` |
+| Ω53 | P1 | `WatchStats` ignorava identidades desconhecidas e podia omitir ações, rebuys, ruas ou resultados | filtros/returns permissivos sem estado explícito de mão | lifecycle `_hand_open`, unicidade e identidade são invariantes; violações falham explicitamente |
+| Ω54 | P1 | Preflight emitia GO com `POKER_ENABLE_REMOTE_VLM` ambíguo | oracle local só bloqueava o valor textual `1` | perfil de banca exige exatamente `0`; quatro valores ambíguos são regressões negativas |
+| Ω55 | P1 | Preflight emitia GO com `POKER_WARMUP=talvez`, embora o servidor real falhasse no startup | `TestClient` era usado sem context manager e não executava o lifespan FastAPI | preflight valida a flag e percorre startup/shutdown reais; três valores ambíguos bloqueiam |
+| Ω56 | P1 | Log vazio desaparecia da saúde e JSON com chaves duplicadas ou `NaN` podia ser interpretado ambiguamente | leitor aceitava ausência de meta e defaults permissivos do parser JSON Python | vazio/duplicata/não-finito são corrupção; writer usa `allow_nan=False`; readiness contabiliza o arquivo ilegível |
+| Ω57 | P2 | NFR dizia que receipts não expiravam automaticamente, contradizendo gates com máximo de 30 dias | documentação antecedia o endurecimento Ω36/Ω43 | NFR agora declara expiração de 30 dias e invalidação antecipada por código/ambiente/lock |
+| Ω58 | P2 | OpenAPI 415 ainda documentava apenas tipo não permitido, omitindo mismatch entre MIME e bytes introduzido em Ω50 | projeção do contrato não foi atualizada junto à validação do decoder | descrição canônica harmonizada, artefatos regenerados e teste semântico dedicado |
+| Ω59 | P1 | `WatchStats` aceitava jogador histórico ausente da mão atual, cadeira duplicada, recompra durante a mão e vencedores/contenders repetidos | estado acumulado `per` era usado como roster atual e o lifecycle era parcial | roster por mão, seat/identidade exatos, cobertura integral do resultado, unicidade, tipos/faixas e rebuy somente entre mãos |
+| Ω60 | P1 | `MatchLogger` aceitava ação/resultado fora do roster, par seat↔player incorreto, metadados reservados sobrescritos e `meta.id` divergente do arquivo | buffer guardava dados sem binding semântico à identidade da mão/arquivo | roster validado, resultado completo, IDs/nomes ligados, metadados reservados e identidade path↔meta obrigatória |
+| Ω61 | P1 | Linha JSONL vazia/BOM, `1e400`, inteiro enorme e assimetria writer→reader podiam ser ignorados, virar infinito ou produzir log ilegível | defaults permissivos do JSON e validação diferente na escrita/leitura | parser estrito para duplicatas/BOM/brancos/finitude/inteiro; writer recursivo usa o mesmo limite; regressões de round-trip |
+| Ω62 | P1 | Preflight podia emitir GO com receipt de performance expirado ou stale | idade/binding eram verificados só dentro da suíte pytest, não no oracle executado pela opção de banca | preflight chama o validador probatório antes da visão e inclui hash, 5×7, P95 e budget no payload GO |
+| Ω63 | P1 | Receipt confiava em booleans/resumos armazenados e não preservava amostras para recomputar P95 | schema v4 guardava apenas agregados mutáveis | schema v5 preserva 7 amostras por cenário; validador recompõe min/mediana/P95/máximo, acceptance, ordem, ambiente, binding e expiração |
+| Ω64 | P1 | `MatchLogger` ainda podia persistir ação/street/board, coerção `seat=True↔1` e valores de ação/pote/stack semanticamente inválidos | o writer garantia JSON finito e identidade, mas não o domínio completo dos eventos/tipos | seat inteiro estrito, ações/streets/cartas e tamanho do board são validados; amount/pot/end/delta exigem inteiros e faixas compatíveis; regressões provam rejeição antes da escrita |
 
 ## 7. Bugs silenciosos e corrupção silenciosa
 
 Os principais silent bugs reais foram Ω02, Ω04, Ω06, Ω07, Ω10, Ω12, Ω13, Ω17, Ω21, Ω22,
-Ω23, Ω25, Ω31, Ω33–Ω36, Ω38, Ω40 e Ω41: poderiam retornar um resultado plausível sem erro explícito. O endurecimento inclui
-invariantes, schemas estritos, hashes semânticos, ausência de fallback de decisão, quotas,
-stale state e oracles independentes. Nenhuma evidência de corrupção de bytes no repositório
-foi encontrada, mas isso não testa RAM/disco/hardware da banca.
+Ω23, Ω25, Ω31, Ω33–Ω36, Ω38, Ω40, Ω41, Ω50–Ω56 e Ω59–Ω64: poderiam retornar um resultado plausível,
+omitir evento/corrupção ou emitir um GO falso sem erro explícito. O endurecimento inclui
+invariantes de lifecycle/identidade, schemas e JSON estritos, hashes semânticos, ausência de
+fallback de decisão, quotas, stale state, startup real e oracles independentes. Nenhuma
+evidência de corrupção de bytes no repositório foi encontrada, mas isso não testa
+RAM/disco/hardware da banca.
 
 ## 8. Erros de teste/oracle e hipóteses refutadas
 
@@ -192,7 +214,7 @@ foi encontrada, mas isso não testa RAM/disco/hardware da banca.
 | Raise incontestável | motor oferecia raise 332; PokerKit rejeitava | repro versionado passa; fuzz ad hoc histórico seed 20260810, 20k casos, `bad=[]`, mantido apenas como apoio | harness ad hoc não foi preservado; não conta como gate reproduzível |
 | Review sizing | raise 40 e raise 60 davam match | mismatch explícito 40≠60 | subconjunto PHH NT |
 | Frontend | 2 warnings ESLint | 78/78 testes; lint sem aviso; build aprovado | browser/hardware local |
-| Copiloto | receipt anterior invalidado por mudança de source/runtime | receipt v4 final SHA-256 `50EA9008233D3F39D388B539A4922BAC572B4260DDCD3F3E0AED4D955C396DA4`: P95 máximo 819,317 ms em 5 cenários, budget 2500 ms | 7 medições/cenário; versões instaladas e CPU vinculadas; não é comparação entre hosts |
+| Copiloto | receipt anterior invalidado por mudança de source/runtime | receipt v5 final SHA-256 `FADC2605E2ECAE20C75C2B2ABA5BA1591CB90DB5954769D84AC5BA7AC1C31DD1`: P95 máximo 902,198 ms em 5 cenários, budget 2500 ms | 7 amostras brutas/cenário; binding `3aa22f92…4c70d6a`; versões instaladas e CPU vinculadas; não é comparação entre hosts |
 | Contenção do host | execução incidental sob forte carga chegou a 2607,209 ms e falhou | receipt falho descartado; medição Ω48 aprovou mesmo com um processo externo CPU-bound observável | fechar workloads concorrentes no preflight da banca; o run Ω48 não é benchmark isolado |
 | Equity exata | Monte Carlo 400 variava | 990 enumerações; erro numérico 0 no domínio | HU river/range uniforme |
 | Avaliação real F1 | alegação não medida | 0/1 exato, abstenção, 10,08 s; F2 ausente | amostra de conveniência |
@@ -201,6 +223,12 @@ foi encontrada, mas isso não testa RAM/disco/hardware da banca.
 | Concorrência UI | respostas anteriores podiam reaparecer após edição/upload inválido | AbortController + geração; 2 testes deferred | event loop/browser testado |
 | Contexto de aposta | raise-to 80 por default onde mínimo real era 100 | API retorna 100 com contribuição/alvo/incremento explícitos | depende de entrada humana correta |
 | React StrictMode | cleanup de desenvolvimento deixava captura inerte | regressão StrictMode permite seleção; 19/19 focais do agente | browsers fora da matriz |
+| Limite de upload configurável | inteiro decimal enorme causava HTTP 500 num upload mínimo | valor inseguro volta ao teto de 5 MiB; requisição inválida retorna 400 | proxy externo pode impor teto menor |
+| MIME/frame da imagem | BMP como PNG e APNG de 2 frames retornavam 200 | mismatch retorna 415; multiframe retorna 400 | não mede ataques adversariais semanticamente válidos |
+| Flags e lifecycle | `POKER_ENABLE_REMOTE_VLM=talvez` parecia desativado; `POKER_WARMUP=talvez` podia receber GO sem startup real | readiness/preflight bloqueiam valores ambíguos; preflight executa lifespan | novas flags futuras exigem o mesmo parser |
+| Eventos e auditoria | evento sem mão/dupla abertura, roster histórico, identidade divergente e log vazio/ambíguo podiam sumir ou ser aceitos | lifecycle da mão, roster/resultado exatos, JSONL estrito e `unreadable_logs=1` | sequência integral de streets fica a cargo do `GameSession`; crash físico não medido |
+| Fuzz de imagem pós-correção | matriz de malformados, MIME falso, limites e formatos | 180 casos malformados + matriz válida: zero 5xx; statuses 400/413/415/200 esperados | geração finita e local; não prova robustez populacional |
+| Receipt probatório | agregados/booleans v4 podiam ser adulterados coerentemente e o preflight não consultava idade/binding | v5 contém 35 amostras brutas; validador recompõe estatísticas/aceite; preflight bloqueia drift/expiração | host único e amostra pequena; não mede qualidade estratégica |
 
 Os números finais do gate integral e o hash do snapshot são registrados na seção 18 após a
 execução sobre árvore limpa.
@@ -217,31 +245,31 @@ execução sobre árvore limpa.
 | T03 Ontológico | Sim | Sim | invariantes de Hand/Pot/Player/Artifact | Ω04,Ω10,Ω13 | testes domínio/manifesto | variantes fora de NLHE NT |
 | T04 Regra de domínio | Sim | Sim | diferencial + casos normativos | Ω05,Ω27,Ω29,Ω31,Ω37–Ω39 | PokerKit, TDA/Robert | house rules variam |
 | T05 Elicitação | Sim | Sim | confronto banca local × produção | Ω14 | README, roteiro, NFR | requisitos do corpus dependem do pesquisador |
-| T06 Especificação | Sim | Sim | OpenAPI/ADRs/schema drift | Ω06,Ω23,Ω38 | `generate.py --check` | sem especificação formal completa |
-| T07 Assunções | Sim | Sim | precondições explícitas e testes negativos | Ω04,Ω23 | Pydantic/InvalidSpot | ranges uniformes são aproximação |
+| T06 Especificação | Sim | Sim | OpenAPI/ADRs/schema drift | Ω06,Ω23,Ω38,Ω58 | `generate.py --check` | sem especificação formal completa |
+| T07 Assunções | Sim | Sim | precondições explícitas e testes negativos | Ω04,Ω23,Ω51 | Pydantic/InvalidSpot/config | ranges uniformes são aproximação |
 | T08 Arquitetura | Sim | Sim | mapa de dependências/fronteiras | 0 | ADRs + inspeção | perfil público não homologado |
 | T09 Design | Sim | Sim | review modular/cohesion/API | Ω20,Ω26 | lint, testes, ADRs | alguns módulos permanecem grandes |
 | T10 Algoritmo | Sim | Sim | oracles, complexidade e edge cases | Ω01,Ω05,Ω10 | enumeração/PokerKit | não há solver GTO |
 | T11 Matemático/formal | Sim | Sim | conservação, Wilson, EV, pot odds | Ω02,Ω04 | property tests/benchmarks | sem prova mecanizada |
-| T12 Lógico/controle | Sim | Sim | branch tests/fuzz/boolean boundaries | Ω05,Ω27 | coverage branch + repro | espaço de estados infinito |
+| T12 Lógico/controle | Sim | Sim | branch tests/fuzz/boolean boundaries | Ω05,Ω27,Ω51,Ω54,Ω55 | coverage branch + repro | espaço de estados infinito |
 | T13 Estatístico | Sim | Parcial | IC95, poder, holdout/subgrupos | Ω02,Ω03,Ω15 | receipts v3 | corpus real não existe |
 | T14 Otimização/solver | Sim | Parcial | literatura e inspeção dos bots | Ω03 | PokerBench/CFR/ReBeL | optimalidade estratégica fora do escopo (`N/A`) |
-| T15 Sintaxe/parser | Sim | Sim | parsers PHH/JSON/config, fuzz negativo | Ω08,Ω32,Ω37,Ω39 | testes PHH e compile notebooks | outras variantes PHH |
-| T16 Tipos/serialização | Sim | Sim | mypy, StrictInt, OpenAPI, JSON | Ω06,Ω24,Ω38 | mypy/Pydantic | JS usa number IEEE-754 |
-| T17 Numérico | Sim | Sim | NaN/Inf/faixas/precisão | Ω02,Ω24 | sanity tests | SDC de hardware não coberto |
-| T18 Memória/recursos | Sim | Parcial | limites de body/pixels e 64 MiB por log | Ω18,Ω21 | 413/quota tests | sem cota cumulativa do diretório; RSS/soak longo não medido |
+| T15 Sintaxe/parser | Sim | Sim | parsers PHH/JSON/config, fuzz negativo | Ω08,Ω32,Ω37,Ω39,Ω56,Ω61 | testes PHH/log e compile notebooks | outras variantes PHH |
+| T16 Tipos/serialização | Sim | Sim | mypy, StrictInt, OpenAPI, JSON | Ω06,Ω24,Ω38,Ω59,Ω61 | mypy/Pydantic/parser estrito | JS usa number IEEE-754 |
+| T17 Numérico | Sim | Sim | NaN/Inf/faixas/precisão | Ω02,Ω24,Ω56,Ω59,Ω61,Ω63,Ω64 | sanity/log/receipt tests | SDC de hardware não coberto |
+| T18 Memória/recursos | Sim | Parcial | hard ceilings de body/pixels e 64 MiB por log | Ω18,Ω21,Ω49 | 413/quota/override tests | sem cota cumulativa do diretório; RSS/soak longo não medido |
 | T19 Concorrência | Sim | Sim | locks, broadcasts, races/TOCTOU | Ω20 | thread/API tests | alta concorrência real não testada |
-| T20 Máquina de estados | Sim | Sim | replay/fuzz/transições legais | Ω05,Ω08,Ω27 | PokerKit/PHH | pós-flop fuzz menor que preflop |
+| T20 Máquina de estados | Sim | Sim | replay/fuzz/transições legais e lifecycle de mão auditada | Ω05,Ω08,Ω27,Ω52,Ω53,Ω59,Ω60,Ω64 | PokerKit/PHH/lifecycle tests | logger não replica a progressão de streets do `GameSession` |
 | T21 Tempo/real-time | Sim | Sim | TTL, timeout, stale watchdog | Ω17,Ω19 | Vitest/API | suspensão de laptop/clock jump |
 | T22 Distribuído | Parcial | Parcial | falhas proxy/VLM/WebSocket | Ω19,Ω20 | testes mocks/contratos | sem ambiente distribuído real |
 | T23 Transações | Sim | Sim | persistência fault injection/rollback | Ω28 | testes GameSession/log | sem banco ACID externo |
-| T24 API/contrato | Sim | Sim | OpenAPI drift, HTTP/WS adversarial | Ω06,Ω18,Ω23 | 16 paths/18 requests | compatibilidade cliente externo |
-| T25 Schema de dados | Sim | Sim | manifests, receipts, PHH, API | Ω08,Ω13,Ω15,Ω32,Ω36,Ω38,Ω39 | validação estrutural | schema registry externo ausente |
+| T24 API/contrato | Sim | Sim | OpenAPI drift, HTTP/WS/imagem adversarial | Ω06,Ω18,Ω23,Ω49–Ω51,Ω58 | 16 paths/18 requests + formatos | compatibilidade cliente externo |
+| T25 Schema de dados | Sim | Sim | manifests, receipts, PHH, API e JSONL | Ω08,Ω13,Ω15,Ω32,Ω36,Ω38,Ω39,Ω56,Ω60,Ω61,Ω63,Ω64 | validação estrutural estrita | schema registry externo ausente |
 | T26 Qualidade de dados | Sim | Parcial | duplicatas, labels, subgrupos | Ω15 | external_validation | dataset real fora do escopo (`N/A`) |
 | T27 ETL/lineage | Sim | Sim | hash de fontes/conversor/receipts | Ω09,Ω13,Ω44 | commit + 13 fontes/converter hash | pipeline de treino não executado |
-| T28 Alinhamento/identidade | Sim | Sim | player_id, seat, session partitions | Ω16,Ω25 | testes/API | identidade multi-tenant ausente |
+| T28 Alinhamento/identidade | Sim | Sim | player_id, seat, roster, path e session partitions | Ω16,Ω25,Ω59,Ω60 | testes/API/log | identidade multi-tenant ausente |
 | T29 Banco de dados | Não | N/A | arquitetura confirma in-memory+JSONL | 0 | mapa/ADR | banco produtivo fora do escopo |
-| T30 Storage/filesystem | Sim | Parcial | path containment, atomicidade, cota por arquivo | Ω21,Ω28 | tests ops/log/model | sem orçamento total/retention obrigatória; falha física não injetada |
+| T30 Storage/filesystem | Sim | Parcial | path containment, atomicidade, cota, identidade e corrupção | Ω21,Ω28,Ω52,Ω56,Ω60,Ω61 | tests ops/log/model | sem orçamento total/retention obrigatória; falha física não injetada |
 | T31 Rede | Parcial | Parcial | origin/host/WS/VLM timeout | Ω19,Ω20 | API/security tests | perda/latência de rede real |
 | T32 SO/runtime | Sim | Sim | Windows launcher, locks, env allowlist | 0 | validar.ps1/preflight | outro SO não certificado |
 | T33 Hardware digital | Parcial | Parcial | inventário e limites declarados | 0 | receipt de ambiente | ECC/CPU faults não acessíveis |
@@ -251,17 +279,17 @@ execução sobre árvore limpa.
 | T37 GPU/HPC | Parcial | Parcial | providers e fail-closed sem modelo | 0 | ONNX Runtime docs/manifests | nenhuma GPU/artefato F2 medido |
 | T38 Build/toolchain | Sim | Sim | build TS, lint, format policy, notebooks, pinned tools | Ω26,Ω45,Ω46 | gate integral | bit-reproducibility não provada |
 | T39 Dependências | Sim | Sim | locks, npm audit, pip-audit | 0 | advisory snapshot: 0 conhecidas | vulnerabilidade desconhecida |
-| T40 Config/flags | Sim | Sim | env allowlist, startup fail-closed | Ω19 | config/API tests | drift do host da banca |
-| T41 Deploy/release | Sim | Sim | clean tree e distribution contract | Ω13,Ω46–Ω48 | gate 16/16 e preflight na §18 | assinatura/SLSA externa ausente |
+| T40 Config/flags | Sim | Sim | env allowlist, bool estrito e startup fail-closed | Ω19,Ω49,Ω51,Ω54,Ω55,Ω62 | config/API/preflight tests | drift do host da banca |
+| T41 Deploy/release | Sim | Sim | clean tree, lifecycle, receipt e distribution contract | Ω13,Ω46–Ω48,Ω54,Ω55,Ω62,Ω63 | gate 16/16 e preflight na §18 | assinatura/SLSA externa ausente |
 | T42 Cloud/container | Parcial | Parcial | compose/nginx static contract | 0 | deploy validator | sem deploy real e sem quotas cgroup |
-| T43 Confiabilidade | Sim | Sim | fault injection/readiness/idempotência | Ω20,Ω21,Ω28 | tests regressão | soak multi-dia ausente |
-| T44 Performance/capacidade | Sim | Sim | receipt P95 5 cenários com source+lock+runtime instalado | Ω03,Ω35,Ω43,Ω48 | receipt v4 versionado | 7 amostras/cenário, host único e carga externa observável |
+| T43 Confiabilidade | Sim | Sim | fault injection/readiness/idempotência/lifecycle | Ω20,Ω21,Ω28,Ω52,Ω53,Ω56,Ω59–Ω62 | tests regressão | soak multi-dia ausente |
+| T44 Performance/capacidade | Sim | Sim | receipt P95 5 cenários com amostras+source+lock+runtime | Ω03,Ω35,Ω43,Ω48,Ω62,Ω63 | receipt v5 versionado | 7 amostras/cenário, host único e carga externa observável |
 | T45 Cache/materialização | Sim | Sim | cache identity/hash/stale tests | Ω13,Ω17 | artifact/UI tests | cache externo/CDN N/A |
 | T46 Mensageria/streaming | Parcial | Sim | WebSocket broadcast/idempotência | Ω20 | concorrência simulada | nenhum broker |
-| T47 Observabilidade | Sim | Sim | health/ready/métricas/diagnóstico | Ω17,Ω21 | API/UI tests | telemetria produtiva ausente |
-| T48 Logging/forense | Sim | Parcial | JSONL, paginação, cota por arquivo, corrupção | Ω21,Ω28 | match_log tests | sem cota total/retention; assinatura/WORM ausente |
-| T49 Segurança arquitetura | Sim | Sim | threat boundaries, proxy profile | Ω18–Ω22 | ASVS-oriented tests | pentest externo ausente |
-| T50 Segurança input/lógica | Sim | Sim | body limits, strict parsers, fuzz | Ω08,Ω18,Ω24 | negativos API/PHH | zero-day desconhecido |
+| T47 Observabilidade | Sim | Sim | health/ready/métricas/diagnóstico/receipt | Ω17,Ω21,Ω51,Ω53,Ω56,Ω59,Ω61,Ω62 | API/UI/preflight tests | telemetria produtiva ausente |
+| T48 Logging/forense | Sim | Parcial | JSONL estrito, paginação, cota, roster, semântica de evento e corrupção | Ω21,Ω28,Ω52,Ω56,Ω60,Ω61,Ω64 | match_log tests | sem cota total/retention; assinatura/WORM ausente |
+| T49 Segurança arquitetura | Sim | Sim | threat boundaries, proxy profile, hard ceilings | Ω18–Ω22,Ω49–Ω51,Ω54,Ω55 | ASVS-oriented tests | pentest externo ausente |
+| T50 Segurança input/lógica | Sim | Sim | body limits, MIME/frame, strict parsers, fuzz | Ω08,Ω18,Ω24,Ω49,Ω50,Ω56 | negativos API/PHH/log | zero-day desconhecido |
 | T51 Identidade/auth/session | Sim | Parcial | token, OIDC proxy contract, consent TTL | Ω19 | tests/API | multi-tenant local inexistente |
 | T52 Criptografia/secrets/PKI | Sim | Parcial | scanner, token shape, TLS config | Ω22,Ω45 | scan/audit | rotação e certificado externos |
 | T53 Supply chain | Sim | Parcial | hash, lock, lineage, audits | Ω09,Ω11–Ω13,Ω35 | manifests/locks | SBOM/assinatura não emitidos; lock não prova instalação sozinho |
@@ -270,19 +298,19 @@ execução sobre árvore limpa.
 | T56 Safety | Sim | Parcial | pós-jogo/local/abstenção/fail-closed | Ω14,Ω17 | UI/preflight | não é sistema safety-certified |
 | T57 UX/HCI | Sim | Sim | fluxo, mensagens, stale, aborto e erro | Ω06,Ω07,Ω17,Ω31,Ω33,Ω34,Ω38,Ω40 | Vitest/E2E | estudo com usuários ausente |
 | T58 Acessibilidade | Sim | Parcial | roles, teclado, lint/E2E | 0 | testes UI | auditoria manual WCAG/AT ausente |
-| T59 Erro humano | Sim | Sim | preflight, consentimento, mensagens | Ω07,Ω14,Ω23 | roteiro/UI | pressão real de apresentação |
+| T59 Erro humano | Sim | Sim | preflight, consentimento, flags e mensagens | Ω07,Ω14,Ω23,Ω51,Ω54,Ω55 | roteiro/UI/preflight | pressão real de apresentação |
 | T60 Organizacional/processo | Sim | Parcial | ADRs, gates, handoff | 0 | docs/QA | revisão institucional externa |
-| T61 Documentação | Sim | Sim | drift, README, relatório, roteiro | Ω29,Ω47 | docs checks | manter após futuras mudanças |
-| T62 Test design | Sim | Sim | unit/integration/property/differential/E2E | Ω06,Ω12,Ω42,Ω44,Ω47 | 1097 backend coletados; oracles negativos isolados | mutation testing total ausente |
+| T61 Documentação | Sim | Sim | drift, README, NFR, relatório, roteiro | Ω29,Ω47,Ω57,Ω58 | docs checks | manter após futuras mudanças |
+| T62 Test design | Sim | Sim | unit/integration/property/differential/E2E | Ω06,Ω12,Ω42,Ω44,Ω47,Ω49–Ω64 | backend coletado na §18; oracles negativos isolados | mutation testing total ausente |
 | T63 Oracle/ground truth | Sim | Sim | PokerKit+norma+fixture+replay | Ω09,Ω29 | 13 PHH + fuzz | house-rule mismatch declarado |
 | T64 Verificação formal | Parcial | Parcial | invariantes executáveis | 0 | conservação/idempotência | sem model checker/prova formal |
-| T65 Reprodutibilidade/lineage | Sim | Sim | seeds, hashes, commits, receipts | Ω09,Ω13,Ω35,Ω36,Ω41,Ω43 | binding, fingerprint e expiração | fuzzes ad hoc históricos não foram preservados; hardware diferente exige nova medição |
+| T65 Reprodutibilidade/lineage | Sim | Sim | seeds, hashes, commits, receipts e JSONL estrito | Ω09,Ω13,Ω35,Ω36,Ω41,Ω43,Ω56,Ω60–Ω63 | binding, raw samples, fingerprint e expiração | fuzzes ad hoc históricos não foram preservados; hardware diferente exige nova medição |
 | T66 Backup/restore/DR | Parcial | Parcial | rollback testado, export local | Ω28 | fault tests | restore organizacional real ausente |
 | T67 Manutenção/aging | Sim | Parcial | lint/types/quotas/cache | Ω21,Ω26 | gates | soak/aging longo não executado |
-| T68 Fix-induced | Sim | Sim | regressões focadas por classe de correção/refutação | Ω12,Ω26,Ω33,Ω34,Ω38–Ω48 | fixtures ONNX checker+ORT, oracles negativos, concorrência, release decision e receipt rebinding; gates | combinações não enumeradas |
+| T68 Fix-induced | Sim | Sim | regressões focadas por classe de correção/refutação | Ω12,Ω26,Ω33,Ω34,Ω38–Ω64 | fixtures ONNX checker+ORT, oracles negativos, concorrência, release oracle, imagem, roster, JSONL e receipt; gates | combinações não enumeradas |
 | T69 ML dados/split | Sim | Parcial | contrato de session split, dedup e source groups | Ω15,Ω16 | receipt v3 | sem corpus real aprovado para verificar empiricamente |
 | T70 ML treino/otimização | Sim | Parcial | notebooks/contracts/literatura | 0 | notebook lint | nenhum treino executado aqui |
-| T71 ML inferência/serving | Sim | Sim | ONNX contract/provider/fail-closed | Ω11–Ω14,Ω38,Ω41 | model/API tests | sem F2 promovido |
+| T71 ML inferência/serving | Sim | Sim | ONNX contract/provider/input image/fail-closed | Ω11–Ω14,Ω38,Ω41,Ω50,Ω51 | model/API tests | sem F2 promovido |
 | T72 ML avaliação/fairness | Sim | Parcial | contrato exact-state, Wilson, ECE/Brier, groups | Ω15,Ω16 | external_validation | sem dados/corpus para medir fairness populacional |
 | T73 GenAI/LLM/agentes | Sim | Sim | F3 consentido, grounded as proposal | Ω14,Ω19 | VLM tests | fornecedor/modelo remoto não validado |
 | T74 Web/frontend/browser | Sim | Sim | Vitest/build/lint/E2E/capture | Ω17,Ω23,Ω26,Ω33,Ω34,Ω38,Ω40,Ω46,Ω47 | 78 unitários + 9 E2E | matriz ampla de browsers ausente |
@@ -290,7 +318,7 @@ execução sobre árvore limpa.
 | T76 IoT/embedded/OT | Não | N/A | nenhum componente | 0 | inventário | fora do escopo |
 | T77 Robótica/sensores | Não | N/A | captura é browser, sem controle físico | 0 | arquitetura | fora do escopo |
 | T78 Blockchain/ledger | Não | N/A | nenhum componente | 0 | inventário | fora do escopo |
-| T79 FinOps/custos/quotas | Parcial | Parcial | local/offline, body e cota por log | Ω18,Ω21 | limits/tests | sem cota total de logs; custo externo não modelado |
+| T79 FinOps/custos/quotas | Parcial | Parcial | local/offline, hard ceiling e cota por log | Ω18,Ω21,Ω49 | limits/tests | sem cota total de logs; custo externo não modelado |
 | T80 Interoperabilidade/versionamento | Sim | Sim | OpenAPI/PHH/PokerKit/ONNX | Ω08,Ω09,Ω29,Ω32,Ω38,Ω39 | drift/replay | odd-chip e variantes declarados |
 
 ## 11. Silent-bug hunt S01–S36
@@ -300,33 +328,33 @@ execução sobre árvore limpa.
 | S01 Silent Data Corruption | 0 bytes comprovados | SHA-256, identity recheck, manifests | RAM/disco/ECC não testados |
 | S02 Lost write | Ω28 fechado | append transacional + rollback | crash de SO no flush físico |
 | S03 Misdirected write | 0 detectado | path containment/canonical paths | ACL externa ao pacote |
-| S04 Torn/partial write | Ω21/Ω28 mitigado | parse estrito e falha de readiness | falha de setor físico |
-| S05 Silent truncation | Ω21 fechado | quota rejeita; paginação declara truncamento | consumidores externos |
-| S06 Silent coercion/cast | Ω24 fechado | StrictInt/Bool/finitude | `number` frontend |
-| S07 Overflow/underflow/wrap | 0 detectado | limites de stack/pot/body | inteiros externos fora do schema |
+| S04 Torn/partial write | Ω21/Ω28/Ω56/Ω61 mitigado | parse estrito e falha de readiness | falha de setor físico |
+| S05 Silent truncation | Ω21/Ω61 fechado | quota/linha rejeitam; paginação declara truncamento | consumidores externos |
+| S06 Silent coercion/cast | Ω24/Ω59/Ω61 fechado | StrictInt/Bool/finitude/JSON estrito | `number` frontend |
+| S07 Overflow/underflow/wrap | Ω49/Ω61/Ω63 fechado | limites de stack/pot/body/inteiro e recomputação | inteiros externos fora do schema |
 | S08 Rounding/precision loss | Ω02/Ω29 | Wilson; house rule odd-chip explícita | percentuais UI arredondados |
 | S09 Unit mismatch | 0 detectado | nomes `_ms`, pct/rate e testes | hardware clocks distintos |
 | S10 Alignment error | Ω06/Ω16 | seat/player/session/sizing ligados | corpus externo ausente |
-| S11 Silent default/fallback | Ω14/Ω23 | F1/F3 abstêm; table_size explícito | defaults didáticos restantes |
+| S11 Silent default/fallback | Ω14/Ω23/Ω51/Ω54/Ω55/Ω62 | F1/F3 abstêm; table_size, flags e receipt explícitos | defaults didáticos restantes |
 | S12 Exception swallowing | Ω12 fechado | ONNX parser fail-closed | catches defensivos revisáveis |
 | S13 Retry masking | 0 detectado | sem retry automático de decisão | rede real não exercitada |
 | S14 Cache staleness | Ω13/Ω17 | content hash + TTL/watchdog | clock/suspensão do host |
 | S15 Schema drift | Ω06 | OpenAPI/receipt check | cliente não versionado externo |
-| S16 Config drift | Ω19 | env allowlist/startup gates | máquina da banca exige preflight |
+| S16 Config drift | Ω19/Ω51/Ω54/Ω55/Ω62 | env allowlist, bool estrito, startup/receipt/preflight | máquina da banca exige preflight |
 | S17 Artifact/version mismatch | Ω09/Ω13 | commit/hash/semantic binding | assinatura externa ausente |
 | S18 Checkpoint/model mismatch | Ω13 | lifecycle/kind/contracts | nenhum F2 instalado |
-| S19 Feature disablement | 0 silencioso | `/ready`, levels e UI expõem indisponibilidade | operador pode ignorar aviso |
-| S20 Silent no-op | Ω14 convertido em abstain explícito | `sanity.ok=false`, `decision=null` | modelos de treino não rodados |
-| S21 Partial success | Ω18/Ω28 | 413/503/rollback | falha de processo/OS extrema |
+| S19 Feature disablement | Ω51/Ω54/Ω62 fechado | `/ready`, preflight, receipt, levels e UI expõem indisponibilidade | operador pode ignorar aviso |
+| S20 Silent no-op | Ω14/Ω52/Ω53/Ω59/Ω60 convertidos em abstain/erro explícito | `decision=null` e invariantes de lifecycle/roster | modelos de treino não rodados |
+| S21 Partial success | Ω18/Ω28/Ω49 | 413/503/rollback/hard ceiling | falha de processo/OS extrema |
 | S22 Duplicate processing | 0 detectado | idempotency + tombstones | além das janelas declaradas |
-| S23 Silent omission | Ω23/Ω25 | table_size, rebuys, WTSD | novas métricas futuras |
-| S24 Semantic contract violation | Ω06/Ω13 | sizing e artifact contract | sem prova formal |
-| S25 Consistency violation | Ω05/Ω10/Ω28 | conservação/oracle/rollback | house rules externas |
-| S26 Security bypass | Ω18/Ω19/Ω22 | middleware/consent/scan | pentest externo |
+| S23 Silent omission | Ω23/Ω25/Ω52/Ω53/Ω56/Ω59–Ω61 | table_size, roster/resultado, rebuys, WTSD e unreadable count | novas métricas futuras |
+| S24 Semantic contract violation | Ω06/Ω13/Ω50/Ω56/Ω59–Ω64 | sizing, artifact, MIME, roster, eventos, JSON e receipt | sem prova formal |
+| S25 Consistency violation | Ω05/Ω10/Ω28/Ω52/Ω53/Ω56/Ω59–Ω64 | conservação/oracle/rollback/identity/recompute | house rules externas |
+| S26 Security bypass | Ω18/Ω19/Ω22/Ω49/Ω50/Ω54/Ω55 | middleware/consent/scan/startup | pentest externo |
 | S27 Privacy leakage | Ω19 | window-only + redact + consent | implementação do navegador |
-| S28 Metric corruption | Ω02/Ω15/Ω25 | Wilson/recompute/economic buy-in | população externa ausente |
-| S29 Test false positive | Ω06/Ω12/Ω42/Ω44 fechado | checker+ORT, pixels redigidos, bases negativas completas e oracles específicos | mutation testing incompleto |
-| S30 Evaluator/oracle error | Ω09/Ω29 | múltiplos oracles e norma | casos além do fuzz |
+| S28 Metric corruption | Ω02/Ω15/Ω25/Ω53/Ω59/Ω63 | Wilson/recompute/economic buy-in/event identity/raw samples | população externa ausente |
+| S29 Test false positive | Ω06/Ω12/Ω42/Ω44/Ω54/Ω55/Ω62/Ω63 fechado | checker+ORT, bases negativas, lifecycle real e mutation do receipt | mutation testing total incompleto |
+| S30 Evaluator/oracle error | Ω09/Ω29/Ω54/Ω55/Ω62/Ω63 | múltiplos oracles, norma, startup e recomputação | casos além do fuzz |
 | S31 ML leakage | 0 no artefato promovido | split por sessão obrigatório | não há dataset para testar empiricamente |
 | S32 Preprocessing skew | gate definido | pipeline binding no receipt | F2 real inexistente |
 | S33 Model mode error | gate definido | runtime contract/provider | treino não executado |
@@ -345,6 +373,7 @@ execução sobre árvore limpa.
 | V02 abstenção/calibração | Sim | F1/F3 abstêm; F2 exige Wilson/ECE/Brier | nenhum F2 promovido |
 | V03 independência por sessão | Sim como contrato | ≥20 sessões e partitions reconciliadas | dados ainda não coletados |
 | M01 promoção/linhagem ONNX | Sim | hash, semantic contract, no sidecar, parse fail-closed | autoria não assinada |
+| A01 manipulação adversarial de entrada/imagem | Parcial | hard ceilings, MIME-decoder binding, frame único e fuzz malformado | ataques semanticamente válidos e robustez adversarial F2 não medidos |
 | D01 honestidade acadêmica | Sim | roteiro/README/UI/relatório separam demo de validade | depende da fala correta na banca |
 
 ## 13. Contradiction log
@@ -363,8 +392,14 @@ execução sobre árvore limpa.
 | C10 | gates finais ainda não executados no snapshot limpo | novos bugs ainda podem existir mesmo após aprovação | estado pré-release | natureza incompleta de testes | resolvida no snapshot/permanente no desconhecido | gate 16/16 e preflight na §18; conclusão nunca usa “bug-free” |
 | C11 | “quota de logs” parecia global | limite implementado é 64 MiB por arquivo | texto anterior | código/refutação | resolvida no relatório | classes T18/T30/T48/T79 rebaixadas e risco total explícito |
 | C12 | receipt válido em qualquer ambiente/idade | medição só vale no runtime e janela declarados | verifier anterior | TEVV/refutação | resolvida | fingerprint exato + expiração de 30 dias |
-| C13 | lock/hash estreito provaria o runtime medido | módulos/dependências/CPU omitidos podiam variar | receipt anterior | refutação de closure | resolvida | package Python completo + lock + todas as distribuições/versões instaladas; novo receipt v4 obrigatório |
+| C13 | lock/hash estreito provaria o runtime medido | módulos/dependências/CPU omitidos podiam variar | receipt anterior | refutação de closure | resolvida | package Python completo + lock + todas as distribuições/versões instaladas; receipt atual v5 obrigatório |
 | C14 | `vision.decision_blocked=true` parecia negar o GO geral | release e recomendação estratégica são decisões diferentes | preflight/UI | escopo da banca | resolvida | campos `release_*` separados; abstenção é PASS esperado e a UI a chama de proteção aprovada |
+| C15 | preflight aceitava flags ambíguas | servidor real rejeitava `POKER_WARMUP=talvez` | oracle de release | lifespan FastAPI | resolvida | bool estrito + `TestClient` context manager; nenhum GO sem startup real |
+| C16 | NFR dizia que receipts não expiravam automaticamente | verificadores impõem máximo de 30 dias | NFR antiga | gates Ω36/Ω43 | resolvida | NFR harmonizada com expiração e invalidação por drift |
+| C17 | runtime rejeita MIME divergente | OpenAPI 415 citava apenas tipo não permitido | Ω50 | contrato exportado | resolvida | descrição regenerada e assert semântico em `test_api_docs.py` |
+| C18 | gate pytest bloqueava receipt stale/expirado | opção 5 podia emitir GO sem consultá-lo | suíte integral | preflight isolado | resolvida | mesmo validador probatório integra o preflight e seu payload GO |
+| C19 | receipt dizia P95/acceptance | somente agregados/booleans eram persistidos | claim de performance | schema v4 | resolvida | v5 guarda 35 amostras e recompõe todos os agregados/flags |
+| C20 | coletores “rejeitam eventos fora de ordem” | não duplicam a progressão de streets do motor | NFR/relatório amplo | compatibilidade legada | resolvida | claim calibrado a lifecycle de mão, roster, identidade e resultado; `GameSession` continua autoridade de streets |
 
 ## 14. Negative evidence log
 
@@ -382,6 +417,16 @@ execução sobre árvore limpa.
 | frame stale segue acionável | relógio/TTL e erro de captura | decisão vira nula | throttling/browser não enumerados |
 | peer WS lento recebe N tentativas | broadcast concorrente simulado | uma tentativa; peer `failed` | não é carga de rede real |
 | upload grande chega ao multipart | chunks ASGI acima do teto | 413 precoce | servidor/proxy real pode impor outro limite |
+| override enorme mantém o teto | `POKER_MAX_IMAGE_BYTES` com 100 dígitos + upload mínimo | antes 500; agora 400 sob teto canônico | não mede limite imposto por proxy externo |
+| MIME declarado prova o formato | BMP como `image/png`; APNG com dois frames | hipótese refutada; agora 415 e 400 | imagem semanticamente adversarial ainda pode ser formato válido |
+| flag remota ambígua é inofensiva | `POKER_ENABLE_REMOTE_VLM=talvez` em `/ready` e preflight | antes ready/GO; agora 503/BLOCKED | outras configurações futuras exigem contrato próprio |
+| preflight exerce o servidor real | `POKER_WARMUP=talvez` + execução do oracle | antes GO sem lifespan; agora startup é exercitado e bloqueia | não simula falha física do host |
+| log vazio/duplicado/não-finito é visível | três JSONL dirigidos + writer com `NaN` | erro explícito e `unreadable_logs=1`; writer não persiste | não cobre corrupção física pós-flush |
+| jogador histórico pode agir na mão atual | duas mãos com roster reduzido + ação/resultado do removido | rejeitado como ausente da mão atual | coletores confiam na ordem de streets do `GameSession` |
+| meta/path/roster podem divergir | campos reservados, filename≠meta.id, seat↔player e resultado incompleto | todos falham antes de persistir/contabilizar | identidade externa multi-tenant não existe |
+| JSONL numericamente válido é sempre finito | `1e400`, inteiro de 5.000 dígitos, BOM e linha branca | corrupção explícita; writer/reader usam o mesmo limite | falha física após `fsync` não simulada |
+| receipt adulterado mantém GO | mutações de P95, flag, nome, iterações, duplicata e não-finito | v5 rejeita e recompõe a partir de amostras | autoria ainda não assinada |
+| preflight ignora idade/binding do receipt | injetar receipt expirado/stale no oracle | `DemoPreflightError`; nenhum GO | validação vale para o ambiente local registrado |
 | F1 reconhece caso real rotulado | `real_eval.py` | estado exato 0/1, abstain | uma amostra de conveniência |
 | F2 atende validade externa | busca de artefato/receipt | não instalado; `N/A` nesta release | não prova impossibilidade futura |
 | regras de odd chip são universais | comparar TDA/Robert/PokerKit | divergência encontrada | house rules dependem do local |
@@ -423,6 +468,9 @@ execução sobre árvore limpa.
 11. Receipts históricos de visão sem binding de implementação são apenas registro histórico;
     não autorizam F2 nem sustentam alegação “depois”. O gate de promoção aceita somente receipt
     v3 hash-bound, no mesmo fingerprint de runtime e com até 30 dias.
+12. `WatchStats`/`MatchLogger` validam abertura/fechamento, roster, seat, identidade e cobertura
+    do resultado, mas não reimplementam toda a progressão de streets/board. O chamador
+    autoritativo é `GameSession`; uso isolado desses coletores deve respeitar essa precondição.
 
 ## 16. Recomendações priorizadas
 
@@ -445,8 +493,11 @@ execução sobre árvore limpa.
 3. **“Não encontrado” deveria ser “não verificado”?** Sim para hardware/produção/corpus; foi corrigido.
 4. **Hipótese foi chamada de fato?** Não no parecer final; evidência amostral é rotulada.
 5. **Correlação virou causalidade?** Não; causas-raiz exigiram repro/propagação ou ficaram rivais.
-6. **Algum teste citado não foi executado?** Gates finais terão comando/resultado na seção 18.
-7. **Algum teste sempre passa?** Sim, foi detectado e corrigido: negativos PHH/API falhavam numa precondição anterior ao alvo; agora partem de bases válidas e verificam mensagem/`loc` específicos.
+6. **Algum teste citado não foi executado?** Gates finais do candidato terão comando/resultado
+   operacional; evidências dirigidas e históricas são identificadas separadamente na seção 18.
+7. **Algum teste sempre passa?** Sim, dois padrões foram corrigidos: negativos PHH/API
+   falhavam antes do alvo, e o preflight não executava o lifespan real; ambos agora isolam o
+   oracle pretendido.
 8. **Oracle pode estar errado?** Sim; PokerKit diverge de TDA R47/odd-chip, por isso não é único.
 9. **Ground truth pode estar errado?** Sim; por isso o F2 exige dupla anotação/adjudicação.
 10. **Dado pode estar desalinhado?** Sim; sessão/fonte/seat/sizing agora têm bindings explícitos.
@@ -454,17 +505,22 @@ execução sobre árvore limpa.
 12. **Unidade pode estar errada?** Nenhuma divergência encontrada; `_ms`, pct e rate foram revisados.
 13. **Timezone/DST interfere?** Não na lógica de poker; pode afetar timestamps forenses, risco residual baixo.
 14. **Cast silencioso existe?** Fronteiras críticas usam tipos estritos; JS `number` permanece limitado.
-15. **Overflow/NaN/Inf não monitorado?** Fronteiras visuais bloqueiam; hardware SDC não é monitorado.
+15. **Overflow/NaN/Inf não monitorado?** Fronteiras visuais e JSONL bloqueiam; overrides têm
+    hard ceiling; hardware SDC não é monitorado.
 16. **Catch engole exceção?** O ONNX fail-open encontrado virou erro explícito; não se prova ausência global.
 17. **Retry mascara instabilidade?** Não há retry automático de decisão; rede real não foi exercitada.
 18. **Cache pode estar stale?** Sim em tese; hashes/identity/TTL mitigam, clock do host é residual.
-19. **Config declarada difere da efetiva?** Preflight limpa env e `/ready` expõe estado; host exige repetição.
+19. **Config declarada difere da efetiva?** Flags booleanas são estritas, preflight percorre
+    o lifespan e `/ready` expõe estado; o host da banca ainda exige repetição.
 20. **Artefato executado difere do auditado?** Identity recheck bloqueia troca; SO host ainda é fronteira.
 21. **Dependência móvel?** Locks congelam resolução; índices/advisories externos continuam móveis.
 22. **Build é reproduzível?** Funcionalmente pelo lock/gate; bit-identidade não foi provada.
 23. **Checkpoint/modelo errado?** Lifecycle/kind/hash/contrato bloqueiam; nenhum F2 foi promovido.
-24. **Feature/camada no-op?** Indisponibilidade é exposta; F1/F3 abstêm de propósito, não silenciosamente.
-25. **ACK sem persistência?** Fault injection exige rollback/503; flush físico após crash não foi provado.
+24. **Feature/camada no-op?** Indisponibilidade é exposta; F1/F3 abstêm de propósito e
+    eventos sem mão/roster/resultado válido agora falham, não somem. A ordem de streets é
+    responsabilidade do `GameSession`.
+25. **ACK sem persistência?** Fault injection exige rollback/503; logs vazios/ambíguos
+    degradam readiness; flush físico após crash não foi provado.
 26. **Operação parcial retorna sucesso?** Casos testados falham fechados; falha extrema de processo é residual.
 27. **Mensagem duplica/some/reordena?** Idempotência/versão cobrem REST; não há broker distribuído.
 28. **Race depende do debugger?** Concorrência foi testada sem debugger; espaço real de schedules é maior.
@@ -480,19 +536,23 @@ execução sobre árvore limpa.
 38. **Requisito safety omitido?** Uso pós-jogo/local e abstenção estão explícitos; certificação safety não existe.
 39. **Erro humano causado pelo design?** Ω07/Ω14/Ω23 foram exemplos e foram corrigidos.
 40. **Dashboard mede proxy?** Sim: equity/VPIP/confiança interna são proxies e estão rotulados.
-41. **Log incompleto/clock errado?** Corrupção é sinalizada; relógio wall-clock pode variar.
+41. **Log incompleto/clock errado?** Ausência de meta, duplicatas e não-finitos são corrupção
+    explícita; relógio wall-clock pode variar.
 42. **Métrica usa mesma implementação auditada?** Algumas sim; PokerKit/replay/Wilson recomputado dão triangulação.
 43. **Avaliação ML tem leakage?** Não há avaliação F2 promovida; contrato por sessão previne, não prova empiricamente.
 44. **LLM virou fato sem grounding?** Não; F3 é proposta diagnóstica e se abstém.
 45. **Agente tem agency excessiva?** Agente independente foi read-only; correções ficaram no agente principal.
 46. **Correção enfraqueceu testes?** Não; ONNX ficou mais real e o oracle de raise mais estrito.
 47. **Correção criou regressão?** O primeiro gate revelou Ω46; o gate do candidato Ω47 revelou
-    Ω48 e foi reprovado em 1/16. A causa exata foi reproduzida e o receipt foi remedido. O
-    candidato coleta 1097 backend; 78 frontend e 9 E2E passaram nas execuções dirigidas. A
-    decisão final ainda exige o gate clean-tree do próprio commit e não exclui regressão desconhecida.
+    Ω48 e foi reprovado em 1/16. A nova rodada adversarial revelou Ω49–Ω64 antes do commit.
+    O candidato coleta 1131 backend; a rodada atual possui 174 focais, além das execuções
+    dirigidas anteriores de 78 frontend e 9 E2E. A decisão final ainda exige o gate clean-tree
+    do próprio commit e não exclui regressão desconhecida.
 48. **Há causa alternativa?** Sim em alguns casos; contradições e house rules preservam alternativas.
 49. **Segundo revisor reproduziria?** Os gates, receipts, hashes e casos dirigidos, sim. Os três fuzzes ad hoc históricos não integralmente: seeds/resultados existem, mas os harnesses não foram preservados e não são usados como gate.
-50. **Há evidência independente do efeito final?** Sim para casos dirigidos, replay, contratos Ω42/Ω43 e execução focada; fuzz ad hoc é apenas histórico e não há evidência externa de generalização visual.
+50. **Há evidência independente do efeito final?** Sim para casos dirigidos, replay,
+    contratos Ω42/Ω43 e refutação Ω49–Ω64; fuzz ad hoc é apenas histórico e não há evidência
+    externa de generalização visual.
 
 Qualquer resposta residual relevante foi convertida em item explícito da seção 15.
 
@@ -528,16 +588,23 @@ O contrato Ω47 torna o veredito da release executável: sucesso retorna
 `release_decision=GO`, `release_scope=LOCAL_MASTER_DEFENSE` e lista capacidades externas em
 `out_of_scope`; falha retorna `release_decision=BLOCKED`. O wrapper PowerShell só imprime
 `RELEASE_DECISION=GO; SCOPE=LOCAL_MASTER_DEFENSE` depois de receber exit code 0. A suíte final
-contém **1097 testes backend**, **78 frontend** e **9 E2E**. O commit que contém esta seção só
+contém **1131 testes backend**, **78 frontend** e **9 E2E**. O commit que contém esta seção só
 é liberado depois de repetir os 16 gates e o preflight em árvore limpa; qualquer falha revoga
 o GO.
 
 O primeiro gate do candidato Ω47, `f6739bf`, foi corretamente **reprovado em 1/16**: o teste
 de receipt detectou que o hash versionado de `app.py` antecedia a mudança de linguagem Ω47.
 Os outros 15 gates passaram. A falha foi reproduzida isoladamente e não foi mascarada por
-alteração de teste. O benchmark foi reexecutado sobre o pacote atual; o novo receipt v4 acima
+alteração de teste. O benchmark foi reexecutado sobre aquele pacote; o receipt v4 então gerado
 passou todos os cinco cenários e precisa pertencer ao novo commit clean-tree submetido ao
 mesmo gate integral.
+
+A rodada Ω49–Ω64 acrescentou hard ceilings, vínculo MIME-decoder, frame único, flags
+booleanas estritas, lifecycle/receipt real no preflight, roster e JSONL estritos e receipt v5
+com amostras recomputáveis, além de contrato semântico/numérico do log. Antes do commit, a bateria focada atual e Ruff/format/mypy devem
+passar, o receipt deve ser novamente vinculado ao pacote modificado e o novo commit deve
+percorrer integralmente os 16 gates e o preflight. Nenhuma aprovação histórica substitui
+esse requisito.
 
 ### Rubrica no escopo local supervisionado
 
@@ -561,9 +628,10 @@ estão **fora do escopo (`N/A`)**, não são dependências desta release e não 
 
 O pacote foi substancialmente endurecido em regras NLHE, estimativa numérica, explicações,
 PHH, promoção ONNX, validação visual, segurança, privacidade, persistência, contratos e UX.
-Os defeitos comprovados receberam correções e regressões; a busca independente encontrou
+Os defeitos comprovados receberam correções e regressões; as buscas independentes encontraram
 contraexemplos adicionais de raise incontestável, vetores PHH permissivos, concorrência stale,
-binding incompleto de evidência e divergências de oracle/house rule. Eles foram corrigidos ou
+binding incompleto de evidência, falsos GO de configuração/lifecycle, entrada visual ambígua,
+omissões de eventos/JSONL e divergências de oracle/house rule. Eles foram corrigidos ou
 reclassificados sem escolher automaticamente a conclusão conveniente.
 
 A solução é **GO e 10,0/10,0 como demonstrador acadêmico local, supervisionado,

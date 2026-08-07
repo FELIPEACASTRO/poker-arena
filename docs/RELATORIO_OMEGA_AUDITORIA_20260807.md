@@ -160,6 +160,7 @@ outro defeito da mesma classe.
 | Ω43 | P1 | Receipt de performance ligava o lock, mas não o ambiente Python realmente instalado | declaração de dependências era tratada como runtime medido | schema v4 liga todas as distribuições/versões instaladas e rejeita CPU/máquina não reportadas |
 | Ω44 | P1 | Suíte ampla expôs hashes stale, fixture ONNX apenas parseável e testes VLM sem exercer a redação | regressões de evidência não apareciam nos focais iniciais | catálogo histórico preservado; Pluribus 13/13 regenerado/refutado; ONNX passa checker+ORT; pixels/metadata e wiring da redação testados |
 | Ω45 | P2 | Formatter não era gate e um literal sintético de teste acionava o scanner da própria distribuição | política de estilo e fixture de segurança não eram compostas no mesmo gate | format-check integral; exclusão explícita só do coletor histórico ainda lintado; fixture monta o alvo em runtime; scan da raiz 0 |
+| Ω46 | P1 | Primeiro gate clean-tree excedeu 600 s no coverage e o E2E rejeitou o novo fingerprint de redação | timeout não acompanhou a suíte ampliada; stub congelara `configured-mask-v1` sem digest | timeout 900 s sujeito a conclusão real; stub deriva/valida o digest exato da região; E2E isolado 9/9 |
 
 ## 7. Bugs silenciosos e corrupção silenciosa
 
@@ -247,7 +248,7 @@ execução sobre árvore limpa.
 | T35 Físico/ambiental | Parcial | Não | ameaça documentada | 0 | escopo | calor, cabo, tela, operador |
 | T36 Energia/clock/térmico | Parcial | Não | ameaça documentada | 0 | escopo | throttling/queda de energia |
 | T37 GPU/HPC | Parcial | Parcial | providers e fail-closed sem modelo | 0 | ONNX Runtime docs/manifests | nenhuma GPU/artefato F2 medido |
-| T38 Build/toolchain | Sim | Sim | build TS, lint, format policy, notebooks, pinned tools | Ω26,Ω45 | gate integral | bit-reproducibility não provada |
+| T38 Build/toolchain | Sim | Sim | build TS, lint, format policy, notebooks, pinned tools | Ω26,Ω45,Ω46 | gate integral | bit-reproducibility não provada |
 | T39 Dependências | Sim | Sim | locks, npm audit, pip-audit | 0 | advisory snapshot: 0 conhecidas | vulnerabilidade desconhecida |
 | T40 Config/flags | Sim | Sim | env allowlist, startup fail-closed | Ω19 | config/API tests | drift do host da banca |
 | T41 Deploy/release | Sim | Pendente | clean tree e distribution contract | Ω13 | gate será registrado na §18 | assinatura/SLSA externa ausente |
@@ -277,13 +278,13 @@ execução sobre árvore limpa.
 | T65 Reprodutibilidade/lineage | Sim | Sim | seeds, hashes, commits, receipts | Ω09,Ω13,Ω35,Ω36,Ω41,Ω43 | binding, fingerprint e expiração | fuzzes ad hoc históricos não foram preservados; hardware diferente exige nova medição |
 | T66 Backup/restore/DR | Parcial | Parcial | rollback testado, export local | Ω28 | fault tests | restore organizacional real ausente |
 | T67 Manutenção/aging | Sim | Parcial | lint/types/quotas/cache | Ω21,Ω26 | gates | soak/aging longo não executado |
-| T68 Fix-induced | Sim | Sim | regressões focadas por classe de correção/refutação | Ω12,Ω26,Ω33,Ω34,Ω38–Ω45 | fixtures ONNX checker+ORT, oracles negativos e concorrência; gates | combinações não enumeradas |
+| T68 Fix-induced | Sim | Sim | regressões focadas por classe de correção/refutação | Ω12,Ω26,Ω33,Ω34,Ω38–Ω46 | fixtures ONNX checker+ORT, oracles negativos e concorrência; gates | combinações não enumeradas |
 | T69 ML dados/split | Sim | Parcial | contrato de session split, dedup e source groups | Ω15,Ω16 | receipt v3 | sem corpus real aprovado para verificar empiricamente |
 | T70 ML treino/otimização | Sim | Parcial | notebooks/contracts/literatura | 0 | notebook lint | nenhum treino executado aqui |
 | T71 ML inferência/serving | Sim | Sim | ONNX contract/provider/fail-closed | Ω11–Ω14,Ω38,Ω41 | model/API tests | sem F2 promovido |
 | T72 ML avaliação/fairness | Sim | Parcial | contrato exact-state, Wilson, ECE/Brier, groups | Ω15,Ω16 | external_validation | sem dados/corpus para medir fairness populacional |
 | T73 GenAI/LLM/agentes | Sim | Sim | F3 consentido, grounded as proposal | Ω14,Ω19 | VLM tests | fornecedor/modelo remoto não validado |
-| T74 Web/frontend/browser | Sim | Sim | Vitest/build/lint/E2E/capture | Ω17,Ω23,Ω26,Ω33,Ω34,Ω38,Ω40 | gates | matriz ampla de browsers ausente |
+| T74 Web/frontend/browser | Sim | Sim | Vitest/build/lint/E2E/capture | Ω17,Ω23,Ω26,Ω33,Ω34,Ω38,Ω40,Ω46 | 77 unitários + 9 E2E | matriz ampla de browsers ausente |
 | T75 Mobile | Não | N/A | nenhum cliente mobile | 0 | inventário | fora do escopo |
 | T76 IoT/embedded/OT | Não | N/A | nenhum componente | 0 | inventário | fora do escopo |
 | T77 Robótica/sensores | Não | N/A | captura é browser, sem controle físico | 0 | arquitetura | fora do escopo |

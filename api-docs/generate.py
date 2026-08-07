@@ -136,12 +136,8 @@ def _validate_vendor_assets(vendor_dir: Path = VENDOR_DIR) -> None:
         "registry": "https://registry.npmjs.org/",
         "release_tag": "v5.17.14",
         "retrieved_on": "2026-07-18",
-        "tarball": (
-            "https://registry.npmjs.org/swagger-ui-dist/-/swagger-ui-dist-5.17.14.tgz"
-        ),
-        "tarball_sha256": (
-            "c57badf459aa6e65cc036b3862d0502a63f9a22546407ffcb0e64f85f816bb28"
-        ),
+        "tarball": ("https://registry.npmjs.org/swagger-ui-dist/-/swagger-ui-dist-5.17.14.tgz"),
+        "tarball_sha256": ("c57badf459aa6e65cc036b3862d0502a63f9a22546407ffcb0e64f85f816bb28"),
     }:
         raise ValueError("origem ou integridade do tarball Swagger divergente")
 
@@ -295,9 +291,7 @@ def _parameter_value(parameter: dict[str, Any]) -> tuple[str, bool]:
     return str(default), not parameter.get("required", False)
 
 
-def _multipart_parameters(
-    spec: dict[str, Any], media: dict[str, Any]
-) -> list[dict[str, Any]]:
+def _multipart_parameters(spec: dict[str, Any], media: dict[str, Any]) -> list[dict[str, Any]]:
     schema = _resolve_local_ref(spec, media.get("schema", {}))
     required = set(schema.get("required", []))
     params: list[dict[str, Any]] = []
@@ -308,11 +302,7 @@ def _multipart_parameters(
             item: dict[str, Any] = {"fileName": "", "name": name, "type": "file"}
         else:
             default = prop.get("default", "")
-            value = (
-                json.dumps(default).lower()
-                if isinstance(default, bool)
-                else str(default)
-            )
+            value = json.dumps(default).lower() if isinstance(default, bool) else str(default)
             item = {"name": name, "value": value}
         if name not in required:
             item["disabled"] = True
@@ -324,15 +314,9 @@ def _multipart_parameters(
 
 def _build_insomnia(spec: dict[str, Any]) -> dict[str, Any]:
     rows = list(_operation_rows(spec))
-    tag_docs = {
-        item["name"]: item.get("description", "") for item in spec.get("tags", [])
-    }
-    tags = sorted(
-        {(operation.get("tags") or ["Outros"])[0] for _, _, operation in rows}
-    )
-    path_variables = sorted(
-        {name for _, path, _ in rows for name in PATH_PARAMETER.findall(path)}
-    )
+    tag_docs = {item["name"]: item.get("description", "") for item in spec.get("tags", [])}
+    tags = sorted({(operation.get("tags") or ["Outros"])[0] for _, _, operation in rows})
+    path_variables = sorted({name for _, path, _ in rows for name in PATH_PARAMETER.findall(path)})
     environment: dict[str, Any] = {
         "api_token": "",
         "base_url": LOCAL_SERVER["url"],
@@ -342,10 +326,7 @@ def _build_insomnia(spec: dict[str, Any]) -> dict[str, Any]:
         "ws_url": "ws://127.0.0.1:8000",
     }
     environment.update(
-        {
-            name: 0 if name == "seat" else f"COLE_AQUI_O_{name}"
-            for name in path_variables
-        }
+        {name: 0 if name == "seat" else f"COLE_AQUI_O_{name}" for name in path_variables}
     )
     resources: list[dict[str, Any]] = [
         {
@@ -436,9 +417,7 @@ def _build_insomnia(spec: dict[str, Any]) -> dict[str, Any]:
         content = operation.get("requestBody", {}).get("content", {})
         if "application/json" in content:
             if (method, path) not in JSON_EXAMPLES:
-                raise ValueError(
-                    f"exemplo JSON obrigatório ausente para {method} {path}"
-                )
+                raise ValueError(f"exemplo JSON obrigatório ausente para {method} {path}")
             headers.insert(0, {"name": "Content-Type", "value": "application/json"})
             request["body"] = {
                 "mimeType": "application/json",
@@ -575,9 +554,7 @@ def check_artifacts(output_dir: Path = HERE) -> tuple[str, ...]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--check", action="store_true", help="Detect drift without writing."
-    )
+    parser.add_argument("--check", action="store_true", help="Detect drift without writing.")
     parser.add_argument("--output-dir", type=Path, default=HERE)
     args = parser.parse_args(argv)
 
@@ -592,8 +569,7 @@ def main(argv: list[str] | None = None) -> int:
     write_artifacts(args.output_dir)
     generated, insomnia, _ = build_artifacts()
     count = sum(
-        resource["_type"] in {"request", "websocket_request"}
-        for resource in insomnia["resources"]
+        resource["_type"] in {"request", "websocket_request"} for resource in insomnia["resources"]
     )
     print(f"OK: {len(generated['paths'])} paths; {count} requests")
     return 0

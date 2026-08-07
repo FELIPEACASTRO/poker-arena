@@ -12,8 +12,8 @@ S = 256
 OUT_ICO = os.path.join(os.path.dirname(__file__), "poker.ico")
 OUT_PNG = os.path.join(os.path.dirname(__file__), "poker.png")
 
-GREEN_IN = (28, 150, 105)   # feltro claro (centro)
-GREEN_OUT = (7, 44, 31)     # feltro escuro (borda)
+GREEN_IN = (28, 150, 105)  # feltro claro (centro)
+GREEN_OUT = (7, 44, 31)  # feltro escuro (borda)
 GOLD = (201, 162, 90)
 CREAM = (245, 247, 250)
 
@@ -40,7 +40,9 @@ img.paste(grad, (0, 0), mask)
 # --- anel dourado duplo ---
 d = ImageDraw.Draw(img)
 d.rounded_rectangle([16, 16, S - 16, S - 16], radius=44, outline=GOLD, width=6)
-d.rounded_rectangle([26, 26, S - 26, S - 26], radius=36, outline=(GOLD[0], GOLD[1], GOLD[2]), width=2)
+d.rounded_rectangle(
+    [26, 26, S - 26, S - 26], radius=36, outline=(GOLD[0], GOLD[1], GOLD[2]), width=2
+)
 
 
 def load_font(size):

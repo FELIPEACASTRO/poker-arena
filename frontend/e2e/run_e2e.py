@@ -8,6 +8,7 @@ when an earlier terminate/kill operation fails.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -57,6 +58,10 @@ _ENVIRONMENT_ALLOWLIST = frozenset(
 
 _LOOPBACK_OPENER = build_opener(ProxyHandler({}))
 _REPARSE_POINT = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+_VLM_REDACTION_REGIONS = "0,0,1,1"
+_VLM_REDACTION_POLICY = (
+    "configured-mask-v1-" + hashlib.sha256(b"0.000000,0.000000,1.000000,1.000000").hexdigest()[:16]
+)
 _VLM_RESPONSE = json.dumps(
     {
         "choices": [
@@ -83,9 +88,7 @@ _VLM_RESPONSE = json.dumps(
 _JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 _JOB_OBJECT_EXTENDED_LIMIT_INFORMATION = 9
 _OWNED_PROCESS_WRAPPER = (
-    "import subprocess,sys;"
-    "sys.stdin.buffer.read(1);"
-    "raise SystemExit(subprocess.call(sys.argv[1:]))"
+    "import subprocess,sys;sys.stdin.buffer.read(1);raise SystemExit(subprocess.call(sys.argv[1:]))"
 )
 
 
@@ -303,9 +306,7 @@ def _subprocess_environment() -> dict[str, str]:
     _system_root, program_files, program_files_x86 = _known_windows_directories()
     system_root, system32, comspec, _taskkill = _windows_runtime_paths()
     environment = {
-        name: value
-        for name in sorted(_ENVIRONMENT_ALLOWLIST)
-        if (value := os.environ.get(name))
+        name: value for name in sorted(_ENVIRONMENT_ALLOWLIST) if (value := os.environ.get(name))
     }
     environment.update(
         {
@@ -479,7 +480,7 @@ class _VlmStub:
             r"[a-f0-9]{64}", handler.headers.get("X-Poker-Consent-Session-SHA256", "")
         ):
             failures.append("digest de consentimento invalido")
-        if handler.headers.get("X-Poker-Redaction") != "configured-mask-v1":
+        if handler.headers.get("X-Poker-Redaction") != _VLM_REDACTION_POLICY:
             failures.append("identificador de redacao invalido")
 
         if failures:
@@ -557,12 +558,8 @@ def _cleanup_owned_resources(
         raise ExceptionGroup("falhas no cleanup E2E", errors)  # noqa: F821
 
 
-def _run_checked(
-    command: list[str], *, env: dict[str, str], process_job: _WindowsJob
-) -> None:
-    process = _start_owned_process(
-        command, cwd=FRONTEND, env=env, process_job=process_job
-    )
+def _run_checked(command: list[str], *, env: dict[str, str], process_job: _WindowsJob) -> None:
+    process = _start_owned_process(command, cwd=FRONTEND, env=env, process_job=process_job)
     returncode = process.wait()
     if returncode != 0:
         raise RuntimeError(f"Build E2E falhou com código {returncode}.")
@@ -754,7 +751,7 @@ def main() -> int:
             "POKER_ENABLE_REMOTE_VLM": "1",
             "POKER_VLM_API_TOKEN": e2e_api_token,
             "POKER_VLM_URL": vlm_stub.url,
-            "POKER_VLM_REDACT_REGIONS": "0,0,1,1",
+            "POKER_VLM_REDACT_REGIONS": _VLM_REDACTION_REGIONS,
             "POKER_VLM_TIMEOUT": "2",
         }
         backend_job = _WindowsJob()

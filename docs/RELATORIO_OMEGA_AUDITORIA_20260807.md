@@ -161,6 +161,7 @@ outro defeito da mesma classe.
 | Ω45 | P2 | Formatter não era gate e um literal sintético de teste acionava o scanner da própria distribuição | política de estilo e fixture de segurança não eram compostas no mesmo gate | format-check integral; exclusão explícita só do coletor histórico ainda lintado; fixture monta o alvo em runtime; scan da raiz 0 |
 | Ω46 | P1 | Primeiro gate clean-tree excedeu 600 s no coverage e o E2E rejeitou o novo fingerprint de redação | timeout não acompanhou a suíte ampliada; stub congelara `configured-mask-v1` sem digest | timeout 900 s sujeito a conclusão real; stub deriva/valida o digest exato da região; E2E isolado 9/9 |
 | Ω47 | P1 | Parecer local `GO` coexistia com rótulos de reprovação externa e `vision.decision_blocked`, permitindo interpretar abstenção aprovada como reprovação da release | decisão de release, autoridade estratégica e escopos de pesquisa compartilhavam a mesma palavra “decisão” | contrato separa `release_decision=GO`, `release_scope=LOCAL_MASTER_DEFENSE` e `vision.decision_blocked=true`; externos são `N/A`; wrapper só emite GO após filho exit 0; UI explica a proteção aprovada |
+| Ω48 | P1 | Gate clean-tree do candidato Ω47 reprovou backend porque o receipt de performance não correspondia mais ao hash de `app.py` | o binding v4 detectou corretamente a mudança textual no pacote após a última medição | falha reproduzida no teste exato; benchmark real reexecutado em 7×5 no código atual; novo receipt aprovado e vinculado antes de repetir o gate integral |
 
 ## 7. Bugs silenciosos e corrupção silenciosa
 
@@ -191,8 +192,8 @@ foi encontrada, mas isso não testa RAM/disco/hardware da banca.
 | Raise incontestável | motor oferecia raise 332; PokerKit rejeitava | repro versionado passa; fuzz ad hoc histórico seed 20260810, 20k casos, `bad=[]`, mantido apenas como apoio | harness ad hoc não foi preservado; não conta como gate reproduzível |
 | Review sizing | raise 40 e raise 60 davam match | mismatch explícito 40≠60 | subconjunto PHH NT |
 | Frontend | 2 warnings ESLint | 78/78 testes; lint sem aviso; build aprovado | browser/hardware local |
-| Copiloto | receipt anterior invalidado por mudança de source/runtime | receipt v4 final SHA-256 `E408BAAABF630F656540CFBCC5362CEA374D0A4B3E07F15FEB8EEE226E76D1FB`: P95 máximo 894,005 ms em 5 cenários, budget 2500 ms | 7 medições/cenário; versões instaladas e CPU vinculadas |
-| Contenção do host | execução incidental enquanto outro processo CPU-bound estava ativo chegou a 2607,209 ms e falhou | receipt falho descartado; após término da contenção, nova execução normal aprovou | fechar workloads concorrentes no preflight da banca |
+| Copiloto | receipt anterior invalidado por mudança de source/runtime | receipt v4 final SHA-256 `50EA9008233D3F39D388B539A4922BAC572B4260DDCD3F3E0AED4D955C396DA4`: P95 máximo 819,317 ms em 5 cenários, budget 2500 ms | 7 medições/cenário; versões instaladas e CPU vinculadas; não é comparação entre hosts |
+| Contenção do host | execução incidental sob forte carga chegou a 2607,209 ms e falhou | receipt falho descartado; medição Ω48 aprovou mesmo com um processo externo CPU-bound observável | fechar workloads concorrentes no preflight da banca; o run Ω48 não é benchmark isolado |
 | Equity exata | Monte Carlo 400 variava | 990 enumerações; erro numérico 0 no domínio | HU river/range uniforme |
 | Avaliação real F1 | alegação não medida | 0/1 exato, abstenção, 10,08 s; F2 ausente | amostra de conveniência |
 | Pluribus | conversão sem prova terminal | 13/13 replays e stacks finais iguais | subconjunto selecionado |
@@ -251,10 +252,10 @@ execução sobre árvore limpa.
 | T38 Build/toolchain | Sim | Sim | build TS, lint, format policy, notebooks, pinned tools | Ω26,Ω45,Ω46 | gate integral | bit-reproducibility não provada |
 | T39 Dependências | Sim | Sim | locks, npm audit, pip-audit | 0 | advisory snapshot: 0 conhecidas | vulnerabilidade desconhecida |
 | T40 Config/flags | Sim | Sim | env allowlist, startup fail-closed | Ω19 | config/API tests | drift do host da banca |
-| T41 Deploy/release | Sim | Sim | clean tree e distribution contract | Ω13,Ω46,Ω47 | gate 16/16 e preflight na §18 | assinatura/SLSA externa ausente |
+| T41 Deploy/release | Sim | Sim | clean tree e distribution contract | Ω13,Ω46–Ω48 | gate 16/16 e preflight na §18 | assinatura/SLSA externa ausente |
 | T42 Cloud/container | Parcial | Parcial | compose/nginx static contract | 0 | deploy validator | sem deploy real e sem quotas cgroup |
 | T43 Confiabilidade | Sim | Sim | fault injection/readiness/idempotência | Ω20,Ω21,Ω28 | tests regressão | soak multi-dia ausente |
-| T44 Performance/capacidade | Sim | Sim | receipt P95 5 cenários com source+lock+runtime instalado | Ω03,Ω35,Ω43 | receipt v4 versionado | 7 amostras/cenário, host único |
+| T44 Performance/capacidade | Sim | Sim | receipt P95 5 cenários com source+lock+runtime instalado | Ω03,Ω35,Ω43,Ω48 | receipt v4 versionado | 7 amostras/cenário, host único e carga externa observável |
 | T45 Cache/materialização | Sim | Sim | cache identity/hash/stale tests | Ω13,Ω17 | artifact/UI tests | cache externo/CDN N/A |
 | T46 Mensageria/streaming | Parcial | Sim | WebSocket broadcast/idempotência | Ω20 | concorrência simulada | nenhum broker |
 | T47 Observabilidade | Sim | Sim | health/ready/métricas/diagnóstico | Ω17,Ω21 | API/UI tests | telemetria produtiva ausente |
@@ -278,7 +279,7 @@ execução sobre árvore limpa.
 | T65 Reprodutibilidade/lineage | Sim | Sim | seeds, hashes, commits, receipts | Ω09,Ω13,Ω35,Ω36,Ω41,Ω43 | binding, fingerprint e expiração | fuzzes ad hoc históricos não foram preservados; hardware diferente exige nova medição |
 | T66 Backup/restore/DR | Parcial | Parcial | rollback testado, export local | Ω28 | fault tests | restore organizacional real ausente |
 | T67 Manutenção/aging | Sim | Parcial | lint/types/quotas/cache | Ω21,Ω26 | gates | soak/aging longo não executado |
-| T68 Fix-induced | Sim | Sim | regressões focadas por classe de correção/refutação | Ω12,Ω26,Ω33,Ω34,Ω38–Ω47 | fixtures ONNX checker+ORT, oracles negativos, concorrência e release decision; gates | combinações não enumeradas |
+| T68 Fix-induced | Sim | Sim | regressões focadas por classe de correção/refutação | Ω12,Ω26,Ω33,Ω34,Ω38–Ω48 | fixtures ONNX checker+ORT, oracles negativos, concorrência, release decision e receipt rebinding; gates | combinações não enumeradas |
 | T69 ML dados/split | Sim | Parcial | contrato de session split, dedup e source groups | Ω15,Ω16 | receipt v3 | sem corpus real aprovado para verificar empiricamente |
 | T70 ML treino/otimização | Sim | Parcial | notebooks/contracts/literatura | 0 | notebook lint | nenhum treino executado aqui |
 | T71 ML inferência/serving | Sim | Sim | ONNX contract/provider/fail-closed | Ω11–Ω14,Ω38,Ω41 | model/API tests | sem F2 promovido |
@@ -485,9 +486,10 @@ execução sobre árvore limpa.
 44. **LLM virou fato sem grounding?** Não; F3 é proposta diagnóstica e se abstém.
 45. **Agente tem agency excessiva?** Agente independente foi read-only; correções ficaram no agente principal.
 46. **Correção enfraqueceu testes?** Não; ONNX ficou mais real e o oracle de raise mais estrito.
-47. **Correção criou regressão?** O primeiro gate revelou Ω46 e foi reprovado. O candidato
-    Ω47 coleta 1097 backend; 78 frontend e 9 E2E passaram nas execuções dirigidas. A decisão
-    final ainda exige o gate clean-tree do próprio commit e não exclui regressão desconhecida.
+47. **Correção criou regressão?** O primeiro gate revelou Ω46; o gate do candidato Ω47 revelou
+    Ω48 e foi reprovado em 1/16. A causa exata foi reproduzida e o receipt foi remedido. O
+    candidato coleta 1097 backend; 78 frontend e 9 E2E passaram nas execuções dirigidas. A
+    decisão final ainda exige o gate clean-tree do próprio commit e não exclui regressão desconhecida.
 48. **Há causa alternativa?** Sim em alguns casos; contradições e house rules preservam alternativas.
 49. **Segundo revisor reproduziria?** Os gates, receipts, hashes e casos dirigidos, sim. Os três fuzzes ad hoc históricos não integralmente: seeds/resultados existem, mas os harnesses não foram preservados e não são usados como gate.
 50. **Há evidência independente do efeito final?** Sim para casos dirigidos, replay, contratos Ω42/Ω43 e execução focada; fuzz ad hoc é apenas histórico e não há evidência externa de generalização visual.
@@ -529,6 +531,13 @@ O contrato Ω47 torna o veredito da release executável: sucesso retorna
 contém **1097 testes backend**, **78 frontend** e **9 E2E**. O commit que contém esta seção só
 é liberado depois de repetir os 16 gates e o preflight em árvore limpa; qualquer falha revoga
 o GO.
+
+O primeiro gate do candidato Ω47, `f6739bf`, foi corretamente **reprovado em 1/16**: o teste
+de receipt detectou que o hash versionado de `app.py` antecedia a mudança de linguagem Ω47.
+Os outros 15 gates passaram. A falha foi reproduzida isoladamente e não foi mascarada por
+alteração de teste. O benchmark foi reexecutado sobre o pacote atual; o novo receipt v4 acima
+passou todos os cinco cenários e precisa pertencer ao novo commit clean-tree submetido ao
+mesmo gate integral.
 
 ### Rubrica no escopo local supervisionado
 

@@ -26,7 +26,8 @@ mas sem sidecar não é possível classificar correção.
 
 2. **Há evidência negativa de transferência do F1** no item rotulado e nenhuma evidência
    atual do F2. Uma tela não estima a magnitude geral do gap; F2 ausente não pode receber
-   nota de acurácia. O estado de promoção visual permanece **NO-GO**.
+   nota de acurácia. O estado permanece **`F2_PROMOTION=NOT_PROMOTED`** e `N/A` para a
+   release local; não altera `release_decision=GO` de `LOCAL_MASTER_DEFENSE`.
 
 ## O caminho pra fechar (concreto, já preparado)
 

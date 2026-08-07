@@ -2,7 +2,8 @@
 
 > **SUPERADO:** este snapshot anterior é mantido apenas como histórico. O parecer vigente,
 > com o protocolo Omega v3 e a refutação independente posterior, está em
-> `RELATORIO_OMEGA_AUDITORIA_20260807.md`. Contagens e nota abaixo não descrevem o HEAD atual.
+> `RELATORIO_OMEGA_AUDITORIA_20260807.md`: **GO — `LOCAL_MASTER_DEFENSE`**. Contagens,
+> tag e estados de componentes abaixo não descrevem o HEAD ou a decisão de release atuais.
 
 ## Parecer executivo
 
@@ -15,7 +16,7 @@ execução do preflight na máquina da banca e ao uso das afirmações científi
 A nota não se estende a produção, uso autônomo, aconselhamento em jogo real ou generalização
 do reconhecimento de imagens.
 
-**Parecer sobre validade externa da visão:** **NO-GO / ainda não comprovada**. O F1 é um
+**Validade externa da visão:** **não comprovada e fora do escopo desta release (`N/A`)**. O F1 é um
 baseline sintético e sempre se abstém; nenhum F2 possui receipt externo aprovado. Essa
 separação não reduz a nota do protótipo local: ela impede que a nota seja obtida por uma
 alegação científica indevida.
@@ -102,7 +103,7 @@ P95. O cálculo reproduzível comprova poder >= 0,80 para as alternativas pré-d
 O receipt passou a registrar SO, arquitetura, CPU, bibliotecas, provider, ciclo da sessão,
 warm-up e escopo cronometrado.
 
-**Resultado:** dados insuficientes produzem NO-GO, inclusive quando uma observação isolada é
+**Resultado:** dados insuficientes rejeitam a promoção do F2, inclusive quando uma observação isolada é
 correta. Predictions importadas não contam como execução do pipeline.
 
 ### 4. Privacidade da captura e segurança local
@@ -216,7 +217,8 @@ reconhecimento generalizável; P2 é condição operacional de execução.
 
 ## Procedimento de liberação e apresentação
 
-1. Usar o snapshot marcado por `v0.2.0-defense-20260807`.
+1. Este procedimento e a tag `v0.2.0-defense-20260807` são históricos; para a apresentação
+   atual, usar o HEAD e o procedimento do relatório Omega vigente.
 2. Reiniciar a máquina e manter VLM remoto, tokens e rede desnecessários desativados.
 3. Executar `POKER.bat` → `[5] Preflight banca`.
 4. Prosseguir apenas com `READY_FOR_LOCAL_DEFENSE`.
@@ -230,4 +232,4 @@ reconhecimento generalizável; P2 é condição operacional de execução.
 O pacote está tecnicamente consistente, reproduzível, seguro para demonstração local e
 cientificamente honesto. A nota **10,0/10,0** é sustentada por critérios previamente
 explicitados e gates executáveis. A fronteira é inequívoca: **10/10 como protótipo local de
-banca; NO-GO para alegações de reconhecimento generalizável ou uso produtivo**.
+banca; reconhecimento generalizável e uso produtivo são `N/A` nesta release**.

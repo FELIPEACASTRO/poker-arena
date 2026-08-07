@@ -20,6 +20,13 @@ DEMO_SEED = 2
 MAX_WARM_REQUEST_SECONDS = 4.0
 DEMO_IMAGE = PROJECT_ROOT / "docs" / "demo" / "BANCA_TABLE_FIXTURE_SEED_2.png"
 DEMO_RECEIPT = PROJECT_ROOT / "docs" / "demo" / "BANCA_TABLE_FIXTURE_SEED_2.json"
+RELEASE_SCOPE = "LOCAL_MASTER_DEFENSE"
+OUT_OF_SCOPE_CAPABILITIES = (
+    "REAL_CLIENT_VISUAL_GENERALIZATION",
+    "GTO_OPTIMALITY",
+    "MULTI_TENANT_PRODUCTION",
+    "REAL_MONEY_PLAY",
+)
 
 
 class DemoPreflightError(RuntimeError):
@@ -178,11 +185,14 @@ def run_preflight() -> dict[str, Any]:
         raise DemoPreflightError(f"scanner de segredos bloqueou a banca: {len(findings)} achado(s)")
     vision = _exercise_real_image_route()
     return {
+        "release_decision": "GO",
+        "release_scope": RELEASE_SCOPE,
         "status": "READY_FOR_LOCAL_DEFENSE",
         "network_required": False,
         "remote_vlm_enabled": False,
         "git_clean": True,
         "secret_findings": 0,
+        "out_of_scope": list(OUT_OF_SCOPE_CAPABILITIES),
         "vision": vision,
     }
 
@@ -191,7 +201,18 @@ def main() -> int:
     try:
         result = run_preflight()
     except (DemoPreflightError, OSError, ValueError, RuntimeError) as exc:
-        print(json.dumps({"status": "NOT_READY", "reason": str(exc)}, ensure_ascii=True))
+        print(
+            json.dumps(
+                {
+                    "release_decision": "BLOCKED",
+                    "release_scope": RELEASE_SCOPE,
+                    "status": "NOT_READY",
+                    "reason": str(exc),
+                },
+                ensure_ascii=True,
+                sort_keys=True,
+            )
+        )
         return 1
     print(json.dumps(result, ensure_ascii=True, sort_keys=True))
     return 0

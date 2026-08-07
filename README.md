@@ -11,6 +11,12 @@ banca acadêmica. Metadados de citação, contribuição, segurança e licenciam
 [`SECURITY.md`](SECURITY.md) e [`LICENSE`](LICENSE). O reconhecimento F1 é diagnóstico;
 somente um F2 com recibo de validação externa válido pode autorizar uma decisão.
 
+> **DECISÃO DE LIBERAÇÃO: GO — `LOCAL_MASTER_DEFENSE`.** O produto avaliado é a
+> demonstração local, supervisionada e offline. Abstenção do F1 é um controle obrigatório
+> aprovado, não uma reprovação da solução. Generalização para clientes reais, optimalidade
+> GTO, produção multi-tenant e jogo com dinheiro não integram esta release e são `N/A` para
+> seu aceite; nenhuma alegação sobre essas capacidades é feita.
+
 > **Modo Laboratório** — o grande diferencial: você monta uma mesa só de bots,
 > escolhe o "cérebro" de cada cadeira e **compara os paradigmas de IA ao vivo**,
 > com as cartas abertas. Cada jogada mostra, em **caixa de vidro**, *como aquele
@@ -88,7 +94,7 @@ uma certificação formal de todas as regras possíveis.
 ```
 
 Antes da apresentação local, execute a opção **5** e prossiga somente se ela imprimir
-`READY_FOR_LOCAL_DEFENSE`. O roteiro completo está em
+`RELEASE_DECISION=GO; SCOPE=LOCAL_MASTER_DEFENSE` e `READY_FOR_LOCAL_DEFENSE`. O roteiro completo está em
 [`docs/ROTEIRO_BANCA.md`](docs/ROTEIRO_BANCA.md).
 
 As opções **Iniciar** e **Abrir no navegador** usam

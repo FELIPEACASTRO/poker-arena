@@ -534,7 +534,9 @@ def _review_image(
                 )
             except Exception:  # noqa: BLE001 - remote fallback must remain fail-closed
                 LOGGER.exception("Remote VLM fallback failed without recording image or token")
-                sanity.warnings.append("fallback VLM falhou; decisão permaneceu bloqueada")
+                sanity.warnings.append(
+                    "fallback VLM falhou; recomendação permaneceu suprimida por segurança"
+                )
 
     if state.pot is None:
         sanity.ok = False
@@ -570,7 +572,9 @@ def _review_image(
     )
     if engine == "F2-onnx" and any(value is None for value in manual_context):
         sanity.ok = False
-        sanity.problems.append("contexto manual de apostas incompleto; decisão bloqueada")
+        sanity.problems.append(
+            "contexto manual de apostas incompleto; recomendação suprimida por segurança"
+        )
     if (
         sanity.ok
         and state.pot is not None

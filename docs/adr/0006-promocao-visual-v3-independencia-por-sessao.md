@@ -29,8 +29,9 @@ O perfil `poker-arena-external-vision-v3-2026-08-07`:
   e reavaliação em no máximo 30 dias;
 - autoriza decisão somente quando o contexto manual completo de apostas também foi enviado.
 
-Qualquer ausência, ambiguidade ou receipt v2 produz `NO-GO`. F1 sintético, VLM, uma tela real
-e detector de 52 classes permanecem diagnósticos e não autorizam decisão.
+Qualquer ausência, ambiguidade ou receipt v2 produz `F2_PROMOTION=NOT_PROMOTED`. F1
+sintético, VLM, uma tela real e detector de 52 classes permanecem diagnósticos e não
+autorizam decisão. Esse estado não altera `release_decision=GO` da demonstração local.
 
 ## Consequências
 

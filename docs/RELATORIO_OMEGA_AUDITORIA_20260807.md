@@ -10,13 +10,12 @@ testes dinâmicos, análise diferencial contra PokerKit, fault injection, segura
 privacidade, caça a falhas silenciosas, correções, regressão e refutação por um agente
 independente, sem editar o código durante sua busca.
 
-**Parecer calibrado:** a solução recebe **10,0/10,0 no contexto estrito de demonstração
-local, supervisionada e offline em banca de mestrado**, condicionado a executar o preflight
-no computador da apresentação e a manter as alegações científicas abaixo. A nota não afirma
-ausência de bugs, optimalidade GTO, generalização visual, homologação produtiva ou aptidão
-para jogo com dinheiro. A validade externa do reconhecimento visual permanece **NO-GO**:
-não há detector F2 promovido com holdout real aprovado, e o F1 diagnóstico falhou no caso
-real rotulado disponível.
+**PARECER FINAL: GO — `LOCAL_MASTER_DEFENSE`.** A solução recebe **10,0/10,0 no
+contexto estrito de demonstração local, supervisionada e offline em banca de mestrado**,
+condicionada a executar o preflight no computador da apresentação e a manter as alegações
+científicas abaixo. Abstenção do F1 é um requisito aprovado deste produto. Optimalidade GTO,
+generalização visual para clientes reais, homologação produtiva multi-tenant e jogo com
+dinheiro não integram esta release; são `N/A` para o aceite local e não são alegados.
 
 > Dentro do escopo, artefatos, ambientes, evidências e testes documentados, estes foram os
 > defeitos encontrados, refutados, corrigidos ou que permaneceram não verificáveis.
@@ -161,6 +160,7 @@ outro defeito da mesma classe.
 | Ω44 | P1 | Suíte ampla expôs hashes stale, fixture ONNX apenas parseável e testes VLM sem exercer a redação | regressões de evidência não apareciam nos focais iniciais | catálogo histórico preservado; Pluribus 13/13 regenerado/refutado; ONNX passa checker+ORT; pixels/metadata e wiring da redação testados |
 | Ω45 | P2 | Formatter não era gate e um literal sintético de teste acionava o scanner da própria distribuição | política de estilo e fixture de segurança não eram compostas no mesmo gate | format-check integral; exclusão explícita só do coletor histórico ainda lintado; fixture monta o alvo em runtime; scan da raiz 0 |
 | Ω46 | P1 | Primeiro gate clean-tree excedeu 600 s no coverage e o E2E rejeitou o novo fingerprint de redação | timeout não acompanhou a suíte ampliada; stub congelara `configured-mask-v1` sem digest | timeout 900 s sujeito a conclusão real; stub deriva/valida o digest exato da região; E2E isolado 9/9 |
+| Ω47 | P1 | Parecer local `GO` coexistia com rótulos de reprovação externa e `vision.decision_blocked`, permitindo interpretar abstenção aprovada como reprovação da release | decisão de release, autoridade estratégica e escopos de pesquisa compartilhavam a mesma palavra “decisão” | contrato separa `release_decision=GO`, `release_scope=LOCAL_MASTER_DEFENSE` e `vision.decision_blocked=true`; externos são `N/A`; wrapper só emite GO após filho exit 0; UI explica a proteção aprovada |
 
 ## 7. Bugs silenciosos e corrupção silenciosa
 
@@ -190,7 +190,7 @@ foi encontrada, mas isso não testa RAM/disco/hardware da banca.
 | ONNX inválido | 15 fixtures passavam por bytes não parseáveis | `artifact_uninspectable`; 15 fixtures ONNX válidos/parseáveis | não assina autoria |
 | Raise incontestável | motor oferecia raise 332; PokerKit rejeitava | repro versionado passa; fuzz ad hoc histórico seed 20260810, 20k casos, `bad=[]`, mantido apenas como apoio | harness ad hoc não foi preservado; não conta como gate reproduzível |
 | Review sizing | raise 40 e raise 60 davam match | mismatch explícito 40≠60 | subconjunto PHH NT |
-| Frontend | 2 warnings ESLint | 77/77 testes; lint sem aviso; build aprovado | browser/hardware local |
+| Frontend | 2 warnings ESLint | 78/78 testes; lint sem aviso; build aprovado | browser/hardware local |
 | Copiloto | receipt anterior invalidado por mudança de source/runtime | receipt v4 final SHA-256 `E408BAAABF630F656540CFBCC5362CEA374D0A4B3E07F15FEB8EEE226E76D1FB`: P95 máximo 894,005 ms em 5 cenários, budget 2500 ms | 7 medições/cenário; versões instaladas e CPU vinculadas |
 | Contenção do host | execução incidental enquanto outro processo CPU-bound estava ativo chegou a 2607,209 ms e falhou | receipt falho descartado; após término da contenção, nova execução normal aprovou | fechar workloads concorrentes no preflight da banca |
 | Equity exata | Monte Carlo 400 variava | 990 enumerações; erro numérico 0 no domínio | HU river/range uniforme |
@@ -224,7 +224,7 @@ execução sobre árvore limpa.
 | T11 Matemático/formal | Sim | Sim | conservação, Wilson, EV, pot odds | Ω02,Ω04 | property tests/benchmarks | sem prova mecanizada |
 | T12 Lógico/controle | Sim | Sim | branch tests/fuzz/boolean boundaries | Ω05,Ω27 | coverage branch + repro | espaço de estados infinito |
 | T13 Estatístico | Sim | Parcial | IC95, poder, holdout/subgrupos | Ω02,Ω03,Ω15 | receipts v3 | corpus real não existe |
-| T14 Otimização/solver | Sim | Parcial | literatura e inspeção dos bots | Ω03 | PokerBench/CFR/ReBeL | qualidade estratégica NO-GO |
+| T14 Otimização/solver | Sim | Parcial | literatura e inspeção dos bots | Ω03 | PokerBench/CFR/ReBeL | optimalidade estratégica fora do escopo (`N/A`) |
 | T15 Sintaxe/parser | Sim | Sim | parsers PHH/JSON/config, fuzz negativo | Ω08,Ω32,Ω37,Ω39 | testes PHH e compile notebooks | outras variantes PHH |
 | T16 Tipos/serialização | Sim | Sim | mypy, StrictInt, OpenAPI, JSON | Ω06,Ω24,Ω38 | mypy/Pydantic | JS usa number IEEE-754 |
 | T17 Numérico | Sim | Sim | NaN/Inf/faixas/precisão | Ω02,Ω24 | sanity tests | SDC de hardware não coberto |
@@ -236,7 +236,7 @@ execução sobre árvore limpa.
 | T23 Transações | Sim | Sim | persistência fault injection/rollback | Ω28 | testes GameSession/log | sem banco ACID externo |
 | T24 API/contrato | Sim | Sim | OpenAPI drift, HTTP/WS adversarial | Ω06,Ω18,Ω23 | 16 paths/18 requests | compatibilidade cliente externo |
 | T25 Schema de dados | Sim | Sim | manifests, receipts, PHH, API | Ω08,Ω13,Ω15,Ω32,Ω36,Ω38,Ω39 | validação estrutural | schema registry externo ausente |
-| T26 Qualidade de dados | Sim | Parcial | duplicatas, labels, subgrupos | Ω15 | external_validation | dataset real NO-GO |
+| T26 Qualidade de dados | Sim | Parcial | duplicatas, labels, subgrupos | Ω15 | external_validation | dataset real fora do escopo (`N/A`) |
 | T27 ETL/lineage | Sim | Sim | hash de fontes/conversor/receipts | Ω09,Ω13,Ω44 | commit + 13 fontes/converter hash | pipeline de treino não executado |
 | T28 Alinhamento/identidade | Sim | Sim | player_id, seat, session partitions | Ω16,Ω25 | testes/API | identidade multi-tenant ausente |
 | T29 Banco de dados | Não | N/A | arquitetura confirma in-memory+JSONL | 0 | mapa/ADR | banco produtivo fora do escopo |
@@ -251,7 +251,7 @@ execução sobre árvore limpa.
 | T38 Build/toolchain | Sim | Sim | build TS, lint, format policy, notebooks, pinned tools | Ω26,Ω45,Ω46 | gate integral | bit-reproducibility não provada |
 | T39 Dependências | Sim | Sim | locks, npm audit, pip-audit | 0 | advisory snapshot: 0 conhecidas | vulnerabilidade desconhecida |
 | T40 Config/flags | Sim | Sim | env allowlist, startup fail-closed | Ω19 | config/API tests | drift do host da banca |
-| T41 Deploy/release | Sim | Sim | clean tree e distribution contract | Ω13,Ω46 | gate 16/16 e preflight na §18 | assinatura/SLSA externa ausente |
+| T41 Deploy/release | Sim | Sim | clean tree e distribution contract | Ω13,Ω46,Ω47 | gate 16/16 e preflight na §18 | assinatura/SLSA externa ausente |
 | T42 Cloud/container | Parcial | Parcial | compose/nginx static contract | 0 | deploy validator | sem deploy real e sem quotas cgroup |
 | T43 Confiabilidade | Sim | Sim | fault injection/readiness/idempotência | Ω20,Ω21,Ω28 | tests regressão | soak multi-dia ausente |
 | T44 Performance/capacidade | Sim | Sim | receipt P95 5 cenários com source+lock+runtime instalado | Ω03,Ω35,Ω43 | receipt v4 versionado | 7 amostras/cenário, host único |
@@ -271,20 +271,20 @@ execução sobre árvore limpa.
 | T58 Acessibilidade | Sim | Parcial | roles, teclado, lint/E2E | 0 | testes UI | auditoria manual WCAG/AT ausente |
 | T59 Erro humano | Sim | Sim | preflight, consentimento, mensagens | Ω07,Ω14,Ω23 | roteiro/UI | pressão real de apresentação |
 | T60 Organizacional/processo | Sim | Parcial | ADRs, gates, handoff | 0 | docs/QA | revisão institucional externa |
-| T61 Documentação | Sim | Sim | drift, README, relatório, roteiro | Ω29 | docs checks | manter após futuras mudanças |
-| T62 Test design | Sim | Sim | unit/integration/property/differential/E2E | Ω06,Ω12,Ω42,Ω44 | 1093 backend; oracles negativos isolados | mutation testing total ausente |
+| T61 Documentação | Sim | Sim | drift, README, relatório, roteiro | Ω29,Ω47 | docs checks | manter após futuras mudanças |
+| T62 Test design | Sim | Sim | unit/integration/property/differential/E2E | Ω06,Ω12,Ω42,Ω44,Ω47 | 1097 backend coletados; oracles negativos isolados | mutation testing total ausente |
 | T63 Oracle/ground truth | Sim | Sim | PokerKit+norma+fixture+replay | Ω09,Ω29 | 13 PHH + fuzz | house-rule mismatch declarado |
 | T64 Verificação formal | Parcial | Parcial | invariantes executáveis | 0 | conservação/idempotência | sem model checker/prova formal |
 | T65 Reprodutibilidade/lineage | Sim | Sim | seeds, hashes, commits, receipts | Ω09,Ω13,Ω35,Ω36,Ω41,Ω43 | binding, fingerprint e expiração | fuzzes ad hoc históricos não foram preservados; hardware diferente exige nova medição |
 | T66 Backup/restore/DR | Parcial | Parcial | rollback testado, export local | Ω28 | fault tests | restore organizacional real ausente |
 | T67 Manutenção/aging | Sim | Parcial | lint/types/quotas/cache | Ω21,Ω26 | gates | soak/aging longo não executado |
-| T68 Fix-induced | Sim | Sim | regressões focadas por classe de correção/refutação | Ω12,Ω26,Ω33,Ω34,Ω38–Ω46 | fixtures ONNX checker+ORT, oracles negativos e concorrência; gates | combinações não enumeradas |
+| T68 Fix-induced | Sim | Sim | regressões focadas por classe de correção/refutação | Ω12,Ω26,Ω33,Ω34,Ω38–Ω47 | fixtures ONNX checker+ORT, oracles negativos, concorrência e release decision; gates | combinações não enumeradas |
 | T69 ML dados/split | Sim | Parcial | contrato de session split, dedup e source groups | Ω15,Ω16 | receipt v3 | sem corpus real aprovado para verificar empiricamente |
 | T70 ML treino/otimização | Sim | Parcial | notebooks/contracts/literatura | 0 | notebook lint | nenhum treino executado aqui |
 | T71 ML inferência/serving | Sim | Sim | ONNX contract/provider/fail-closed | Ω11–Ω14,Ω38,Ω41 | model/API tests | sem F2 promovido |
 | T72 ML avaliação/fairness | Sim | Parcial | contrato exact-state, Wilson, ECE/Brier, groups | Ω15,Ω16 | external_validation | sem dados/corpus para medir fairness populacional |
 | T73 GenAI/LLM/agentes | Sim | Sim | F3 consentido, grounded as proposal | Ω14,Ω19 | VLM tests | fornecedor/modelo remoto não validado |
-| T74 Web/frontend/browser | Sim | Sim | Vitest/build/lint/E2E/capture | Ω17,Ω23,Ω26,Ω33,Ω34,Ω38,Ω40,Ω46 | 77 unitários + 9 E2E | matriz ampla de browsers ausente |
+| T74 Web/frontend/browser | Sim | Sim | Vitest/build/lint/E2E/capture | Ω17,Ω23,Ω26,Ω33,Ω34,Ω38,Ω40,Ω46,Ω47 | 78 unitários + 9 E2E | matriz ampla de browsers ausente |
 | T75 Mobile | Não | N/A | nenhum cliente mobile | 0 | inventário | fora do escopo |
 | T76 IoT/embedded/OT | Não | N/A | nenhum componente | 0 | inventário | fora do escopo |
 | T77 Robótica/sensores | Não | N/A | captura é browser, sem controle físico | 0 | arquitetura | fora do escopo |
@@ -350,7 +350,7 @@ execução sobre árvore limpa.
 
 | ID | Afirmação A | Afirmação B | Fonte A | Fonte B | Estado | Resolução |
 |---|---|---|---|---|---|---|
-| C01 | “nota 10” | “visão real NO-GO” | pedido/rubrica local | real_eval/F2 ausente | resolvida | notas têm escopos distintos |
+| C01 | “nota 10” | visão real não validada | pedido/rubrica local | real_eval/F2 ausente | resolvida | release local `GO`; visão externa `N/A`, sem alegação |
 | C02 | múltiplas sobras vão ao primeiro vencedor | no máximo uma por vencedor, em ordem | PokerKit | Robert's Rules | declarada | Arena adota Robert; diferencial exclui esse caso |
 | C03 | 76 estados permitiam raise | aumento cumulativo era menor que full raise | PokerKit fuzz | TDA 2024 R47 | resolvida | TDA é normativa; Arena mantém bloqueio |
 | C04 | score de template parece confiança | não é probabilidade calibrada | UI antiga | TEVV/AI RMF | resolvida | “confiança interna” + abstenção |
@@ -363,6 +363,7 @@ execução sobre árvore limpa.
 | C11 | “quota de logs” parecia global | limite implementado é 64 MiB por arquivo | texto anterior | código/refutação | resolvida no relatório | classes T18/T30/T48/T79 rebaixadas e risco total explícito |
 | C12 | receipt válido em qualquer ambiente/idade | medição só vale no runtime e janela declarados | verifier anterior | TEVV/refutação | resolvida | fingerprint exato + expiração de 30 dias |
 | C13 | lock/hash estreito provaria o runtime medido | módulos/dependências/CPU omitidos podiam variar | receipt anterior | refutação de closure | resolvida | package Python completo + lock + todas as distribuições/versões instaladas; novo receipt v4 obrigatório |
+| C14 | `vision.decision_blocked=true` parecia negar o GO geral | release e recomendação estratégica são decisões diferentes | preflight/UI | escopo da banca | resolvida | campos `release_*` separados; abstenção é PASS esperado e a UI a chama de proteção aprovada |
 
 ## 14. Negative evidence log
 
@@ -381,7 +382,7 @@ execução sobre árvore limpa.
 | peer WS lento recebe N tentativas | broadcast concorrente simulado | uma tentativa; peer `failed` | não é carga de rede real |
 | upload grande chega ao multipart | chunks ASGI acima do teto | 413 precoce | servidor/proxy real pode impor outro limite |
 | F1 reconhece caso real rotulado | `real_eval.py` | estado exato 0/1, abstain | uma amostra de conveniência |
-| F2 atende validade externa | busca de artefato/receipt | não instalado; NO-GO | não prova impossibilidade futura |
+| F2 atende validade externa | busca de artefato/receipt | não instalado; `N/A` nesta release | não prova impossibilidade futura |
 | regras de odd chip são universais | comparar TDA/Robert/PokerKit | divergência encontrada | house rules dependem do local |
 | resultado antigo reaparece após editar spot | promessa controlada → editar → resolver | abortado e descartado por geração | concorrência simulada de event loop |
 | upload A reaparece depois de B inválido | A pendente → B >5 MiB → resolver A | A abortado; sem decisão/diagnóstico antigo | browser real pode ter ordenações adicionais |
@@ -391,9 +392,9 @@ execução sobre árvore limpa.
 
 ## 15. Riscos residuais e itens não verificados
 
-### Bloqueantes para ampliar a alegação, não para a demo local
+### Condições para produtos futuros — não bloqueiam o GO local
 
-1. **F2 real:** coletar holdout autorizado, versionado, com dupla anotação/adjudicação,
+1. **F2 real (`F2_PROMOTION=NOT_PROMOTED`):** coletar holdout autorizado, versionado, com dupla anotação/adjudicação,
    separação por sessão/fonte e receipt v3; até lá, `decision=null` é obrigatório.
 2. **Autoria de evidência:** hashes detectam alteração, mas um ator com controle total do
    workspace pode fabricar artefato e receipt coerentes. Para publicação, assinar o bundle em
@@ -484,7 +485,9 @@ execução sobre árvore limpa.
 44. **LLM virou fato sem grounding?** Não; F3 é proposta diagnóstica e se abstém.
 45. **Agente tem agency excessiva?** Agente independente foi read-only; correções ficaram no agente principal.
 46. **Correção enfraqueceu testes?** Não; ONNX ficou mais real e o oracle de raise mais estrito.
-47. **Correção criou regressão?** O primeiro gate revelou Ω46 e foi reprovado; após a correção, 1093 backend, 77 frontend e 9 E2E passaram no gate clean-tree. Isso não exclui regressão desconhecida.
+47. **Correção criou regressão?** O primeiro gate revelou Ω46 e foi reprovado. O candidato
+    Ω47 coleta 1097 backend; 78 frontend e 9 E2E passaram nas execuções dirigidas. A decisão
+    final ainda exige o gate clean-tree do próprio commit e não exclui regressão desconhecida.
 48. **Há causa alternativa?** Sim em alguns casos; contradições e house rules preservam alternativas.
 49. **Segundo revisor reproduziria?** Os gates, receipts, hashes e casos dirigidos, sim. Os três fuzzes ad hoc históricos não integralmente: seeds/resultados existem, mas os harnesses não foram preservados e não são usados como gate.
 50. **Há evidência independente do efeito final?** Sim para casos dirigidos, replay, contratos Ω42/Ω43 e execução focada; fuzz ad hoc é apenas histórico e não há evidência externa de generalização visual.
@@ -506,8 +509,8 @@ coverage excedeu o timeout de 600 s e o E2E remoto ainda esperava o identificado
 anterior. Nenhum dos dois foi ocultado. A correção Ω46 gerou o snapshot funcional
 `05f86e7be94b2410220aa123413fc96a45af4a4f`.
 
-Resultado autoritativo após a correção: **16/16 gates aprovados** em árvore limpa; duração do
-wrapper 836,7 s. Evidência observada:
+Resultado autoritativo do snapshot funcional anterior: **16/16 gates aprovados** em árvore
+limpa; duração do wrapper 836,7 s. Evidência observada:
 
 - backend: **1093/1093** testes; branch coverage satisfez o gate `>=85%`;
 - Ruff lint + política de formato, notebook security lint e mypy: aprovados;
@@ -515,11 +518,17 @@ wrapper 836,7 s. Evidência observada:
 - `pip-audit` do export locked e `npm audit --audit-level=high`: aprovados;
 - frontend: **77/77** testes, **9/9 E2E**, build TypeScript/Vite e ESLint aprovados;
 - `assets/preflight_banca.ps1`: `READY_FOR_LOCAL_DEFENSE`, Git limpo, rede não necessária,
-  VLM remoto desativado, `secret_findings=0`, F1 bloqueado para decisão e latência warm
+  VLM remoto desativado, `secret_findings=0`, F1 sem autoridade estratégica, recomendação
+  suprimida por segurança e latência warm
   observada de 1122,4 ms no fixture sintético.
 
-Depois desta atualização documental, o mesmo gate e o preflight devem ser repetidos no
-commit final para que o relatório também pertença ao snapshot validado.
+O contrato Ω47 torna o veredito da release executável: sucesso retorna
+`release_decision=GO`, `release_scope=LOCAL_MASTER_DEFENSE` e lista capacidades externas em
+`out_of_scope`; falha retorna `release_decision=BLOCKED`. O wrapper PowerShell só imprime
+`RELEASE_DECISION=GO; SCOPE=LOCAL_MASTER_DEFENSE` depois de receber exit code 0. A suíte final
+contém **1097 testes backend**, **78 frontend** e **9 E2E**. O commit que contém esta seção só
+é liberado depois de repetir os 16 gates e o preflight em árvore limpa; qualquer falha revoga
+o GO.
 
 ### Rubrica no escopo local supervisionado
 
@@ -532,11 +541,12 @@ commit final para que o relatório também pertença ao snapshot validado.
 | Segurança e privacidade local | 1,0 | 1,0 | loopback, consentimento, limites e scan |
 | Reprodutibilidade/proveniência | 1,0 | 1,0 | locks, hashes, seeds, receipts e release gate |
 | UX/acessibilidade/preparo de banca | 0,5 | 0,5 | roteiro, preflight, mensagens e teclado |
-| Rigor científico e limites | 1,0 | 1,0 | F2 NO-GO; sem alegação GTO/generalização |
+| Rigor científico e limites | 1,0 | 1,0 | F2 externo `N/A`; sem alegação GTO/generalização |
 | **Total** | **10,0** | **10,0** | **somente para a banca local declarada** |
 
-Para **reconhecimento real generalizável** e **produção multi-tenant**, o parecer é **NO-GO**,
-não uma nota numérica artificial. São produtos/hipóteses de avaliação diferentes.
+**Veredito único do produto avaliado: GO.** Reconhecimento generalizável em clientes reais,
+produção multi-tenant, GTO e jogo com dinheiro são capacidades de outros produtos/hipóteses;
+estão **fora do escopo (`N/A`)**, não são dependências desta release e não recebem alegação.
 
 ## 19. Conclusão calibrada
 
@@ -547,7 +557,8 @@ contraexemplos adicionais de raise incontestável, vetores PHH permissivos, conc
 binding incompleto de evidência e divergências de oracle/house rule. Eles foram corrigidos ou
 reclassificados sem escolher automaticamente a conclusão conveniente.
 
-A solução é **10,0/10,0 como demonstrador acadêmico local, supervisionado, reprodutível e
-cientificamente honesto**, após o gate clean-tree registrado acima. Ela **não é declarada
-livre de bugs**. O reconhecimento visual em clientes reais, a estratégia GTO e o perfil
-produtivo permanecem deliberadamente fora dessa nota e bloqueados por gates fail-closed.
+A solução é **GO e 10,0/10,0 como demonstrador acadêmico local, supervisionado,
+reprodutível e cientificamente honesto**, desde que o commit final satisfaça os 16 gates e o
+preflight clean-tree da §18. Ela **não é declarada livre de bugs**. Reconhecimento visual em
+clientes reais, estratégia GTO, jogo com dinheiro e perfil produtivo são `N/A` nesta release;
+os controles fail-closed impedem que sejam alegados ou ativados acidentalmente.

@@ -840,7 +840,7 @@
       <section class="chapter" id="gate" data-paths="all operator jury technical five">
         <div class="chapter-head">
           <div class="chapter-number">05</div>
-          <div><h2>Gate e abstenção: o “segurança da porta”</h2><p class="chapter-intro">Se o estado não é coerente, a decisão não entra.</p></div>
+          <div><h2>Gate e abstenção: o “segurança da porta”</h2><p class="chapter-intro">Se o estado não é coerente, nenhuma recomendação é emitida.</p></div>
         </div>
         <div class="analogy">
           <div><b>Segurança de aeroporto</b><small>Documento, nome, data e bagagem precisam ser coerentes.</small></div>
@@ -849,14 +849,14 @@
         </div>
         <p>
           O gate recebe a proposta da visão e verifica invariantes. Se falhar, retorna
-          <strong>abstenção ativa</strong>, motivos e avisos. Isso é uma saída válida do sistema,
-          não um travamento.
+          <strong>proteção aprovada com recomendação suprimida</strong>, motivos e avisos. Isso é
+          o resultado seguro esperado do sistema, não um travamento ou reprovação da release.
         </p>
         <div class="visual-frame">
-          <img src="assets/navigation-guide/03-diagnostico-ativo.png" alt="Diagnóstico real com motor F1, confiança zero, decisão bloqueada, motivos e avisos de leitura." />
-          <div class="visual-caption"><b>Tela real — abstenção.</b> O motor respondeu, mas o gate bloqueou a decisão por estado insuficiente e incoerente.</div>
+          <img src="assets/navigation-guide/03-diagnostico-ativo.png" alt="Diagnóstico real com motor F1, confiança zero, recomendação estratégica suprimida por segurança, motivos e avisos de leitura." />
+          <div class="visual-caption"><b>Tela real — proteção aprovada.</b> O motor respondeu, mas o gate não emitiu recomendação porque o estado era insuficiente e incoerente.</div>
         </div>
-        <h3>O que pode bloquear?</h3>
+        <h3>O que pode suprimir uma recomendação?</h3>
         <div class="grid-2">
           <article class="concept-card bad"><h4>Estrutura ilegal</h4><p>Duas cartas iguais; board com 1, 2 ou 6 cartas; mais cartas do que o baralho permite.</p></article>
           <article class="concept-card bad"><h4>Campos críticos ausentes</h4><p>Sem hole cards, pote ou contexto mínimo para a análise solicitada.</p></article>

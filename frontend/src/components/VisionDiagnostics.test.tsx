@@ -53,12 +53,27 @@ describe('VisionDiagnostics', () => {
       />,
     )
 
-    expect(screen.getByText('Abstenção ativa')).toBeInTheDocument()
-    expect(screen.getByText('Bloqueada')).toBeInTheDocument()
+    expect(screen.getByText('Proteção aprovada · recomendação suprimida')).toBeInTheDocument()
+    expect(screen.getByText('Suprimida por segurança (resultado esperado)')).toBeInTheDocument()
+    expect(screen.getByText('Por que nenhuma recomendação foi emitida')).toBeInTheDocument()
     expect(screen.getByText('carta abaixo do limiar')).toBeInTheDocument()
     expect(screen.getByText('pote não detectado')).toBeInTheDocument()
     expect(screen.getByText('proposta remota não calibrada')).toBeInTheDocument()
     expect(screen.getByText('Não medida')).toBeInTheDocument()
+  })
+
+  it('explica fail-closed sem reutilizar a decisão de release', () => {
+    render(
+      <VisionDiagnostics
+        result={{ ...accepted, sanity: { ok: false, problems: [], warnings: [] } }}
+        latencyMs={1}
+      />,
+    )
+
+    expect(
+      screen.getByText('O backend suprimiu a recomendação sem retornar um motivo estruturado.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/bloqueou a decisão/i)).not.toBeInTheDocument()
   })
 
   it('não transforma confiança inválida em porcentagem aparentemente válida', () => {

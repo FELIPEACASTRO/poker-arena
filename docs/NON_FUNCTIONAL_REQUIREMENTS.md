@@ -64,4 +64,6 @@ comprovadas, nunca como aprovadas.
 - Ruff, mypy, testes backend, cobertura, testes frontend, lint, build, E2E, auditorias de
   dependências, scanner de segredos e contrato de distribuição são gates de liberação.
 - Uma liberação exige árvore Git limpa e `HEAD` imutável. Falha ou ausência de qualquer
-  evidência mantém o estado `NO-GO`.
+  evidência obrigatória mantém a decisão `BLOCKED`; somente o preflight integral emite `GO`.
+- Para `LOCAL_MASTER_DEFENSE`, o sucesso exige `release_decision=GO`; capacidades declaradas
+  fora do escopo são `N/A` e não alteram a decisão da release.

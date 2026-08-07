@@ -260,6 +260,15 @@ def test_powershell_operational_scripts_parse_without_syntax_errors():
     assert result.returncode == 0, result.stdout.decode(errors="replace")
 
 
+def test_preflight_wrapper_emits_go_only_after_child_success():
+    script = _text("assets/preflight_banca.ps1")
+
+    failure_check = script.index("if ($lastexitcode -ne 0)")
+    go_marker = script.index("release_decision=go; scope=local_master_defense")
+    assert failure_check < go_marker
+    assert "throw 'solucao nao esta pronta" in script[failure_check:go_marker]
+
+
 def test_validation_script_runs_static_contract_security_and_test_gates():
     script = _text("assets/validar.ps1")
 

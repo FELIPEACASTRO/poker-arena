@@ -179,7 +179,7 @@ describe('LiveCopilotScreen', () => {
     expect(
       await screen.findByRole('region', { name: /Diagnóstico verificável/ }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Abstenção ativa')).toBeInTheDocument()
+    expect(screen.getByText('Proteção aprovada · recomendação suprimida')).toBeInTheDocument()
     expect(screen.getByText('leitura insuficiente')).toBeInTheDocument()
   })
 

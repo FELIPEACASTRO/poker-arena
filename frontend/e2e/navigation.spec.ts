@@ -171,7 +171,7 @@ test('workspace executa seleção, confirmação, leitura real e encerramento', 
   expect(response.status()).toBe(200)
   expect(imageRequests).toBeGreaterThanOrEqual(1)
   await expect(workspace.getByRole('region', { name: /Diagnóstico verificável/ })).toBeVisible()
-  await expect(workspace.getByText('Abstenção ativa')).toBeVisible()
+  await expect(workspace.getByText('Proteção aprovada · recomendação suprimida')).toBeVisible()
   await expect(workspace.getByText(/Modo apresentação: estratégia não é exibida/)).toBeVisible()
   await page.screenshot({ path: guideScreenshot('03-diagnostico-ativo.png'), fullPage: true })
 

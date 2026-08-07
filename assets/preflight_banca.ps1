@@ -20,4 +20,5 @@ Write-Host '=== PREFLIGHT OFFLINE DA BANCA ==='
 if ($LASTEXITCODE -ne 0) {
     throw 'Solucao NAO esta pronta para a banca; corrija o motivo acima.'
 }
+Write-Host 'RELEASE_DECISION=GO; SCOPE=LOCAL_MASTER_DEFENSE'
 Write-Host 'READY_FOR_LOCAL_DEFENSE: solucao pronta para apresentacao local.'

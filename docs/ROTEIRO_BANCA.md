@@ -4,7 +4,7 @@
 
 1. Reinicie a máquina e não configure tokens, VLM remoto, proxy ou credenciais no terminal.
 2. Execute `POKER.bat` e escolha **Preflight banca**. Continue somente com
-   `READY_FOR_LOCAL_DEFENSE`.
+   `RELEASE_DECISION=GO; SCOPE=LOCAL_MASTER_DEFENSE` e `READY_FOR_LOCAL_DEFENSE`.
 3. Abra `docs/demo/BANCA_TABLE_FIXTURE_SEED_2.png` no visualizador de imagens. Escolha
    **Iniciar** e compartilhe apenas essa **janela**. Mantenha o PDF
    `docs/GUIA_DE_NAVEGACAO_POKER_ARENA.pdf` aberto como fallback visual.
@@ -17,8 +17,9 @@
 3. **Processamento de imagem:** selecione a janela da fixture, confirme a prévia e mostre
    cartas, pote, jogadores, posição, confiança interna e latência. O JSON ao lado da imagem
    contém o SHA-256 e o gabarito auditável.
-4. **Rigor científico:** destaque que F1 é um baseline sintético e, por isso, a decisão fica
-   bloqueada mesmo quando a fixture é lida corretamente. Mostre o receipt obrigatório do F2.
+4. **Rigor científico:** destaque que F1 é um baseline sintético e, por isso, a recomendação
+   estratégica é suprimida por segurança mesmo quando a fixture é lida corretamente. Esse é
+   o resultado esperado e aprovado da demo. Mostre o receipt obrigatório do F2.
 5. **Falha segura:** tente uma fonte não comprovada/guia ou imagem inválida e mostre a abstenção.
 6. **Reprodutibilidade:** mostre o commit, o preflight e o gate completo, sem alegar que testes
    sintéticos provam generalização para clientes reais.

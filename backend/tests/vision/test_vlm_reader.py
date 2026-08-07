@@ -603,6 +603,42 @@ def test_from_image_so_chama_vlm_com_consentimento_e_mantem_confianca_zero(monke
     assert any("somente para inspeção" in warning for warning in body["sanity"]["warnings"])
 
 
+def test_from_image_falha_remota_mantem_recomendacao_suprimida(monkeypatch):
+    import poker_arena.vision as vision_pkg
+
+    monkeypatch.setenv("POKER_ENABLE_REMOTE_VLM", "1")
+    monkeypatch.setenv("POKER_API_TOKEN", _API_TOKEN)
+    monkeypatch.setenv("POKER_VLM_REDACT_REGIONS", "0,0,0.5,0.5")
+    monkeypatch.setattr(vision_pkg, "vision_model_available", lambda: False)
+    monkeypatch.setattr(
+        vision_pkg, "recognize_table", lambda *a, **k: RecognizedState(hole=[], board=[], pot=None)
+    )
+    monkeypatch.setattr(vision_pkg, "vlm_available", lambda: True)
+
+    def fail_remote_reader(*_args, **_kwargs):
+        raise RuntimeError("falha remota controlada")
+
+    monkeypatch.setattr(vision_pkg, "read_table_vlm", fail_remote_reader)
+
+    client = TestClient(create_app())
+    session_id = _mint_remote_consent(client)
+    response = client.post(
+        "/copilot/from-image",
+        headers={"X-Poker-Token": _API_TOKEN},
+        files={"image": ("t.png", _img_bytes(), "image/png")},
+        data={"remote_vlm_consent": "true", "remote_vlm_session_id": session_id},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["engine"] == "F1-template"
+    assert body["decision"] is None
+    assert (
+        "fallback VLM falhou; recomendação permaneceu suprimida por segurança"
+        in body["sanity"]["warnings"]
+    )
+
+
 def test_from_image_nao_envia_sem_consentimento_da_sessao(monkeypatch):
     import poker_arena.vision as vision_pkg
 

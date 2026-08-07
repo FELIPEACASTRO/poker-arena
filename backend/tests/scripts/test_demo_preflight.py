@@ -29,6 +29,51 @@ def test_demo_fixture_exercises_exact_recognition_and_fail_closed_decision(
     assert 0 <= result["warm_latency_ms"] <= 4_000
 
 
+def test_release_decision_is_go_only_for_the_declared_local_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(demo_preflight, "_require_local_offline_profile", lambda: None)
+    monkeypatch.setattr(demo_preflight, "_require_local_dependencies", lambda: None)
+    monkeypatch.setattr(demo_preflight, "validate_distribution", lambda *args, **kwargs: None)
+    monkeypatch.setattr(demo_preflight, "scan", lambda _root: [])
+    monkeypatch.setattr(
+        demo_preflight,
+        "_exercise_real_image_route",
+        lambda: {"exact_state": True, "decision_blocked": True},
+    )
+
+    result = demo_preflight.run_preflight()
+
+    assert result["release_decision"] == "GO"
+    assert result["release_scope"] == "LOCAL_MASTER_DEFENSE"
+    assert result["status"] == "READY_FOR_LOCAL_DEFENSE"
+    assert result["out_of_scope"] == [
+        "REAL_CLIENT_VISUAL_GENERALIZATION",
+        "GTO_OPTIMALITY",
+        "MULTI_TENANT_PRODUCTION",
+        "REAL_MONEY_PLAY",
+    ]
+    assert result["vision"]["decision_blocked"] is True
+
+
+def test_failed_preflight_emits_blocked_release_decision(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fail() -> dict[str, object]:
+        raise demo_preflight.DemoPreflightError("falha controlada")
+
+    monkeypatch.setattr(demo_preflight, "run_preflight", fail)
+
+    assert demo_preflight.main() == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == {
+        "release_decision": "BLOCKED",
+        "release_scope": "LOCAL_MASTER_DEFENSE",
+        "status": "NOT_READY",
+        "reason": "falha controlada",
+    }
+
+
 @pytest.mark.parametrize(
     "name",
     [

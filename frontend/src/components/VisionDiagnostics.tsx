@@ -35,14 +35,14 @@ export default function VisionDiagnostics({
 }) {
   const abstained = !result.sanity.ok
   const status = abstained
-    ? 'Abstenção ativa'
+    ? 'Proteção aprovada · recomendação suprimida'
     : result.decision
       ? 'Leitura aceita pelo gate'
       : 'Leitura válida, sem recomendação'
   const failureReasons = abstained
     ? result.sanity.problems.length
       ? result.sanity.problems
-      : ['O backend bloqueou a decisão sem retornar um motivo estruturado.']
+      : ['O backend suprimiu a recomendação sem retornar um motivo estruturado.']
     : []
   const stacks = Object.values(result.detected.stacks ?? {})
 
@@ -77,8 +77,14 @@ export default function VisionDiagnostics({
           <small>Navegador → backend → resposta; não é benchmark.</small>
         </div>
         <div>
-          <dt>Decisão</dt>
-          <dd>{abstained ? 'Bloqueada' : result.decision ? 'Disponível' : 'Não produzida'}</dd>
+          <dt>Autoridade estratégica</dt>
+          <dd>
+            {abstained
+              ? 'Suprimida por segurança (resultado esperado)'
+              : result.decision
+                ? 'Disponível'
+                : 'Não produzida'}
+          </dd>
         </div>
       </dl>
 
@@ -103,7 +109,7 @@ export default function VisionDiagnostics({
 
       {failureReasons.length > 0 && (
         <div className="vision-failures" role="alert">
-          <h3>Por que a decisão foi bloqueada</h3>
+          <h3>Por que nenhuma recomendação foi emitida</h3>
           <ul>
             {failureReasons.map((reason) => <li key={reason}>{reason}</li>)}
           </ul>

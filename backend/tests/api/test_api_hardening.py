@@ -495,7 +495,10 @@ def test_f2_abstains_when_manual_betting_context_is_incomplete(
     assert response.status_code == 200
     assert response.json()["sanity"]["ok"] is False
     assert response.json()["decision"] is None
-    assert any("contexto manual" in item for item in response.json()["sanity"]["problems"])
+    assert (
+        "contexto manual de apostas incompleto; recomendação suprimida por segurança"
+        in response.json()["sanity"]["problems"]
+    )
 
 
 def test_f2_abstains_when_strategic_context_confidence_is_low(

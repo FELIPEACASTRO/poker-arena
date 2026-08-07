@@ -19,7 +19,7 @@ captura supervisionada.
 | Estado detectado | `FromImageResult.detected` | Proposta daquela imagem: cartas, pote, jogadores, posição e stacks |
 | Motor | `FromImageResult.engine` | Qual caminho respondeu (`F1`, `F2`, `F3` ou desconhecido) |
 | Confiança reportada | `detected.confidence` | Sinal interno de uma tentativa, somente quando finito e em `[0,1]` |
-| Abstenção | `sanity.ok === false` | O gate bloqueou a decisão |
+| Proteção/abstenção | `sanity.ok === false` | O gate suprimiu a recomendação estratégica como esperado |
 | Motivos/avisos | `sanity.problems` / `sanity.warnings` | Diagnóstico estruturado devolvido pelo backend |
 | Latência da chamada | relógio monotônico do navegador ao redor de `api.fromImage` | Tempo navegador → backend → resposta daquela chamada |
 | Decisão | `decision` | Não exibida durante a captura ao vivo; revisão estratégica é pós-jogo |

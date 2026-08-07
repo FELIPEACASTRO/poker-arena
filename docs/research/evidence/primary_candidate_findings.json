@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "snapshot_date": "2026-07-17",
+  "scope": "Primary-source triage for strategy, opponent modelling, calibration, abstention, poker environments, and reproducible code discovered during the 156-platform sweep.",
+  "evidence_boundary": "Claims below are claims made by the cited source or facts observed in the cited repository. They are not Poker Arena benchmark results. Transfer decisions remain fail-closed until local, pinned, paired evaluation passes.",
+  "query_families": [
+    "poker AND imperfect-information AND self-play",
+    "policy gradient OR PPO AND exploitability",
+    "PSRO OR CFR OR ReBeL AND poker",
+    "opponent modelling AND poker",
+    "calibration OR conformal OR selective prediction AND computer vision",
+    "playing-card detection OR OCR OR synthetic-to-real",
+    "poker environment AND action abstraction"
+  ],
+  "findings": [
+    {
+      "id": "iig-policy-gradient-v4",
+      "area": "strategy",
+      "title": "Reevaluating Policy Gradient Methods for Imperfect-Information Games",
+      "primary_url": "https://arxiv.org/abs/2502.08938v4",
+      "status": "ICLR 2026; arXiv v4 revised 2026-05-27",
+      "source_claim": "Across more than 7000 training runs and five large games with exact exploitability computation, FP-, DO-, and CFR-based deep-RL approaches did not outperform generic policy-gradient methods.",
+      "code": [
+        {
+          "url": "https://github.com/nathanlct/IIG-RL-Benchmark",
+          "head": "591d35dadf243df846534c9df9f77759f7441814",
+          "license_observed": "No root LICENSE/COPYING file observed at this commit; visible source is not a reuse grant."
+        },
+        {
+          "url": "https://github.com/gabrfarina/exp-a-spiel",
+          "head": "9412882c24e521fad7cbd96fdd68311d9bf6f203",
+          "license_observed": "MIT LICENSE observed at this exact revision; LICENSE Git blob 9cf106272ac3b56b0c4c80218e8fc10a664ca5f4."
+        }
+      ],
+      "transfer_risk": "All evaluated domains are two-player zero-sum games and four of the five are described by the authors as somewhat homogeneous. The paper explicitly says relative performance is not universal even across its five games, only one representative of each FP/DO/CFR family was tested, and results depend on tuning choices and a 10-million-step budget. None is Poker Arena's full NLHE 6/9-max environment.",
+      "decision": "Use PPO as a mandatory control, not as transferred superiority. Benchmark PSRO/NFSP/R-NaD as challengers only after encoder v2 and a formal small-game adapter exist."
+    },
+    {
+      "id": "big2-selfplay-2026",
+      "area": "strategy",
+      "title": "Self-Play Reinforcement Learning under Imperfect Information in Big 2",
+      "primary_url": "https://arxiv.org/abs/2605.28863v2",
+      "status": "arXiv v2 revised 2026-06-28",
+      "source_claim": "Under a common Big 2 setup, PPO outperformed value-based controls; moderate entropy regularization and current-policy self-play were favored under the tested finite budget.",
+      "transfer_risk": "One four-player shedding-card environment is not evidence for NLHE; the paper says its result tables generally use one training/evaluation seed and do not report uncertainty, so no parameter or small difference should be copied directly.",
+      "decision": "Use current-policy self-play and entropy as controlled ablations, not defaults."
+    },
+    {
+      "id": "stratformer-2026",
+      "area": "opponent_modelling",
+      "title": "StratFormer: Adaptive Opponent Modeling and Exploitation in Imperfect-Information Games",
+      "primary_url": "https://arxiv.org/abs/2604.25796v1",
+      "status": "Accepted at Computers and Games 2026",
+      "source_claim": "A two-phase transformer uses dual-turn tokens and bucket-rate contexts to model and exploit six Leduc opponent archetypes; the paper reports average +0.106 BB/hand over its GTO control and peak +0.821.",
+      "transfer_risk": "Leduc only; no production-ready code or pinned weights were verified in this sweep.",
+      "decision": "Benchmark a small opponent-history head after encoder v2; do not promote or cite the reported rates as NLHE performance."
+    },
+    {
+      "id": "sp-psro-iclr2024",
+      "area": "strategy",
+      "title": "Self-Play PSRO: Toward Optimal Populations in Two-Player Zero-Sum Games",
+      "primary_url": "https://openreview.net/forum?id=J2TZgj3Tac",
+      "status": "ICLR 2024 conference paper",
+      "source_claim": "SP-PSRO adds an approximate stochastic policy as well as a best response and reports faster empirical exploitability reduction than APSRO/PSRO in tested games.",
+      "transfer_risk": "Two-player zero-sum assumptions and tested small games do not match 6/9-max general-sum play.",
+      "decision": "Keep as a post-PPO two-player challenger only."
+    },
+    {
+      "id": "turborebel-2026-submission",
+      "area": "strategy_efficiency",
+      "title": "TurboReBeL: Accelerated Belief Learning for Large Imperfect-Information Extensive-Form Games",
+      "primary_url": "https://openreview.net/forum?id=yMo7Z670f6",
+      "status": "Listed as submitted to ICLR 2026 in the accessible record; acceptance not verified",
+      "source_claim": "The submission reports roughly 250x training acceleration using single-sample multi-iteration generation plus suit/chip isomorphic augmentation, with HUNL experiments on four A100 GPUs.",
+      "transfer_risk": "Author claim in a submission, high implementation complexity, no locally verified code/weights, and HUNL rather than multi-player NLHE.",
+      "decision": "Quarantine as a research hypothesis; independently test exact suit-isomorphism augmentation first."
+    },
+    {
+      "id": "evpa-iclr2025",
+      "area": "strategy_efficiency",
+      "title": "Efficient Online Pruning and Abstraction for Imperfect Information Extensive-Form Games",
+      "primary_url": "https://proceedings.iclr.cc/paper_files/paper/2025/hash/8c1b5863a6b0f925617b917bb2f55be0-Abstract-Conference.html",
+      "status": "ICLR 2025 conference paper",
+      "source_claim": "EVPA combines expected-value estimation, minimax pruning before CFR, and dynamic information abstraction; the paper reports 1%-2% of a DeepStack replication's solving time in its HUNL setting.",
+      "transfer_risk": "No compatible implementation or reproduction was verified; aggressive pruning can silently remove strategically necessary actions.",
+      "decision": "Paper-design review only until a small-game reproduction preserves exploitability and action coverage."
+    },
+    {
+      "id": "jstage-nfsp-exploration-buffer-2018",
+      "area": "strategy_data_hygiene",
+      "title": "Excluding the Data with Exploration from Supervised Learning Improves Neural Fictitious Self-Play",
+      "primary_url": "https://www.jstage.jst.go.jp/article/pjsai/JSAI2018/0/JSAI2018_1N301/_article/-char/en",
+      "status": "JSAI 2018 conference paper; Japanese primary record and four-page paper inspected",
+      "source_claim": "In two-player Leduc, the authors exclude exploration-originated transitions from NFSP's supervised average-policy memory while retaining exploration. At fixed epsilon 0.1 after 10^7 games, five runs reported exploitability (2.3 +/- 0.5)e-2 versus (26.8 +/- 0.8)e-2 for ordinary fixed-epsilon NFSP; the fixed-epsilon exploration sweep used epsilon 0.01, 0.02, 0.05, 0.1, 0.2 and 0.5, with most non-0.1 settings run only once.",
+      "transfer_risk": "A short 2018 Leduc study with five replicated runs only at selected settings is not evidence for NLHE or for PPO. The result concerns replay-buffer semantics, not a generally superior policy.",
+      "decision": "Add a post-PPO formal NFSP ablation that tags behavior-policy/exploration provenance and excludes exploratory actions from the supervised average-policy reservoir. Do not copy epsilon 0.1 as a default."
+    },
+    {
+      "id": "ualberta-aivat-2018",
+      "area": "evaluation_efficiency",
+      "title": "AIVAT: A New Variance Reduction Technique for Agent Evaluation in Imperfect Information Games",
+      "primary_url": "https://ojs.aaai.org/index.php/AAAI/article/view/11481",
+      "status": "AAAI 2018 publication indexed by the University of Alberta Computer Poker Research Group",
+      "source_claim": "The authors describe an unbiased estimator using a heuristic state-value estimate plus explicit strategies for known agents and report an 85% standard-deviation reduction on a HUNL human-machine match, corresponding to 44 times fewer games for the same statistical conclusion.",
+      "transfer_risk": "AIVAT needs correct game/chance histories, a known strategy for at least a subset of agents, and a separately validated value estimate. Those prerequisites are not yet present in Poker Arena's custom multiplayer runtime.",
+      "decision": "Keep paired duplicate deals as the current control and benchmark AIVAT only in the formal two-player lane after its estimator can be differentially tested for unbiasedness."
+    },
+    {
+      "id": "open-spiel-2.0",
+      "area": "formal_environment",
+      "title": "OpenSpiel",
+      "primary_url": "https://github.com/google-deepmind/open_spiel",
+      "status": "PyPI 2.0 released 2026-07-14; Apache-2.0",
+      "release_tag": "v2.0",
+      "release_commit": "6a1458e8a7d52b1f38265fc7ed85cfb1a3dbc85f",
+      "observed_default_branch_head": "112b77704631fc2ce7ad8e4581f6ca09798ce15a",
+      "source_fact": "OpenSpiel represents histories and chance nodes explicitly and provides game-theoretic algorithms and evaluation metrics.",
+      "transfer_risk": "A new major release must be evaluated in an isolated environment; its poker abstractions are not automatically identical to the local engine.",
+      "decision": "Adopt as the formal Kuhn/Leduc/exploitability lane and differential research oracle, not as a drop-in runtime replacement."
+    },
+    {
+      "id": "rlcard",
+      "area": "baseline_environment",
+      "title": "RLCard",
+      "primary_url": "https://github.com/datamllab/rlcard",
+      "status": "MIT; public toolkit",
+      "code_head": "d7d0a957baf4cc7225a50522adb0164bf130a9d0",
+      "source_fact": "The toolkit exposes card-game environments and CFR, NFSP, DQN and DMC examples; its no-limit action space is abstracted.",
+      "transfer_risk": "The five-action abstraction cannot validate arbitrary bet sizing, full raise-reopening semantics, or complete local-engine parity.",
+      "decision": "Use as a baseline adapter and API/differential smoke target only."
+    },
+    {
+      "id": "pettingzoo-nlhe-v6",
+      "area": "baseline_environment",
+      "title": "PettingZoo Texas Hold'em No Limit v6",
+      "primary_url": "https://pettingzoo.farama.org/environments/classic/texas_holdem_no_limit/",
+      "status": "Current public documentation observed 2026-07-17",
+      "source_fact": "The environment wraps RLCard, exposes 54 observations and five actions: fold, check/call, half-pot, pot, all-in.",
+      "quality_gap": "The same page contains a contradictory paragraph calling the implementation a standard limited version, so even the documentation is not a rules oracle.",
+      "decision": "Use only for common multi-agent API smoke tests."
+    },
+    {
+      "id": "pokerrl",
+      "area": "historical_baseline",
+      "title": "PokerRL",
+      "primary_url": "https://github.com/EricSteinberger/PokerRL",
+      "status": "MIT; historical research framework",
+      "code_head": "e02ea667061b96912e424231da071b6f20a262f7",
+      "source_fact": "Framework/reference implementations exist for NFSP, Deep CFR and related poker research.",
+      "transfer_risk": "Documentation and dependency assumptions are old (including Python 3.6-era setup); modernization cost and semantic drift are material.",
+      "decision": "Read-only reference unless an isolated reproduction justifies a maintained fork."
+    },
+    {
+      "id": "selective-conformal-risk-control",
+      "area": "vision_calibration",
+      "title": "Selective Conformal Risk Control",
+      "primary_url": "https://arxiv.org/abs/2512.12844",
+      "status": "Preprint; no local reproduction",
+      "source_claim": "The paper combines selective classification and conformal risk control, with an exact exchangeability-oriented variant and a calibration-only PAC-style variant.",
+      "transfer_risk": "Guarantees require their assumptions; screenshots grouped by client/session/theme are not exchangeable IID samples by default.",
+      "decision": "Benchmark group-aware calibration and risk-coverage gates after the independent real screenshot corpus exists."
+    },
+    {
+      "id": "recoverr",
+      "area": "vision_abstention",
+      "title": "ReCoVERR",
+      "primary_url": "https://arxiv.org/abs/2402.15610",
+      "status": "VQA selective-prediction research",
+      "code": {
+        "url": "https://github.com/tejas1995/ReCoVERR",
+        "head": "0cbd88de4e5782dc16092ad3dad82a33544ce827",
+        "license_observed": "No LICENSE/COPYING file was present in the repository root at this exact revision; design reference only, with no source-code reuse grant inferred."
+      },
+      "source_claim": "The paper reports answering up to 20% more VQA questions without reducing accuracy in its tasks by selectively seeking evidence.",
+      "transfer_risk": "General VQA is not structured poker-state extraction; extra calls can compound hallucination and latency.",
+      "decision": "Borrow only the staged evidence-and-abstention design; preserve deterministic schema/rule validation as the authority."
+    }
+  ]
+}

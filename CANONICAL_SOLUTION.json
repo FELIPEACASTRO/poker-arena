@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "canonical_solution": ".",
+  "upstream_repository": "https://github.com/FELIPEACASTRO/poker-arena",
+  "upstream_commit": "dad1adb71f824f575be2985d64b7269843ae72bd",
+  "history_policy": "self-contained-audited-snapshot",
+  "legacy_solution_present": false,
+  "credential_files_present": false,
+  "credential_rotation": "external-confirmation-required",
+  "vision_decision_policy": "externally-validated-f2-only",
+  "recorded_at": "2026-08-07"
+}

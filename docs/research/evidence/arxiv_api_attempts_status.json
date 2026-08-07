@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "checked_on": "2026-07-17",
+  "receipt_valid": false,
+  "endpoint": "https://export.arxiv.org/api/query",
+  "control_query": "all:poker",
+  "observed_error": "HTTP 429",
+  "interpretation": "The skill script writes an empty result when its request fails unless verbose mode is enabled. Therefore zero-result files from this attempt are access-failure receipts, not evidence that arXiv has no matching papers.",
+  "invalid_result_files": [
+    "arxiv_poker_strategy.json",
+    "arxiv_card_vision.json",
+    "arxiv_imperfect_information.json",
+    "arxiv_vision_calibration.json",
+    "arxiv_poker_broad.json"
+  ],
+  "fallback": "Stopped API calls after 429; continued via web search restricted to official arxiv.org pages."
+}

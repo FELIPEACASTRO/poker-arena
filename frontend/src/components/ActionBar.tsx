@@ -1,0 +1,278 @@
+import { useEffect, useState } from 'react'
+import { AlertTriangle, Eye, Gauge, LogOut, Pause, Play, Trophy } from 'lucide-react'
+import { useGame } from '../store'
+import type { TableState } from '../types'
+
+interface Props {
+  state: TableState
+  onAction: (type: string, amount?: number) => void
+  onNext: () => void
+  onLeave: () => void
+  busy: boolean
+  error: string | null
+  watch?: boolean
+  paused?: boolean
+  onTogglePause?: () => void
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+
+function winnerNames(state: TableState): string {
+  return (state.winners ?? [])
+    .map((i) => state.seats.find((s) => s.seat === i)?.name ?? `#${i}`)
+    .join(', ')
+}
+
+export default function ActionBar({
+  state,
+  onAction,
+  onNext,
+  onLeave,
+  busy,
+  error,
+  watch = false,
+  paused = false,
+  onTogglePause,
+}: Props) {
+  const { stepDelay, setStepDelay } = useGame()
+  const legal = state.legal
+  const minR = legal?.min_raise_to ?? 0
+  const maxR = legal?.max_raise_to ?? 0
+  const resetKey = `${state.hand_number}:${minR}:${maxR}`
+  const [raiseState, setRaiseState] = useState({ key: resetKey, value: minR })
+  const raiseTo = raiseState.key === resetKey ? clamp(raiseState.value, minR, maxR) : minR
+  const setRaiseTo = (value: number) => setRaiseState({ key: resetKey, value })
+
+  // tamanhos de aposta relativos ao pote (poker de verdade)
+  const me = state.seats.find((s) => s.is_turn)
+  const callTo = (me?.current_bet ?? 0) + (legal?.to_call ?? 0)
+  const potAfterCall = state.pot + (legal?.to_call ?? 0)
+  const sizeTo = (frac: number) => clamp(Math.round(callTo + frac * potAfterCall), minR, maxR)
+  const canRaise = !!legal?.actions.includes('raise')
+
+  // atalhos de teclado (só na vez do humano)
+  useEffect(() => {
+    if (watch || busy) return
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target instanceof HTMLElement ? e.target : null
+      const isEditing = Boolean(
+        target?.closest('input, textarea, select, button, a[href], [contenteditable="true"]'),
+      )
+      if (
+        e.defaultPrevented ||
+        e.repeat ||
+        e.altKey ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.shiftKey ||
+        isEditing ||
+        document.querySelector('[aria-modal="true"]')
+      ) return
+      const k = e.key.toLowerCase()
+      if (state.phase === 'hand_over' && (k === 'enter' || k === ' ')) {
+        e.preventDefault()
+        onNext()
+        return
+      }
+      if (state.phase !== 'human_turn' || !legal) return
+      if (k === 'f' && legal.actions.includes('fold')) {
+        e.preventDefault()
+        onAction('fold')
+      }
+      else if (k === 'c') {
+        if (legal.actions.includes('check')) {
+          e.preventDefault()
+          onAction('check')
+        } else if (legal.actions.includes('call')) {
+          e.preventDefault()
+          onAction('call')
+        }
+      } else if (k === 'r' && canRaise) {
+        e.preventDefault()
+        onAction('raise', raiseTo)
+      } else if (k === 'a' && legal.actions.includes('all_in')) {
+        e.preventDefault()
+        onAction('all_in')
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [watch, busy, state.phase, legal, canRaise, raiseTo, onAction, onNext])
+
+  if (watch) {
+    const actor = state.seats.find((s) => s.is_turn)?.name
+    return (
+      <div className="actionbar actionbar-watch">
+        {error && (
+          <div className="error" role="alert">
+            <AlertTriangle size={14} /> {error}
+          </div>
+        )}
+        <div className="actions result-row">
+          {state.phase === 'bot_turn' && (
+            <span className="result">
+              <Eye size={15} /> Assistindo — <b>{actor}</b> vai jogar…
+            </span>
+          )}
+          {state.phase === 'hand_over' && (
+            <span className="result">
+              <Trophy size={15} /> Venceu: <b>{winnerNames(state)}</b> — próxima mão…
+            </span>
+          )}
+          {state.phase === 'game_over' ? (
+            <>
+              <span className="result">
+                <Trophy size={15} /> Campeão: <b>{winnerNames(state)}</b>
+              </span>
+              <button className="btn" onClick={onLeave}>
+                Nova partida
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="speed-ctrl">
+                <Gauge size={15} />
+                <input
+                  type="range"
+                  min={300}
+                  max={5000}
+                  step={100}
+                  value={stepDelay}
+                  onChange={(e) => {
+                    const next = e.currentTarget.valueAsNumber
+                    if (Number.isFinite(next)) setStepDelay(next)
+                  }}
+                  aria-label="Tempo por jogada"
+                />
+                <span className="speed-val mono">{(stepDelay / 1000).toFixed(1)}s/jogada</span>
+              </div>
+              <button className="btn btn-call" onClick={onTogglePause}>
+                {paused ? <Play size={15} /> : <Pause size={15} />}
+                {paused ? 'Continuar' : 'Pausar'}
+              </button>
+              <button className="btn" onClick={onLeave}>
+                <LogOut size={15} /> Sair
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="actionbar">
+      {error && (
+        <div className="error" role="alert">
+          <AlertTriangle size={14} /> {error}
+        </div>
+      )}
+
+      {state.phase === 'human_turn' && legal && (
+        <div className="actions-v2">
+          {canRaise && (
+            <div className="betsize">
+              <div className="betsize-tabs">
+                <button onClick={() => setRaiseTo(minR)}>Min</button>
+                <button onClick={() => setRaiseTo(sizeTo(0.5))}>½ Pote</button>
+                <button onClick={() => setRaiseTo(sizeTo(1))}>Pote</button>
+                <button onClick={() => setRaiseTo(sizeTo(2.5))}>2,5× Pote</button>
+                <button onClick={() => setRaiseTo(maxR)}>Máx</button>
+              </div>
+              <div className="betsize-step">
+                <button
+                  className="step-btn"
+                  onClick={() => setRaiseTo(clamp(raiseTo - 20, minR, maxR))}
+                  aria-label="Diminuir aposta"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  className="mono"
+                  aria-label="Valor total do aumento"
+                  value={raiseTo}
+                  min={minR}
+                  max={maxR}
+                  onChange={(e) => {
+                    const next = e.currentTarget.valueAsNumber
+                    if (Number.isFinite(next)) setRaiseTo(clamp(next, minR, maxR))
+                  }}
+                />
+                <button
+                  className="step-btn"
+                  onClick={() => setRaiseTo(clamp(raiseTo + 20, minR, maxR))}
+                  aria-label="Aumentar aposta"
+                >
+                  +
+                </button>
+              </div>
+              <p className="betsize-total">
+                Aposta total: <b className="mono">{raiseTo}</b>
+              </p>
+            </div>
+          )}
+
+          <div className="actbtns">
+            {legal.actions.includes('fold') && (
+              <button className="actbtn act-fold" disabled={busy} onClick={() => onAction('fold')}>
+                <span className="actbtn-label">Desistir</span>
+                <kbd>F</kbd>
+              </button>
+            )}
+            {legal.actions.includes('check') && (
+              <button className="actbtn act-call" disabled={busy} onClick={() => onAction('check')}>
+                <span className="actbtn-label">Passar</span>
+                <kbd>C</kbd>
+              </button>
+            )}
+            {legal.actions.includes('call') && (
+              <button className="actbtn act-call" disabled={busy} onClick={() => onAction('call')}>
+                <span className="actbtn-label">Pagar</span>
+                <span className="actbtn-val mono">{legal.to_call}</span>
+              </button>
+            )}
+            {canRaise && (
+              <button
+                className="actbtn act-raise"
+                disabled={busy}
+                onClick={() => onAction('raise', raiseTo)}
+              >
+                <span className="actbtn-label">Aumentar p/</span>
+                <span className="actbtn-val mono">{raiseTo}</span>
+              </button>
+            )}
+            {legal.actions.includes('all_in') && !canRaise && (
+              <button className="actbtn act-allin" disabled={busy} onClick={() => onAction('all_in')}>
+                <span className="actbtn-label">All-in</span>
+                <kbd>A</kbd>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {state.phase === 'hand_over' && (
+        <div className="actions result-row">
+          <span className="result">
+            <Trophy size={15} /> Venceu: <b>{winnerNames(state)}</b>
+          </span>
+          <button className="btn btn-next" disabled={busy} onClick={onNext}>
+            Próxima mão <kbd>↵</kbd>
+          </button>
+        </div>
+      )}
+
+      {state.phase === 'game_over' && (
+        <div className="actions result-row">
+          <span className="result">
+            <Trophy size={15} /> Fim de jogo — campeão: <b>{winnerNames(state)}</b>
+          </span>
+          <button className="btn" onClick={onLeave}>
+            Nova partida
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}

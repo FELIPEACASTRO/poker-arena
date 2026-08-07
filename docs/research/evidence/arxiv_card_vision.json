@@ -1,0 +1,5 @@
+{
+  "query": "(all:playing_card OR all:poker_card) AND (all:recognition OR all:detection OR all:OCR) AND cat:cs.CV",
+  "result_count": 0,
+  "results": []
+}

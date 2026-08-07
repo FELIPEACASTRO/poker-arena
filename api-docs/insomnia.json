@@ -1,0 +1,775 @@
+{
+  "__export_date": "1970-01-01T00:00:00.000Z",
+  "__export_format": 4,
+  "__export_source": "poker-arena:generate.py",
+  "_type": "export",
+  "resources": [
+    {
+      "_id": "wrk_poker_arena",
+      "_type": "workspace",
+      "description": "Contrato completo gerado do FastAPI. Nenhuma credencial real é incluída; configure o ambiente local somente se POKER_API_TOKEN estiver ativo.",
+      "name": "Poker Arena API",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_poker_base",
+      "_type": "environment",
+      "data": {
+        "api_token": "",
+        "base_url": "http://127.0.0.1:8000",
+        "expected_version": "0",
+        "game_id": "COLE_AQUI_O_game_id",
+        "idempotency_key": "CHANGE-ME-UNIQUE-PER-COMMAND",
+        "request_id": "",
+        "seat": 0,
+        "table_id": "COLE_AQUI_O_table_id",
+        "ws_url": "ws://127.0.0.1:8000"
+      },
+      "metaSortKey": 0,
+      "name": "Base local",
+      "parentId": "wrk_poker_arena"
+    },
+    {
+      "_id": "fld_a230f466233a4905",
+      "_type": "request_group",
+      "description": "Histórico das partidas gravadas e replay mão a mão.",
+      "metaSortKey": 1000,
+      "name": "Auditoria",
+      "parentId": "wrk_poker_arena"
+    },
+    {
+      "_id": "fld_082ba86f5ce1b7c3",
+      "_type": "request_group",
+      "description": "Dados de apoio (níveis de IA disponíveis).",
+      "metaSortKey": 2000,
+      "name": "Catálogo",
+      "parentId": "wrk_poker_arena"
+    },
+    {
+      "_id": "fld_f71742ee75856fe3",
+      "_type": "request_group",
+      "description": "Revisar um spot pós-jogo (equity, MDF, veredito das jogadas, conselho das IAs) — offline.",
+      "metaSortKey": 3000,
+      "name": "Copiloto",
+      "parentId": "wrk_poker_arena"
+    },
+    {
+      "_id": "fld_1ed13bbaa7ba238f",
+      "_type": "request_group",
+      "description": "Avançar o jogo: sua jogada, jogada dos bots e próxima mão.",
+      "metaSortKey": 4000,
+      "name": "Jogada",
+      "parentId": "wrk_poker_arena"
+    },
+    {
+      "_id": "fld_c9aa045c6957833e",
+      "_type": "request_group",
+      "description": "Entrar/sair de jogadores na mesa ao vivo (como num cassino).",
+      "metaSortKey": 5000,
+      "name": "Jogadores",
+      "parentId": "wrk_poker_arena"
+    },
+    {
+      "_id": "fld_136ea94d964c517c",
+      "_type": "request_group",
+      "description": "Criar uma partida e ler o estado da mesa.",
+      "metaSortKey": 6000,
+      "name": "Mesa",
+      "parentId": "wrk_poker_arena"
+    },
+    {
+      "_id": "fld_f490dde232cfaad3",
+      "_type": "request_group",
+      "description": "Saúde do serviço.",
+      "metaSortKey": 7000,
+      "name": "Sistema",
+      "parentId": "wrk_poker_arena"
+    },
+    {
+      "_id": "req_f2a0ff5cd3092b90",
+      "_type": "request",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"big_blind\": 20,\n  \"board\": [\n    \"Kd\",\n    \"7c\",\n    \"2s\"\n  ],\n  \"hole\": [\n    \"As\",\n    \"Ah\"\n  ],\n  \"in_position\": true,\n  \"my_stack\": 1000,\n  \"num_opponents\": 1,\n  \"position\": \"BTN\",\n  \"pot\": 100,\n  \"to_call\": 20\n}"
+      },
+      "description": "Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)\ne devolve a leitura completa: equity real, pot odds, EV, MDF, outs, a nut,\ntextura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o\nconselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos\nlocais e não acessa sites de poker. É destinado a estudo e revisão pós-jogo.",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 1000,
+      "method": "POST",
+      "name": "Copiloto: revisar um spot (pós-jogo, offline)",
+      "parentId": "fld_f71742ee75856fe3",
+      "url": "{{ _.base_url }}/copilot"
+    },
+    {
+      "_id": "req_8bf4e4e420ed94df",
+      "_type": "request",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "description": "Screenshot 2D da mesa de poker.",
+            "fileName": "",
+            "name": "image",
+            "type": "file"
+          },
+          {
+            "disabled": true,
+            "name": "to_call",
+            "value": "0"
+          },
+          {
+            "disabled": true,
+            "name": "my_stack",
+            "value": "1000"
+          },
+          {
+            "disabled": true,
+            "name": "num_opponents",
+            "value": "1"
+          },
+          {
+            "disabled": true,
+            "name": "in_position",
+            "value": "true"
+          },
+          {
+            "disabled": true,
+            "name": "position",
+            "value": ""
+          },
+          {
+            "description": "Obrigatoriamente true. O modo permissivo foi removido porque permitia contornar o limiar de confiança da visão.",
+            "disabled": true,
+            "name": "strict",
+            "value": "true"
+          },
+          {
+            "description": "Opt-in explícito desta requisição para o fallback VLM remoto. Só é considerado junto com remote_vlm_session_id.",
+            "disabled": true,
+            "name": "remote_vlm_consent",
+            "value": "false"
+          },
+          {
+            "description": "Identificador efêmero da sessão de captura autorizada; não é persistido nem enviado em claro ao VLM.",
+            "disabled": true,
+            "name": "remote_vlm_session_id",
+            "value": ""
+          }
+        ]
+      },
+      "description": "VISÃO → estado → sanity → Copiloto. A imagem é lida (cartas + pote + stacks)\npela visão e passa pelo sanity-check de regras. A decisão só é autorizada quando\no engine é F2 e seu artefato carrega validação externa promovida; F1 e VLM são\ndiagnósticos e sempre abstêm. Leituras implausíveis também abstêm. `strict=true`\né obrigatório e exige o limiar de confiança, além das validações estruturais;\nisso reduz risco, mas não garante exatidão. O\nfallback VLM remoto fica desligado, salvo opt-in do operador e consentimento\nexplícito e efêmero em cada requisição da sessão de captura. Antes de sair da\nmáquina, a imagem passa pela redação configurada; qualquer falha mantém abstain.",
+      "headers": [
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 2000,
+      "method": "POST",
+      "name": "Copiloto: ler uma imagem; decidir somente com F2 validado",
+      "parentId": "fld_f71742ee75856fe3",
+      "url": "{{ _.base_url }}/copilot/from-image"
+    },
+    {
+      "_id": "req_268de06caece8e49",
+      "_type": "request",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"consent\": true\n}"
+      },
+      "description": "Issue a bounded, process-local nonce after explicit consent and authentication. Requires a configured 32-512 character printable-ASCII API token.",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "description": "Obrigatório: token ASCII imprimível de 32 a 512 caracteres.",
+          "disabled": false,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 3000,
+      "method": "POST",
+      "name": "Criar autorização efêmera para o fallback VLM remoto",
+      "parentId": "fld_f71742ee75856fe3",
+      "url": "{{ _.base_url }}/copilot/remote-vlm/consent-sessions"
+    },
+    {
+      "_id": "req_8fae4a3e7bbf2568",
+      "_type": "request",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"session_id\": \"replace-with-issued-session-id\"\n}"
+      },
+      "description": "Revoke by request body so the capability never appears in logs as a URL. Requires a configured 32-512 character printable-ASCII API token.",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "description": "Obrigatório: token ASCII imprimível de 32 a 512 caracteres.",
+          "disabled": false,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 4000,
+      "method": "DELETE",
+      "name": "Revogar autorização efêmera do fallback VLM remoto",
+      "parentId": "fld_f71742ee75856fe3",
+      "url": "{{ _.base_url }}/copilot/remote-vlm/consent-sessions"
+    },
+    {
+      "_id": "req_3878114908b4c9db",
+      "_type": "request",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"phh\": \"variant = 'NT'\\nantes = [0, 0]\\nblinds_or_straddles = [1, 2]\\nmin_bet = 2\\nstarting_stacks = [100, 100]\\nplayers = ['Alice', 'Bob']\\nactions = ['d dh p1 AsKd', 'd dh p2 QsQh', 'p1 cc', 'p2 cc']\",\n  \"player\": 1\n}"
+      },
+      "description": "Cole o histórico da mão (formato PHH — o texto que o jogo exporta ao FIM da\nmão) e escolha qual jogador é você. O copiloto reproduz a mão e revisa CADA\ndecisão sua, comparando com a recomendação. É estudo pós-jogo (como rever um\nPGN de xadrez), executado localmente — não lê tela de jogo ao vivo.",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 5000,
+      "method": "POST",
+      "name": "Copiloto: revisar uma MÃO inteira (cole o histórico PHH)",
+      "parentId": "fld_f71742ee75856fe3",
+      "url": "{{ _.base_url }}/copilot/review-hand"
+    },
+    {
+      "_id": "req_dbf6d05509df5767",
+      "_type": "request",
+      "description": "Histórico de todas as partidas (resumo: id, modo, nº de mãos, data).\nToda partida é gravada automaticamente em disco para auditoria/replay.",
+      "headers": [
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 6000,
+      "method": "GET",
+      "name": "Listar partidas gravadas",
+      "parentId": "fld_a230f466233a4905",
+      "url": "{{ _.base_url }}/games"
+    },
+    {
+      "_id": "req_3e13ea85acc01ce7",
+      "_type": "request",
+      "description": "Devolve uma página do log da partida: cada mão com as ações, o **raciocínio\nde cada bot** no momento (glass-box), o board, os vencedores e o saldo em fichas.",
+      "headers": [
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 7000,
+      "method": "GET",
+      "name": "Replay paginado de uma partida",
+      "parentId": "fld_a230f466233a4905",
+      "url": "{{ _.base_url }}/games/{{ _.game_id }}"
+    },
+    {
+      "_id": "req_bdfa0ea43cd0d02d",
+      "_type": "request",
+      "description": "Retorna `{\"status\": \"ok\"}` se a API está no ar. Útil para o launcher/monitor.",
+      "headers": [
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 8000,
+      "method": "GET",
+      "name": "Saúde do serviço",
+      "parentId": "fld_f490dde232cfaad3",
+      "url": "{{ _.base_url }}/health"
+    },
+    {
+      "_id": "req_fd62ff2721a00172",
+      "_type": "request",
+      "description": "Lista os níveis de bot que podem ser usados ao criar uma mesa ou adicionar\num jogador. O `expert` só aparece quando o modelo treinado está instalado.",
+      "headers": [
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 9000,
+      "method": "GET",
+      "name": "Níveis de IA disponíveis",
+      "parentId": "fld_082ba86f5ce1b7c3",
+      "url": "{{ _.base_url }}/levels"
+    },
+    {
+      "_id": "req_57ec2855c1c4bd58",
+      "_type": "request",
+      "description": "Prontidão e dependências opcionais",
+      "headers": [
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 10000,
+      "method": "GET",
+      "name": "Prontidão e dependências opcionais",
+      "parentId": "fld_f490dde232cfaad3",
+      "url": "{{ _.base_url }}/ready"
+    },
+    {
+      "_id": "req_5420e59bdb7f9bcc",
+      "_type": "request",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"big_blind\": 20,\n  \"bots\": [\n    {\n      \"level\": \"random\",\n      \"name\": \"Luna\"\n    },\n    {\n      \"level\": \"heuristic\",\n      \"name\": \"Caio\"\n    }\n  ],\n  \"hand_limit\": 50,\n  \"human_name\": \"VOCE\",\n  \"mode\": \"play\",\n  \"rebuy\": true,\n  \"seed\": 42,\n  \"small_blind\": 10,\n  \"starting_stack\": 1000\n}"
+      },
+      "description": "Cria uma partida com os bots, blinds, formato (cash/torneio) e modo (play/watch)\nescolhidos. **Guarde o `table_id` da resposta** — ele identifica a mesa em todas\nas chamadas seguintes.",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "Chave única para repetir o mesmo comando sem duplicar efeitos. O servidor mantém 256 respostas e 4096 tombstones por escopo; uma resposta expirada dentro dessa janela retorna 409 e nunca repete o comando.",
+          "disabled": true,
+          "name": "Idempotency-Key",
+          "value": "{{ _.idempotency_key }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 11000,
+      "method": "POST",
+      "name": "Criar uma mesa (nova partida)",
+      "parentId": "fld_136ea94d964c517c",
+      "url": "{{ _.base_url }}/tables"
+    },
+    {
+      "_id": "req_8b256dd7a85864b4",
+      "_type": "request",
+      "description": "Devolve o estado completo e atual da mesa (fase, cartas, pote, cadeiras,\njogadas válidas, análises). É o jeito de 'dar refresh' sem alterar nada.",
+      "headers": [
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 12000,
+      "method": "GET",
+      "name": "Ler o estado atual da mesa",
+      "parentId": "fld_136ea94d964c517c",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}"
+    },
+    {
+      "_id": "req_97488fb16c9c9d0f",
+      "_type": "request",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": 0,\n  \"type\": \"call\"\n}"
+      },
+      "description": "Aplica a sua jogada quando `phase == human_turn`. Só valem as ações listadas\nem `legal.actions`; para `raise`, o `amount` é o valor TOTAL (entre `min_raise_to`\ne `max_raise_to`). Os bots jogam sozinhos em seguida, até voltar a ser a sua vez.",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "Chave única para repetir o mesmo comando sem duplicar efeitos. O servidor mantém 256 respostas e 4096 tombstones por escopo; uma resposta expirada dentro dessa janela retorna 409 e nunca repete o comando.",
+          "disabled": true,
+          "name": "Idempotency-Key",
+          "value": "{{ _.idempotency_key }}"
+        },
+        {
+          "description": "Versão recebida no estado anterior ou no cabeçalho ETag.",
+          "disabled": true,
+          "name": "If-Match",
+          "value": "{{ _.expected_version }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 13000,
+      "method": "POST",
+      "name": "Fazer a sua jogada (turno do humano)",
+      "parentId": "fld_1ed13bbaa7ba238f",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/actions"
+    },
+    {
+      "_id": "req_ca4da42586ed8fb4",
+      "_type": "request",
+      "description": "Distribui uma nova mão. Só é válido quando `phase == hand_over`.",
+      "headers": [
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "Chave única para repetir o mesmo comando sem duplicar efeitos. O servidor mantém 256 respostas e 4096 tombstones por escopo; uma resposta expirada dentro dessa janela retorna 409 e nunca repete o comando.",
+          "disabled": true,
+          "name": "Idempotency-Key",
+          "value": "{{ _.idempotency_key }}"
+        },
+        {
+          "description": "Versão recebida no estado anterior ou no cabeçalho ETag.",
+          "disabled": true,
+          "name": "If-Match",
+          "value": "{{ _.expected_version }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 14000,
+      "method": "POST",
+      "name": "Começar a próxima mão",
+      "parentId": "fld_1ed13bbaa7ba238f",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/next-hand"
+    },
+    {
+      "_id": "req_4daba18078f68e1d",
+      "_type": "request",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"buy_in\": 1000,\n  \"level\": \"montecarlo\",\n  \"name\": \"Ana\"\n}"
+      },
+      "description": "Adiciona um bot do nível escolhido. A mudança vale **a partir da próxima mão**\n(a mão atual termina normalmente). A mesa aceita no máximo 9 assentos.",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "Chave única para repetir o mesmo comando sem duplicar efeitos. O servidor mantém 256 respostas e 4096 tombstones por escopo; uma resposta expirada dentro dessa janela retorna 409 e nunca repete o comando.",
+          "disabled": true,
+          "name": "Idempotency-Key",
+          "value": "{{ _.idempotency_key }}"
+        },
+        {
+          "description": "Versão recebida no estado anterior ou no cabeçalho ETag.",
+          "disabled": true,
+          "name": "If-Match",
+          "value": "{{ _.expected_version }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 15000,
+      "method": "POST",
+      "name": "Sentar um novo bot na mesa",
+      "parentId": "fld_c9aa045c6957833e",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/players"
+    },
+    {
+      "_id": "req_0eb6f878d865b73d",
+      "_type": "request",
+      "description": "Remove o jogador da cadeira indicada (índice em `roster`). Vale a partir da\npróxima mão. Não dá para remover o humano nem deixar a mesa com menos de 2.",
+      "headers": [
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "Chave única para repetir o mesmo comando sem duplicar efeitos. O servidor mantém 256 respostas e 4096 tombstones por escopo; uma resposta expirada dentro dessa janela retorna 409 e nunca repete o comando.",
+          "disabled": true,
+          "name": "Idempotency-Key",
+          "value": "{{ _.idempotency_key }}"
+        },
+        {
+          "description": "Versão recebida no estado anterior ou no cabeçalho ETag.",
+          "disabled": true,
+          "name": "If-Match",
+          "value": "{{ _.expected_version }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 16000,
+      "method": "DELETE",
+      "name": "Remover um jogador da mesa",
+      "parentId": "fld_c9aa045c6957833e",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/players/{{ _.seat }}"
+    },
+    {
+      "_id": "req_82c4bdb07d194007",
+      "_type": "request",
+      "description": "No modo `watch`, avança UMA jogada de bot por vez — é assim que você acompanha\na partida lance a lance, vendo o raciocínio de cada IA. Válido só em `bot_turn`.",
+      "headers": [
+        {
+          "description": "Habilite se POKER_API_TOKEN estiver configurado.",
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        },
+        {
+          "description": "Alternativa bearer: habilite este cabeçalho OU X-Poker-Token.",
+          "disabled": true,
+          "name": "Authorization",
+          "value": "Bearer {{ _.api_token }}"
+        },
+        {
+          "description": "Chave única para repetir o mesmo comando sem duplicar efeitos. O servidor mantém 256 respostas e 4096 tombstones por escopo; uma resposta expirada dentro dessa janela retorna 409 e nunca repete o comando.",
+          "disabled": true,
+          "name": "Idempotency-Key",
+          "value": "{{ _.idempotency_key }}"
+        },
+        {
+          "description": "Versão recebida no estado anterior ou no cabeçalho ETag.",
+          "disabled": true,
+          "name": "If-Match",
+          "value": "{{ _.expected_version }}"
+        },
+        {
+          "description": "ID opcional de correlação (1 a 128 caracteres seguros).",
+          "disabled": true,
+          "name": "X-Request-ID",
+          "value": "{{ _.request_id }}"
+        }
+      ],
+      "metaSortKey": 17000,
+      "method": "POST",
+      "name": "Avançar uma jogada de bot (Modo Laboratório)",
+      "parentId": "fld_1ed13bbaa7ba238f",
+      "url": "{{ _.base_url }}/tables/{{ _.table_id }}/step"
+    },
+    {
+      "_id": "fld_9f6a12cb6ece40cc",
+      "_type": "request_group",
+      "description": "Canal WebSocket com push de estado.",
+      "metaSortKey": 8000,
+      "name": "Tempo real",
+      "parentId": "wrk_poker_arena"
+    },
+    {
+      "_id": "ws_023c4f09285313aa",
+      "_type": "websocket_request",
+      "description": "Recebe um TableStateResponse inicial. Aceita mensagens objeto de até 4096 bytes com apenas type, amount, command_id e expected_version. Envie, por exemplo, `{\"type\":\"call\",\"command_id\":\"unique-1\",\"expected_version\":0}`. `command_id` (1..128 caracteres seguros) torna a mensagem idempotente e `expected_version` inteiro não negativo evita estado obsoleto. Erros retornam um objeto com `error` e, quando aplicável, `code`: validation_error, idempotency_conflict, version_conflict ou invalid_action. Antes do upgrade, o servidor pode fechar com 4401 (token), 4403 (Origin) ou 4404 (mesa).",
+      "headers": [
+        {
+          "disabled": true,
+          "name": "X-Poker-Token",
+          "value": "{{ _.api_token }}"
+        }
+      ],
+      "metaSortKey": 18000,
+      "name": "WebSocket da mesa",
+      "parentId": "fld_9f6a12cb6ece40cc",
+      "url": "{{ _.ws_url }}/tables/{{ _.table_id }}/ws"
+    }
+  ]
+}

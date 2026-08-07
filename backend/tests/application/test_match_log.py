@@ -1,0 +1,285 @@
+"""Poda do histórico: manter só as N partidas mais recentes (evita lixo no disco)."""
+
+import json
+import os
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+from poker_arena.application import BotSpec, SessionConfig, build_session
+from poker_arena.application.game_session import _insight_dict
+from poker_arena.application.match_log import (
+    MatchLogCorruptionError,
+    MatchLogger,
+    _is_reparse_or_link,
+    list_games_page,
+    prune_old_games,
+    read_game,
+    read_game_page,
+)
+from poker_arena.bots.insight import BotInsight
+
+
+def _game_file(log_dir, name, mtime):
+    """Cria um .jsonl de partida com mtime EXPLÍCITO (teste determinístico)."""
+    p = Path(log_dir) / f"{name}.jsonl"
+    p.write_text('{"type": "meta", "id": "' + name + '"}\n', encoding="utf-8")
+    os.utime(p, (mtime, mtime))
+    return p
+
+
+def test_prune_keeps_the_newest(tmp_path):
+    for i in range(15):  # mtimes crescentes: g14 é o mais novo
+        _game_file(tmp_path, f"g{i:02d}", mtime=1_000 + i)
+    assert prune_old_games(keep=10, log_dir=tmp_path) == 5
+    names = sorted(f.stem for f in tmp_path.glob("*.jsonl"))
+    assert names == [f"g{i:02d}" for i in range(5, 15)]  # só os 10 mais recentes
+
+
+def test_prune_noop_when_under_limit(tmp_path):
+    for i in range(4):
+        _game_file(tmp_path, f"g{i}", mtime=1_000 + i)
+    assert prune_old_games(keep=10, log_dir=tmp_path) == 0
+    assert len(list(tmp_path.glob("*.jsonl"))) == 4
+
+
+def test_prune_idempotent_and_respects_keep(tmp_path):
+    for i in range(12):
+        _game_file(tmp_path, f"g{i:02d}", mtime=1_000 + i)
+    assert prune_old_games(keep=10, log_dir=tmp_path) == 2  # tira as 2 mais antigas
+    assert prune_old_games(keep=10, log_dir=tmp_path) == 0  # já enxuto -> nada
+    assert prune_old_games(keep=3, log_dir=tmp_path) == 7  # keep menor tira o excedente
+
+
+def test_matchlogger_does_not_prune_history_without_explicit_retention(tmp_path):
+    for i in range(12):
+        lg = MatchLogger(f"s{i:02d}", {"mode": "watch", "levels": []}, log_dir=tmp_path)
+        lg.begin_hand(1, 0, [{"seat": 0, "name": "A", "level": "random", "start": 1000}])
+        lg.finish_hand([], 0, [], [{"seat": 0, "name": "A", "end": 1000, "delta": 0}])
+    assert len(list(tmp_path.glob("*.jsonl"))) == 12
+
+
+@pytest.mark.parametrize("keep", [None, True, 0, -1, 1_000_001])
+def test_prune_rejects_invalid_retention_without_deleting(tmp_path, keep):
+    _game_file(tmp_path, "preserve", mtime=1_000)
+
+    with pytest.raises(ValueError):
+        prune_old_games(keep=keep, log_dir=tmp_path)
+
+    assert (tmp_path / "preserve.jsonl").is_file()
+
+
+@pytest.mark.parametrize("retention", [True, 0, -1, 1_000_001])
+def test_matchlogger_rejects_invalid_retention_before_writing(tmp_path, retention):
+    with pytest.raises(ValueError):
+        MatchLogger("invalid-retention", {}, log_dir=tmp_path, retention=retention)
+
+    assert not list(tmp_path.glob("*.jsonl"))
+
+
+def test_match_log_records_every_players_hole_cards(tmp_path, monkeypatch):
+    monkeypatch.setenv("POKER_LOG_DIR", str(tmp_path))
+    session = build_session(
+        SessionConfig(bots=[BotSpec("B", "random")]),
+        session_id="hole-audit",
+        seed=1,
+    )
+    session.apply_human_action("fold")
+
+    game = read_game("hole-audit", log_dir=tmp_path)
+    assert game is not None
+    seats = game["hands"][0]["seats"]
+    assert all(len(seat["hole"]) == 2 for seat in seats)
+
+
+def test_read_game_rejects_parent_directory_traversal(tmp_path):
+    log_dir = tmp_path / "logs"
+    log_dir.mkdir()
+    outside = tmp_path / "outside.jsonl"
+    outside.write_text('{"type":"meta","id":"outside"}\n', encoding="utf-8")
+
+    assert read_game(r"..\outside", log_dir=log_dir) is None
+
+
+def test_matchlogger_rejects_traversal_in_session_id(tmp_path):
+    log_dir = tmp_path / "logs"
+    with pytest.raises(ValueError):
+        MatchLogger(r"..\outside", {"mode": "watch"}, log_dir=log_dir)
+    assert not (tmp_path / "outside.jsonl").exists()
+
+
+def test_matchlogger_creates_session_file_exclusively(tmp_path):
+    MatchLogger("same-session", {"mode": "watch"}, log_dir=tmp_path)
+
+    with pytest.raises(MatchLogCorruptionError, match="ja existe"):
+        MatchLogger("same-session", {"mode": "watch"}, log_dir=tmp_path)
+
+
+def test_matchlogger_detects_file_replacement_before_next_append(tmp_path):
+    logger = MatchLogger("replace-me", {"mode": "watch"}, log_dir=tmp_path)
+    logger.path.unlink()
+    logger.path.write_text('{"type":"meta","id":"attacker"}\n', encoding="utf-8")
+    logger.begin_hand(1, 0, [])
+
+    with pytest.raises(MatchLogCorruptionError, match="identidade"):
+        logger.finish_hand([], 0, [], [])
+
+    assert '"attacker"' in logger.path.read_text(encoding="utf-8")
+
+
+def test_windows_reparse_attribute_is_recognized_without_platform_privilege():
+    class ReparseStat:
+        st_mode = 0o100600
+        st_file_attributes = 0x400
+
+    assert _is_reparse_or_link(ReparseStat())
+
+
+def test_matchlogger_rejects_reparse_log_directory_without_platform_privilege(
+    tmp_path, monkeypatch
+):
+    import poker_arena.application.match_log as module
+
+    original_lstat = module.os.lstat
+
+    def mark_log_dir_as_reparse(path):
+        result = original_lstat(path)
+        if Path(path) == tmp_path:
+            return SimpleNamespace(
+                st_mode=result.st_mode,
+                st_file_attributes=0x400,
+            )
+        return result
+
+    monkeypatch.setattr(module.os, "lstat", mark_log_dir_as_reparse)
+
+    with pytest.raises(MatchLogCorruptionError, match="reparse"):
+        MatchLogger("reparse-dir", {"mode": "watch"}, log_dir=tmp_path)
+
+    assert not (tmp_path / "reparse-dir.jsonl").exists()
+
+
+def test_matchlogger_rejects_non_regular_session_target(tmp_path):
+    (tmp_path / "not-a-file.jsonl").mkdir()
+
+    with pytest.raises(MatchLogCorruptionError, match="arquivo de auditoria"):
+        MatchLogger("not-a-file", {"mode": "watch"}, log_dir=tmp_path)
+
+    assert (tmp_path / "not-a-file.jsonl").is_dir()
+
+
+def test_read_game_rejects_hard_linked_audit_file(tmp_path):
+    log_dir = tmp_path / "logs"
+    log_dir.mkdir()
+    outside = tmp_path / "outside.jsonl"
+    outside.write_text('{"type":"meta","id":"hard-linked"}\n', encoding="utf-8")
+    os.link(outside, log_dir / "hard-linked.jsonl")
+
+    with pytest.raises(MatchLogCorruptionError, match="regular"):
+        read_game("hard-linked", log_dir=log_dir)
+
+    assert outside.read_text(encoding="utf-8").endswith("\n")
+
+
+def test_logged_insight_preserves_expert_and_adaptive_evidence():
+    insight = BotInsight(
+        kind="expert",
+        label="policy",
+        confidence=0.8,
+        probs=(0.1, 0.2, 0.3, 0.2, 0.2),
+        fold_to_bet=0.7,
+        bias=0.12,
+    )
+    logged = _insight_dict(insight)
+    assert logged == {
+        "kind": "expert",
+        "label": "policy",
+        "confidence": 0.8,
+        "probs": [0.1, 0.2, 0.3, 0.2, 0.2],
+        "fold_to_bet": 0.7,
+        "bias": 0.12,
+    }
+
+
+def test_paginated_replay_reports_total_and_next_offset(tmp_path):
+    path = tmp_path / "paged.jsonl"
+    rows = [{"type": "meta", "id": "paged", "created": "2026-01-01"}]
+    rows.extend(
+        {"type": "hand", "hand": index, "ts": f"2026-01-01T00:00:0{index}"}
+        for index in range(1, 6)
+    )
+    path.write_text("".join(f"{json.dumps(row)}\n" for row in rows), encoding="utf-8")
+
+    page = read_game_page("paged", offset=1, limit=2, log_dir=tmp_path)
+
+    assert page is not None
+    assert [hand["hand"] for hand in page["hands"]] == [2, 3]
+    assert page["page"] == {
+        "offset": 1,
+        "limit": 2,
+        "returned": 2,
+        "total": 5,
+        "next_offset": 3,
+    }
+
+
+def test_corrupt_json_object_is_explicit_and_does_not_hide_healthy_game(
+    tmp_path, caplog
+):
+    _game_file(tmp_path, "healthy", mtime=2_000)
+    corrupt = tmp_path / "corrupt.jsonl"
+    corrupt.write_text("[]\n", encoding="utf-8")
+
+    with pytest.raises(MatchLogCorruptionError, match="objeto JSON"):
+        read_game_page("corrupt", log_dir=tmp_path)
+
+    listing = list_games_page(offset=0, limit=50, log_dir=tmp_path)
+    assert "healthy" in {game["id"] for game in listing["games"]}
+    assert "corrupt" not in {game["id"] for game in listing["games"]}
+    assert "corrupção" in caplog.text
+
+
+def test_summary_cache_invalidates_when_append_changes_file(tmp_path, monkeypatch):
+    import poker_arena.application.match_log as module
+
+    path = _game_file(tmp_path, "cached-summary", mtime=2_000)
+    original = module._summary_of
+    calls = 0
+
+    def counted(candidate):
+        nonlocal calls
+        if candidate == path:
+            calls += 1
+        return original(candidate)
+
+    monkeypatch.setattr(module, "_summary_of", counted)
+    first = list_games_page(offset=0, limit=50, log_dir=tmp_path)
+    second = list_games_page(offset=0, limit=50, log_dir=tmp_path)
+    assert first == second
+    assert calls == 1
+
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write('{"type":"hand","hand":1,"ts":"2026-01-01"}\n')
+    refreshed = list_games_page(offset=0, limit=50, log_dir=tmp_path)
+    refreshed_game = next(game for game in refreshed["games"] if game["id"] == "cached-summary")
+    assert refreshed_game["hands"] == 1
+    assert calls == 2
+
+
+def test_prune_failure_is_observable_without_failing_availability(
+    tmp_path, monkeypatch, caplog
+):
+    _game_file(tmp_path, "new", mtime=2_000)
+    old = _game_file(tmp_path, "old", mtime=1_000)
+    original_unlink = Path.unlink
+
+    def fail_old(self, *args, **kwargs):
+        if self == old:
+            raise OSError("locked")
+        return original_unlink(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", fail_old)
+    assert prune_old_games(keep=1, log_dir=tmp_path) == 0
+    assert old.exists()
+    assert "não foi possível remover log antigo" in caplog.text

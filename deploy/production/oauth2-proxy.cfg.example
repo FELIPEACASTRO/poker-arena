@@ -1,0 +1,25 @@
+# Modelo SEM SEGREDOS. Materialize uma cópia fora do checkout e forneça-a pelo
+# Docker secret `oauth2_proxy_config`; nunca use este arquivo diretamente.
+provider = "oidc"
+oidc_issuer_url = "https://idp.example.invalid/realms/organization"
+redirect_url = "https://poker.example.invalid/oauth2/callback"
+client_id = "poker-arena-production"
+client_secret = "INJECT_BY_SECRET_MANAGER"
+cookie_secret = "INJECT_BY_SECRET_MANAGER"
+cookie_name = "__Host-poker_auth"
+cookie_secure = true
+cookie_httponly = true
+cookie_samesite = "lax"
+cookie_path = "/"
+email_domains = ["organization.example.invalid"]
+scope = "openid profile email"
+reverse_proxy = true
+set_xauthrequest = true
+skip_provider_button = true
+pass_access_token = false
+pass_authorization_header = false
+session_cookie_minimal = true
+request_logging = false
+auth_logging = false
+upstreams = ["static://202"]
+http_address = "0.0.0.0:4180"

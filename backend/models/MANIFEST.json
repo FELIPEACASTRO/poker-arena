@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "snapshot_date": "2026-07-17",
+  "artifacts": [
+    {
+      "path": "poker_expert.onnx",
+      "state": "quarantined",
+      "installed": true,
+      "size_bytes": 394449,
+      "sha256": "e1164cc273d93c38eb609329c0cc273507fd48b8219d19ff16ac03a660f75db5",
+      "producer": "pytorch",
+      "inputs": [{"name": "obs", "dtype": "float32", "shape": ["batch", 121]}],
+      "outputs": [{"name": "logits", "dtype": "float32", "shape": ["batch", 5]}],
+      "embedded_metadata": {},
+      "governance": {
+        "license": {"status": "unresolved", "id": null, "reference": null},
+        "lineage": {"status": "unresolved", "id": null, "reference": null}
+      },
+      "inference_policy": {
+        "state": "unapproved",
+        "temperature": 0.75,
+        "min_prob_ratio": 0.15,
+        "sizing_jitter": 0.12
+      }
+    },
+    {
+      "path": "poker_expert_v1_backup.onnx",
+      "state": "quarantined",
+      "installed": true,
+      "size_bytes": 394449,
+      "sha256": "1a46ce03e97748cea2016d7d9fc8c943779292fe9e06f5368f927fde1dcb91c6",
+      "producer": "pytorch",
+      "inputs": [{"name": "obs", "dtype": "float32", "shape": ["batch", 121]}],
+      "outputs": [{"name": "logits", "dtype": "float32", "shape": ["batch", 5]}],
+      "embedded_metadata": {},
+      "governance": {
+        "license": {"status": "unresolved", "id": null, "reference": null},
+        "lineage": {"status": "unresolved", "id": null, "reference": null}
+      }
+    },
+    {
+      "path": "poker_vision.onnx",
+      "state": "quarantined",
+      "installed": true,
+      "size_bytes": 10645921,
+      "sha256": "2bc63b9b43da261cea7654513f0f5e8646610ca665e13e1129dc0961972a26c4",
+      "producer": "pytorch",
+      "inputs": [{"name": "images", "dtype": "float32", "shape": [1, 3, 640, 640]}],
+      "outputs": [{"name": "output0", "dtype": "float32", "shape": [1, 58, 8400]}],
+      "classes": [
+        "2s", "2h", "2d", "2c", "3s", "3h", "3d", "3c",
+        "4s", "4h", "4d", "4c", "5s", "5h", "5d", "5c",
+        "6s", "6h", "6d", "6c", "7s", "7h", "7d", "7c",
+        "8s", "8h", "8d", "8c", "9s", "9h", "9d", "9c",
+        "Ts", "Th", "Td", "Tc", "Js", "Jh", "Jd", "Jc",
+        "Qs", "Qh", "Qd", "Qc", "Ks", "Kh", "Kd", "Kc",
+        "As", "Ah", "Ad", "Ac", "seat", "button"
+      ],
+      "embedded_metadata": {
+        "architecture": "Ultralytics YOLO11n",
+        "ultralytics_version": "8.4.87",
+        "task": "detect",
+        "training_data_path": "/content/pokervision/data.yaml",
+        "export_date": "2026-07-04T22:23:05.491037",
+        "license": "AGPL-3.0 License (https://ultralytics.com/license)"
+      },
+      "governance": {
+        "license": {"status": "unresolved", "id": null, "reference": null},
+        "lineage": {"status": "unresolved", "id": null, "reference": null}
+      }
+    },
+    {
+      "path": "card_reader.onnx",
+      "state": "missing",
+      "installed": false,
+      "sha256": null,
+      "expected_inputs": [{"dtype": "float32", "shape": [1, 3, 96, 64]}],
+      "expected_outputs": [
+        {"semantic": "rank_logits", "shape": [1, 13]},
+        {"semantic": "suit_logits", "shape": [1, 4]}
+      ],
+      "governance": {
+        "license": {"status": "unresolved", "id": null, "reference": null},
+        "lineage": {"status": "unresolved", "id": null, "reference": null}
+      }
+    }
+  ]
+}

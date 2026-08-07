@@ -1,0 +1,90 @@
+# ===== Segredos (NUNCA commitar) =====
+*.env
+.env
+.env.*
+# Configuração pública e sem credenciais usada somente pelo navegador E2E.
+!frontend/.env.e2e
+/kaggle.json
+/CHAVE.txt
+/MODAL2.txt
+/HF_TOKEN.txt
+/HUGGINGFACE_TOKEN.txt
+/MODAL_TOKEN_ID.txt
+/MODAL_TOKEN_SECRET.txt
+/*.credentials.json
+/*.secrets.json
+/.credentials/
+/.secrets/
+/deploy/production/secrets/
+.huggingface/
+.kaggle/
+
+# ===== Logs de partida (auditoria, gerados em runtime) =====
+backend/logs/
+logs/
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.pytest-*/
+.pytest-run-*/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.qa_tmp/
+.qa-run-*/
+.qa_manual_*/
+.qa_agent_*/
+.e2e-run-*/
+.coverage
+coverage.xml
+htmlcov/
+*.ipynb_checkpoints
+
+# ===== ML / modelos / dados (pesados) =====
+*.pt
+*.pth
+*.ckpt
+*.onnx
+data/
+datasets/
+# exceção: dados EMPACOTADOS com a solução (pequenos e curados)
+!backend/poker_arena/data/
+!backend/poker_arena/data/*.jsonl
+checkpoints/
+runs/
+wandb/
+mlruns/
+
+# ===== Node / React =====
+node_modules/
+.npm-cache/
+frontend/playwright-report/
+frontend/test-results/
+dist/
+build/
+.vite/
+test-results/
+playwright-report/
+*.tsbuildinfo
+*.local
+.poker-arena-runtime/
+.poker-arena.pids.json
+
+# ===== Editor / SO =====
+.agents/
+.claude/
+frontend/.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# evidência de visão gerada pelo script (regenerável)
+backend/scripts/vision_evidence/
+backend/scripts/real_eval/imgs/247/

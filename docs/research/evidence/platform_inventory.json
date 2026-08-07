@@ -1,0 +1,2525 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-18T02:03:34.836696+00:00",
+  "source": {
+    "filename": "plataformas_concorrentes_equivalentes_arxiv (3).md",
+    "sha256": "8f411d8bac4d6f0ac4103d7eb9593406bd84b758e9ecc6e28dd8bc6364a08204"
+  },
+  "method": {
+    "scope": "Markdown sections 1-12; exact official URLs; deduplicated by URL",
+    "probe": "HEAD once per URL; GET up to 1024 bytes only for HTTP 405/501; redirects followed; no authentication or control bypass"
+  },
+  "platform_count": 156,
+  "section_counts": {
+    "1": 24,
+    "2": 7,
+    "3": 16,
+    "4": 7,
+    "5": 18,
+    "6": 17,
+    "7": 8,
+    "8": 12,
+    "9": 6,
+    "10": 11,
+    "11": 25,
+    "12": 5
+  },
+  "platforms": [
+    {
+      "inventory_id": "0ebebd2416009dd2",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Advance — SAGE Preprints",
+      "url": "https://advance.sagepub.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://advance.sagepub.com/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "5b62202f10c31889",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "AIJR Preprints",
+      "url": "https://preprints.aijr.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://preprints.aijr.org/index.php/ap",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "e4ebb100b7dda4ba",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "AiraXiv",
+      "url": "https://airaxiv.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://airaxiv.com/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "a3f16109b866ce76",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "ARPHA Preprints",
+      "url": "https://preprints.arphahub.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://preprints.arphahub.com/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "e2b6fd087ae0c1ae",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Authorea",
+      "url": "https://www.authorea.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.authorea.com/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "82d6e4851c8d0224",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Cambridge Open Engage",
+      "url": "https://www.cambridge.org/engage/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.cambridge.org/engage/coe/public-dashboard",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "87073430fe40936c",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "EasyChair Preprints",
+      "url": "https://easychair.org/publications/preprints",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "GET",
+        "final_url": "https://easychair.org/publications/preprints",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "678042998825c124",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "F1000Research",
+      "url": "https://f1000research.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://f1000research.com/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "1f1cb2f76803558c",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Figshare",
+      "url": "https://figshare.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 202,
+        "method": "HEAD",
+        "final_url": "https://figshare.com/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "9154243698f81fdc",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "HAL",
+      "url": "https://hal.science/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://hal.science/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "5ebdb53e52357e4e",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Jxiv",
+      "url": "https://jxiv.jst.go.jp/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://jxiv.jst.go.jp/index.php/jxiv",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "59b217344696084c",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Octopus",
+      "url": "https://www.octopus.ac/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.octopus.ac/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "df6cdc85120cae31",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "OpenReview",
+      "url": "https://openreview.net/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://openreview.net/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "1a93067dd92bfa51",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "OSF Preprints",
+      "url": "https://osf.io/preprints/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "4944c724c0bd46d2",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Preprints.org",
+      "url": "https://www.preprints.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.preprints.org/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "5b9436f29f9ab60e",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "PubPub",
+      "url": "https://www.pubpub.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.pubpub.org/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "e4b8c16e1dabddc8",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Qeios",
+      "url": "https://www.qeios.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.qeios.com/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "3e585933fed4adc7",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Research Square",
+      "url": "https://www.researchsquare.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.researchsquare.com/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "6532d19054e14348",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "ScienceOpen",
+      "url": "https://www.scienceopen.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.scienceopen.com/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "f49faee730678772",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "SSRN",
+      "url": "https://www.ssrn.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.ssrn.com:443/ssrn/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "aba135309c060237",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Synthical",
+      "url": "https://synthical.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "TimeoutError"
+      }
+    },
+    {
+      "inventory_id": "72cdc4b61d80da0b",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "viXra",
+      "url": "https://www.vixra.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.vixra.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "d27c5342da1adb69",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "WikiJournal Preprints",
+      "url": "https://en.wikiversity.org/wiki/WikiJournal_Preprints",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://en.wikiversity.org/wiki/WikiJournal_Preprints",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "5e4a033e3cc8d917",
+      "section": 1,
+      "section_title": "Servidores multidisciplinares e plataformas gerais de preprints",
+      "name": "Zenodo",
+      "url": "https://zenodo.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://zenodo.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "e020c348b0f980c3",
+      "section": 2,
+      "section_title": "Matemática, física, computação, engenharia e tecnologia",
+      "name": "CERN Document Server",
+      "url": "https://cds.cern.ch/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://cds.cern.ch/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "afcd6565990624c1",
+      "section": 2,
+      "section_title": "Matemática, física, computação, engenharia e tecnologia",
+      "name": "Cryptology ePrint Archive",
+      "url": "https://eprint.iacr.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://eprint.iacr.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "b158966b711e712f",
+      "section": 2,
+      "section_title": "Matemática, física, computação, engenharia e tecnologia",
+      "name": "ECCC — Electronic Colloquium on Computational Complexity",
+      "url": "https://eccc.weizmann.ac.il/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://eccc.weizmann.ac.il/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "ca75e80dbfa60025",
+      "section": 2,
+      "section_title": "Matemática, física, computação, engenharia e tecnologia",
+      "name": "ECSarXiv",
+      "url": "https://ecsarxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/ecsarxiv/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "3e42bf07283f8132",
+      "section": 2,
+      "section_title": "Matemática, física, computação, engenharia e tecnologia",
+      "name": "engrXiv",
+      "url": "https://engrxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://engrxiv.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "b4cc094cc8b01ae7",
+      "section": 2,
+      "section_title": "Matemática, física, computação, engenharia e tecnologia",
+      "name": "Optimization Online",
+      "url": "https://optimization-online.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://optimization-online.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "2c2f4de0b1852770",
+      "section": 2,
+      "section_title": "Matemática, física, computação, engenharia e tecnologia",
+      "name": "TechRxiv",
+      "url": "https://www.techrxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.techrxiv.org/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "f6005e076e8968e6",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "Beilstein Archives",
+      "url": "https://www.beilstein-archives.org/xiv/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "SSLCertVerificationError"
+      }
+    },
+    {
+      "inventory_id": "fe7bca80b6b7e1ec",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "BioHackrXiv",
+      "url": "https://biohackrxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/biohackrxiv/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "8ee5364eb2178fec",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "bioRxiv",
+      "url": "https://www.biorxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.biorxiv.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "b733bd80e05f5278",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "Cell Press Sneak Peek",
+      "url": "https://www.ssrn.com/index.cfm/en/cell-press-sneak-peek/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.ssrn.com/index.cfm/en/cell-press-sneak-peek/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "c62a2a9fb0456c72",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "ChemRxiv",
+      "url": "https://chemrxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://chemrxiv.org/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "5087a5bb492a365e",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "EyeXiv",
+      "url": "https://eyexiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "gaierror"
+      }
+    },
+    {
+      "inventory_id": "0b6efeccfef8ceaf",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "FocUS Archive",
+      "url": "https://osf.io/preprints/focusarchive",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/focusarchive",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "b1f2eda5dc0207d9",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "JMIR Preprints",
+      "url": "https://preprints.jmir.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://preprints.jmir.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "98ee221592aac0c1",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "medRxiv",
+      "url": "https://www.medrxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.medrxiv.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "3169492acbd29832",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "MitoFit Preprints Archive",
+      "url": "https://www.mitofit.org/index.php/MitoFit_Preprints",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.mitofit.org/index.php/MitoFit_Preprints",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "6e45f082aeee8b6a",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "Preprints with The Lancet",
+      "url": "https://www.thelancet.com/preprints",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.thelancet.com/preprints",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "3f7dd35cf84bdf85",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "PsyArXiv",
+      "url": "https://psyarxiv.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/psyarxiv/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "aa388566de01779e",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "SportRxiv",
+      "url": "https://sportrxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://sportrxiv.org/index.php/server",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "01f5244f328dcc8e",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "Surgery Open Science First Look",
+      "url": "https://www.ssrn.com/index.cfm/en/surgery-open-science-first-look/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 404,
+        "method": "HEAD",
+        "final_url": "https://www.ssrn.com/index.cfm/en/surgery-open-science-first-look/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "037080e4f57735b6",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "Therapoid",
+      "url": "https://therapoid.net/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://cbvista.com/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "ccda76b501c5a809",
+      "section": 3,
+      "section_title": "Biologia, medicina, saúde, química e esporte",
+      "name": "VeriXiv",
+      "url": "https://verixiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://verixiv.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "3302f2437e730789",
+      "section": 4,
+      "section_title": "Terra, ambiente, agricultura, ecologia e paleontologia",
+      "name": "agriRxiv",
+      "url": "https://agrirxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "TimeoutError"
+      }
+    },
+    {
+      "inventory_id": "f77cfb3846b7974d",
+      "section": 4,
+      "section_title": "Terra, ambiente, agricultura, ecologia e paleontologia",
+      "name": "Earth-prints Repository",
+      "url": "https://www.earth-prints.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.earth-prints.org/home",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "473dff441018a5a8",
+      "section": 4,
+      "section_title": "Terra, ambiente, agricultura, ecologia e paleontologia",
+      "name": "EarthArXiv",
+      "url": "https://eartharxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://eartharxiv.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "10d89b1a01846e10",
+      "section": 4,
+      "section_title": "Terra, ambiente, agricultura, ecologia e paleontologia",
+      "name": "EcoEvoRxiv",
+      "url": "https://www.ecoevorxiv.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "SSLError"
+      }
+    },
+    {
+      "inventory_id": "c103bf170b2e41bb",
+      "section": 4,
+      "section_title": "Terra, ambiente, agricultura, ecologia e paleontologia",
+      "name": "ESS Open Archive",
+      "url": "https://essopenarchive.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://essopenarchive.org/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "c88f9a9815bec7fe",
+      "section": 4,
+      "section_title": "Terra, ambiente, agricultura, ecologia e paleontologia",
+      "name": "Organic Eprints",
+      "url": "https://www.orgprints.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.orgprints.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "ed809a16bd2daeb5",
+      "section": 4,
+      "section_title": "Terra, ambiente, agricultura, ecologia e paleontologia",
+      "name": "PaleorXiv",
+      "url": "https://paleorxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/paleorxiv/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "5b1a0bd4ed178f02",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "AgEcon Search",
+      "url": "https://ageconsearch.umn.edu/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 202,
+        "method": "HEAD",
+        "final_url": "https://ageconsearch.umn.edu/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "048a960469b90e35",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "APSA Preprints",
+      "url": "https://preprints.apsanet.org/engage/apsa/public-dashboard",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://preprints.apsanet.org/engage/apsa/public-dashboard",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "84999bc92f205e5e",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "Bepress Legal Repository",
+      "url": "https://law.bepress.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://law.bepress.com/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "596c914ede07c51d",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "CEPR Discussion Papers",
+      "url": "https://cepr.org/publications/discussion-papers",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://cepr.org/publications/discussion-papers",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "ea42f84d7115df7f",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "CESifo Working Papers",
+      "url": "https://www.cesifo.org/en/publications/working-papers",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.ifo.de/en/cesifo/cesifo-homepage",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "c257e81914a9f6af",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "CrimRxiv",
+      "url": "https://www.crimrxiv.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.crimrxiv.com/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "47507d493ad3bfb2",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "EconStor",
+      "url": "https://www.econstor.eu/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.econstor.eu/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "b13d4f880e6eca5d",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "EdArXiv",
+      "url": "https://edarxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/edarxiv/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "dc006c1f907bef81",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "ERIC",
+      "url": "https://eric.ed.gov/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://eric.ed.gov/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "72620af057d59cfc",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "Federal Reserve — FEDS Working Papers",
+      "url": "https://www.federalreserve.gov/econres/feds/index.htm",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.federalreserve.gov/econres/feds/index.htm",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "31c0294b51cac80d",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "IMF Working Papers",
+      "url": "https://www.imf.org/en/Publications/WP",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.imf.org/en/Publications/WP",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "783ea37ed93c73b0",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "IZA Discussion Papers",
+      "url": "https://www.iza.org/publications/dp",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.iza.org/publications/dp",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "569730d82838341c",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "MPRA — Munich Personal RePEc Archive",
+      "url": "https://mpra.ub.uni-muenchen.de/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://mpra.ub.uni-muenchen.de/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "6271d9432a1eeeb1",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "NBER Working Papers",
+      "url": "https://www.nber.org/papers",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.nber.org/papers",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "e67fefafa49cdf98",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "RePEc",
+      "url": "https://repec.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "SSLError"
+      }
+    },
+    {
+      "inventory_id": "7bb743bcd19cd9d1",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "SocArXiv",
+      "url": "https://osf.io/preprints/socarxiv/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/socarxiv/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "4a1896d6bac07f24",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "SSOAR",
+      "url": "https://www.ssoar.info/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.gesis.org/ssoar/",
+        "redirected": true,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "d8bdba06e51aadf7",
+      "section": 5,
+      "section_title": "Ciências sociais, economia, direito, educação e políticas públicas",
+      "name": "World Bank Policy Research Working Papers",
+      "url": "https://www.worldbank.org/en/research/brief/policy-research-working-papers",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.worldbank.org/en/research/brief/policy-research-working-papers",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "c3ea2640de3b638f",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "ART-Dok",
+      "url": "https://archiv.ub.uni-heidelberg.de/artdok/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "TimeoutError"
+      }
+    },
+    {
+      "inventory_id": "1d4282b1f5bcbc39",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "BodoArXiv",
+      "url": "https://bodoarxiv.wordpress.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://bodoarxiv.wordpress.com/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "5d07eb8a05b39249",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "CrossAsia Repository",
+      "url": "https://crossasia-repository.ub.uni-heidelberg.de/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "TimeoutError"
+      }
+    },
+    {
+      "inventory_id": "4dc631ba88378ac3",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "E-LIS",
+      "url": "http://eprints.rclis.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "http://eprints.rclis.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "894dd982d4f07784",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "hprints",
+      "url": "https://hal-hprints.archives-ouvertes.fr/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://hal-hprints.archives-ouvertes.fr/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "efff6a1ee1618f86",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "Humanities Commons CORE",
+      "url": "https://hcommons.org/core/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 302,
+        "method": "HEAD",
+        "final_url": "https://works.hcommons.org/sso/broker-callback/?no_session=1&final_redirect=https%3A%2F%2Fworks.hcommons.org%2F",
+        "redirected": true,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "d19dafd7cd0c36cf",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "LingBuzz",
+      "url": "https://ling.auf.net/lingbuzz",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "RemoteDisconnected"
+      }
+    },
+    {
+      "inventory_id": "cb75ce80fd74610a",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "LIS Scholarship Archive — LISSA",
+      "url": "https://lissarchive.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://lissarchive.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "6389ff4b44ec0d12",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "MediArXiv",
+      "url": "https://mediarxiv.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://mediarxiv.com/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "050a16c71c3ac4d9",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "MetaArXiv",
+      "url": "https://osf.io/preprints/metaarxiv/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/metaarxiv/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "c3e3165ae1d7bc13",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "MindRxiv",
+      "url": "https://mindrxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/mindrxiv/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "1f004e6a13f418eb",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "Open Anthropology Research Repository",
+      "url": "https://www.openanthroresearch.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://openanthroresearch.org/index.php/oarr",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "0b45ba5a22c28a4a",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "PhilArchive",
+      "url": "https://philarchive.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://philarchive.org/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "b3a152d619cb20da",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "PhilSci-Archive",
+      "url": "https://philsci-archive.pitt.edu/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://philsci-archive.pitt.edu/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "7c16f29017e6f646",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "PropylaeumDok",
+      "url": "https://archiv.ub.uni-heidelberg.de/propylaeumdok/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "TimeoutError"
+      }
+    },
+    {
+      "inventory_id": "68127b04eb6532d3",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "Rutgers Optimality Archive",
+      "url": "https://roa.rutgers.edu/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://roa.rutgers.edu/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "765fb28cad15dc7c",
+      "section": 6,
+      "section_title": "Humanidades, artes, linguagem, informação, mídia e filosofia",
+      "name": "Thesis Commons",
+      "url": "https://thesiscommons.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/thesiscommons/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "1a76ba8fec802380",
+      "section": 7,
+      "section_title": "Plataformas nacionais e regionais",
+      "name": "AfricArXiv",
+      "url": "https://africarxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://africarxiv.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "59f4883c2c3b1ace",
+      "section": 7,
+      "section_title": "Plataformas nacionais e regionais",
+      "name": "ChinaXiv",
+      "url": "http://chinaxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://chinaxiv.org/home.htm",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "4d87fc9a67e1e4d1",
+      "section": 7,
+      "section_title": "Plataformas nacionais e regionais",
+      "name": "IndiaRxiv",
+      "url": "https://ops.iihr.res.in/index.php/IndiaRxiv",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 500,
+        "method": "HEAD",
+        "final_url": "https://ops.iihr.res.in/index.php/IndiaRxiv",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "c3e87c17f8c82489",
+      "section": 7,
+      "section_title": "Plataformas nacionais e regionais",
+      "name": "LatArXiv Preprints",
+      "url": "https://preprints.latarxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 302,
+        "method": "HEAD",
+        "final_url": "https://preprints.latarxiv.org/index.php/latarxiv/en",
+        "redirected": true,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "d3a3b83413ded368",
+      "section": 7,
+      "section_title": "Plataformas nacionais e regionais",
+      "name": "Preprints.ru",
+      "url": "https://preprints.ru/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://preprints.ru/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "ccc8613e670a5b5e",
+      "section": 7,
+      "section_title": "Plataformas nacionais e regionais",
+      "name": "RINarXiv",
+      "url": "https://rinarxiv.lipi.go.id/lipi",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "gaierror"
+      }
+    },
+    {
+      "inventory_id": "55c8a4e8d32c7d22",
+      "section": 7,
+      "section_title": "Plataformas nacionais e regionais",
+      "name": "SciELO Preprints",
+      "url": "https://preprints.scielo.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://preprints.scielo.org/index.php/scielo",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "59123b2c665faf2a",
+      "section": 7,
+      "section_title": "Plataformas nacionais e regionais",
+      "name": "Sciencepaper Online",
+      "url": "http://www.paper.edu.cn/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.paper.edu.cn/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "2992a2af29d72f3b",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "AAS Open Research",
+      "url": "https://aasopenresearch.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://openresearchafrica.org/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "8672abb4a344320d",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "AMRC Open Research",
+      "url": "https://amrcopenresearch.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://amrcopenresearch.org/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "6ff402d05a6d9c04",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "Emerald Open Research",
+      "url": "https://emeraldopenresearch.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.emerald.com/insight/publication/acronym/EOR",
+        "redirected": true,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "8dcb93634113d5c9",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "Gates Open Research",
+      "url": "https://gatesopenresearch.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://gatesopenresearch.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "af47dc1eace66a06",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "Health Open Research",
+      "url": "https://healthopenresearch.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://healthopenresearch.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "4b189b3085bbc6a5",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "HRB Open Research",
+      "url": "https://hrbopenresearch.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://hrbopenresearch.org/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "02ed001638331e3d",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "MNI Open Research",
+      "url": "https://mniopenresearch.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://mniopenresearch.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "a715d358f39d564d",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "NIHR Open Research",
+      "url": "https://openresearch.nihr.ac.uk/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://openresearch.nihr.ac.uk/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "4e16a251627258e3",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "Open Research Africa",
+      "url": "https://openresearchafrica.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://openresearchafrica.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "d0ed8a435ee528ff",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "Open Research Europe",
+      "url": "https://open-research-europe.ec.europa.eu/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://open-research-europe.ec.europa.eu/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "8afb40c1df39d12a",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "Routledge Open Research",
+      "url": "https://routledgeopenresearch.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://routledgeopenresearch.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "7091e1ba03e479c6",
+      "section": 8,
+      "section_title": "Plataformas de pesquisa aberta de financiadores, sociedades e editoras",
+      "name": "Wellcome Open Research",
+      "url": "https://wellcomeopenresearch.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://wellcomeopenresearch.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "68e942cf7c5ab476",
+      "section": 9,
+      "section_title": "Repositórios institucionais e redes de autoarquivamento",
+      "name": "Academia.edu",
+      "url": "https://www.academia.edu/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.academia.edu/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "ee70c30757836735",
+      "section": 9,
+      "section_title": "Repositórios institucionais e redes de autoarquivamento",
+      "name": "DASH — Digital Access to Scholarship at Harvard",
+      "url": "https://dash.harvard.edu/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 405,
+        "method": "GET",
+        "final_url": "https://dash.harvard.edu/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "5f7b1e8f7a533eb3",
+      "section": 9,
+      "section_title": "Repositórios institucionais e redes de autoarquivamento",
+      "name": "DSpace@MIT",
+      "url": "https://dspace.mit.edu/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 405,
+        "method": "GET",
+        "final_url": "https://dspace.mit.edu/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "0724753351ea7c29",
+      "section": 9,
+      "section_title": "Repositórios institucionais e redes de autoarquivamento",
+      "name": "LSE Research Online",
+      "url": "https://researchonline.lse.ac.uk/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://researchonline.lse.ac.uk/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "ae0df345e061d19b",
+      "section": 9,
+      "section_title": "Repositórios institucionais e redes de autoarquivamento",
+      "name": "Open Science Framework",
+      "url": "https://osf.io/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "afce5963a9c21607",
+      "section": 9,
+      "section_title": "Repositórios institucionais e redes de autoarquivamento",
+      "name": "ResearchGate",
+      "url": "https://www.researchgate.net/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.researchgate.net/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "0f2ee86e2b5724d0",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "Arabixiv",
+      "url": "http://about.arabixiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://zenodo.org/communities/arabixiv/about",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "fc0ba76ae359d55c",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "CogPrints",
+      "url": "http://cogprints.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://web-archive.southampton.ac.uk/cogprints.org/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "a627ac2288f461f6",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "ESSOAr — serviço anterior ao ESS Open Archive",
+      "url": "https://www.essoar.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://essopenarchive.org/",
+        "redirected": true,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "e5991b7cdafa676a",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "Frenxiv",
+      "url": "https://frenxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://frenxiv.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "5f9f8a4d3688b194",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "INA-Rxiv",
+      "url": "https://osf.io/preprints/inarxiv/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/inarxiv/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "905b08f4c0741f74",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "LawArXiv",
+      "url": "https://osf.io/preprints/lawarxiv/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/lawarxiv/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "bfe0946f9e17c88e",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "MarXiv — antigo servidor OSF",
+      "url": "https://osf.io/preprints/marxiv/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/marxiv/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "3352e769972a75d4",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "mp_arc — Mathematical Physics Preprint Archive",
+      "url": "https://web.ma.utexas.edu/mp_arc/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "network_error",
+        "http_status": null,
+        "method": "HEAD",
+        "final_url": null,
+        "redirected": false,
+        "error_type": "TimeoutError"
+      }
+    },
+    {
+      "inventory_id": "82092bf1237e6c3a",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "Nature Precedings",
+      "url": "https://www.nature.com/npre/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.nature.com/npre?error=cookies_not_supported&code=60504fc7-f19d-4897-8097-2e386e3b163a",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "b8c6f1db39f47354",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "NutriXiv",
+      "url": "https://osf.io/preprints/nutrixiv/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://osf.io/preprints/nutrixiv/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "25d0dda9a1a601b1",
+      "section": 10,
+      "section_title": "Serviços encerrados, somente leitura, migrados ou legados",
+      "name": "PeerJ Preprints",
+      "url": "https://peerj.com/preprints/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://peerj.com/preprints/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "094f58618abcab9a",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "alphaXiv",
+      "url": "https://alphaxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.alphaxiv.org/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "87a9a8178b23a2a8",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "ar5iv",
+      "url": "https://ar5iv.labs.arxiv.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://ar5iv.labs.arxiv.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "8b12f642d09c1105",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "BASE — Bielefeld Academic Search Engine",
+      "url": "https://www.base-search.net/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.base-search.net/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "10b420d89363a745",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "CORE",
+      "url": "https://core.ac.uk/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://core.ac.uk/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "6e2b4ddf7c992b25",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "Crossref Metadata Search",
+      "url": "https://search.crossref.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://search.crossref.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "b1d1995de28fe2be",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "DBLP",
+      "url": "https://dblp.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://dblp.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "187470e2cc6baac1",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "Dimensions",
+      "url": "https://app.dimensions.ai/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 202,
+        "method": "HEAD",
+        "final_url": "https://app.dimensions.ai/auth/landing?redirect=%2Fdiscover",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "8f100e0725f9f09c",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "EconPapers",
+      "url": "https://econpapers.repec.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://econpapers.repec.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "b617c11543d655da",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "Europe PMC",
+      "url": "https://europepmc.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://europepmc.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "b65231a805855666",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "Google Scholar",
+      "url": "https://scholar.google.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://scholar.google.com/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "ad5732584a030ad6",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "Hugging Face Papers",
+      "url": "https://huggingface.co/papers",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://huggingface.co/papers/date/2026-07-17",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "684b79c6aca9bf8f",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "IDEAS/RePEc",
+      "url": "https://ideas.repec.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://ideas.repec.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "50ad171c3a74cac3",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "INSPIRE HEP",
+      "url": "https://inspirehep.net/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://inspirehep.net/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "b6771ff0a9bdab47",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "Internet Archive Scholar",
+      "url": "https://scholar.archive.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://scholar.archive.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "75e80e48408c2378",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "Lens",
+      "url": "https://www.lens.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.lens.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "164d6e3475f05f97",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "NASA ADS",
+      "url": "https://ui.adsabs.harvard.edu/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 202,
+        "method": "HEAD",
+        "final_url": "https://ui.adsabs.harvard.edu/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "30fad05d220c876d",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "OpenAIRE Explore",
+      "url": "https://explore.openaire.eu/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://explore.openaire.eu/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "aba1153b2b569f68",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "OpenAlex",
+      "url": "https://openalex.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://openalex.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "0ef8b4e9ab5da50a",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "OpenCitations",
+      "url": "https://opencitations.net/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://opencitations.net/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "3ba926695ec2c38e",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "Papers with Code",
+      "url": "https://paperswithcode.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://huggingface.co/papers/trending",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "176fdd07c360c1ed",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "PhilPapers",
+      "url": "https://philpapers.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://philpapers.org/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "689a9ff80da2437f",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "PubMed",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://pubmed.ncbi.nlm.nih.gov/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "1f247467d18c58ef",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "Scilit",
+      "url": "https://www.scilit.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://www.scilit.com/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "30c671811575690a",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "SciRate",
+      "url": "https://scirate.com/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "http_error",
+        "http_status": 403,
+        "method": "HEAD",
+        "final_url": "https://scirate.com/",
+        "redirected": false,
+        "error_type": "HTTPError"
+      }
+    },
+    {
+      "inventory_id": "5bb3d01201f0cc39",
+      "section": 11,
+      "section_title": "Buscadores, agregadores e índices que cobrem preprints",
+      "name": "Semantic Scholar",
+      "url": "https://www.semanticscholar.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://www.semanticscholar.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "243d6acc95fdbbf0",
+      "section": 12,
+      "section_title": "Diretórios especializados para descobrir outros repositórios",
+      "name": "ASAPbio — Preprint Server Directory",
+      "url": "https://asapbio.org/preprint-servers",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://asapbio.org/preprint-servers/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "0a61634b7cc122b3",
+      "section": 12,
+      "section_title": "Diretórios especializados para descobrir outros repositórios",
+      "name": "DOAPR — Directory of Open Access Preprint Repositories",
+      "url": "https://doapr.coar-repositories.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://doapr.coar-repositories.org/",
+        "redirected": false,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "3c166efdda627e84",
+      "section": 12,
+      "section_title": "Diretórios especializados para descobrir outros repositórios",
+      "name": "OpenDOAR",
+      "url": "https://v2.sherpa.ac.uk/opendoar/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://opendoar.ac.uk:443/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "80f737f605811360",
+      "section": 12,
+      "section_title": "Diretórios especializados para descobrir outros repositórios",
+      "name": "ROAR — Registry of Open Access Repositories",
+      "url": "http://roar.eprints.org/",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://roar.eprints.org/",
+        "redirected": true,
+        "error_type": null
+      }
+    },
+    {
+      "inventory_id": "ef1e364d7c87e0a6",
+      "section": 12,
+      "section_title": "Diretórios especializados para descobrir outros repositórios",
+      "name": "SPI-Hub — Scholarly Publishing Information Hub",
+      "url": "https://spi-hub.app.vumc.org/pp-service/browse",
+      "probe": {
+        "checked_at": "2026-07-18T02:02:35.913548+00:00",
+        "state": "reachable",
+        "http_status": 200,
+        "method": "HEAD",
+        "final_url": "https://spi-hub.app.vumc.org/pp-service/browse",
+        "redirected": false,
+        "error_type": null
+      }
+    }
+  ]
+}

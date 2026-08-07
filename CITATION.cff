@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use Poker Arena in academic work, cite this software and the associated dissertation."
+title: "Poker Arena: auditable poker simulation and selective table-image recognition"
+type: software
+authors:
+  - name: "Poker Arena contributors"
+version: 0.2.0
+date-released: 2026-08-07
+repository-code: "https://github.com/FELIPEACASTRO/poker-arena"
+license: proprietary
+keywords:
+  - computer vision
+  - selective prediction
+  - poker
+  - reproducible research

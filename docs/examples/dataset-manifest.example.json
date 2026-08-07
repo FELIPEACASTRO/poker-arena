@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "profile_revision": "poker-arena-dataset-manifest-v1-2026-07-18",
+  "dataset": {
+    "name": "poker-table-screenshots",
+    "version": "2026.07.17"
+  },
+  "policy": {
+    "allowed_splits": ["train", "validation", "test"],
+    "allowed_licenses": ["CC-BY-4.0"],
+    "group_disjoint_keys": [
+      ["source", "session"],
+      ["client", "theme", "deck"]
+    ],
+    "reject_duplicates_within_split": true,
+    "consent": {
+      "status": "obtained",
+      "evidence_reference": "consent-batch-example"
+    },
+    "legal_basis": {
+      "basis": "consent",
+      "evidence_reference": "legal-review-example"
+    },
+    "redaction": {
+      "direct_identifiers_removed": true,
+      "screen_names_removed": true,
+      "free_text_reviewed": true,
+      "verification": "automated-and-human"
+    },
+    "permitted_use": ["research", "model-training", "model-evaluation"],
+    "real_money": false,
+    "platform_terms": {
+      "status": "reviewed-compatible",
+      "evidence_reference": "terms-review-example"
+    },
+    "jurisdiction": ["BR"],
+    "player_identity": {
+      "scheme": "hmac-sha256",
+      "key_version": "kv-player-identity-2026-01",
+      "separation_context": "poker-arena/player-identity/v1",
+      "purpose": "split-leakage-prevention"
+    },
+    "retention": {
+      "expires_at": "2099-12-31T23:59:59Z",
+      "review_interval_days": 365
+    },
+    "deletion": {
+      "on_request": true,
+      "on_retention_expiry": true,
+      "procedure_id": "deletion-procedure-example",
+      "verification_required": true
+    },
+    "temporal_order": {
+      "split_order": ["train", "validation", "test"],
+      "allow_equal_boundary": false
+    }
+  },
+  "samples": [
+    {
+      "id": "capture-000001",
+      "path": "images/capture-000001.png",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source": "curated-capture-batch",
+      "source_version": "batch-2026-07-17",
+      "session": "session-001",
+      "client": "poker-client-a",
+      "theme": "classic-dark",
+      "deck": "four-colour-v1",
+      "player_pseudonym": "player-example-0001",
+      "hashed_player_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "event_time": "2026-01-01T12:00:00Z",
+      "split_group": "capture-session-example-0001",
+      "split": "train",
+      "license": "CC-BY-4.0"
+    }
+  ]
+}

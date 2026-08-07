@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://poker-arena.local/schemas/dataset-manifest-v1.schema.json",
+  "title": "Poker Arena ML dataset manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile_revision", "dataset", "policy", "samples"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "profile_revision": {"const": "poker-arena-dataset-manifest-v1-2026-07-18"},
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"$ref": "#/$defs/safeString"},
+        "version": {"$ref": "#/$defs/safeString"}
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_splits",
+        "allowed_licenses",
+        "group_disjoint_keys",
+        "reject_duplicates_within_split",
+        "consent",
+        "legal_basis",
+        "redaction",
+        "permitted_use",
+        "real_money",
+        "platform_terms",
+        "jurisdiction",
+        "player_identity",
+        "retention",
+        "deletion"
+      ],
+      "properties": {
+        "allowed_splits": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/canonicalId"}
+        },
+        "allowed_licenses": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/safeString"}
+        },
+        "group_disjoint_keys": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "source",
+                "session",
+                "client",
+                "theme",
+                "deck",
+                "hashed_player_id",
+                "player_pseudonym",
+                "split_group"
+              ]
+            }
+          }
+        },
+        "reject_duplicates_within_split": {"type": "boolean"},
+        "consent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "evidence_reference"],
+          "properties": {
+            "status": {"enum": ["obtained", "not-required"]},
+            "evidence_reference": {"$ref": "#/$defs/opaqueReference"}
+          }
+        },
+        "legal_basis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["basis", "evidence_reference"],
+          "properties": {
+            "basis": {
+              "enum": [
+                "consent",
+                "contract",
+                "legitimate-interest",
+                "public-task",
+                "research-exemption"
+              ]
+            },
+            "evidence_reference": {"$ref": "#/$defs/opaqueReference"}
+          }
+        },
+        "redaction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "direct_identifiers_removed",
+            "screen_names_removed",
+            "free_text_reviewed",
+            "verification"
+          ],
+          "properties": {
+            "direct_identifiers_removed": {"const": true},
+            "screen_names_removed": {"const": true},
+            "free_text_reviewed": {"const": true},
+            "verification": {
+              "enum": ["automated", "human", "automated-and-human"]
+            }
+          }
+        },
+        "permitted_use": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "research",
+              "model-training",
+              "model-evaluation",
+              "internal-demo",
+              "redistribution"
+            ]
+          }
+        },
+        "real_money": {"const": false},
+        "platform_terms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "evidence_reference"],
+          "properties": {
+            "status": {"enum": ["reviewed-compatible", "not-applicable"]},
+            "evidence_reference": {"$ref": "#/$defs/opaqueReference"}
+          }
+        },
+        "jurisdiction": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(AD|AE|AF|AG|AI|AL|AM|AO|AQ|AR|AS|AT|AU|AW|AX|AZ|BA|BB|BD|BE|BF|BG|BH|BI|BJ|BL|BM|BN|BO|BQ|BR|BS|BT|BV|BW|BY|BZ|CA|CC|CD|CF|CG|CH|CI|CK|CL|CM|CN|CO|CR|CU|CV|CW|CX|CY|CZ|DE|DJ|DK|DM|DO|DZ|EC|EE|EG|EH|ER|ES|ET|FI|FJ|FK|FM|FO|FR|GA|GB|GD|GE|GF|GG|GH|GI|GL|GM|GN|GP|GQ|GR|GS|GT|GU|GW|GY|HK|HM|HN|HR|HT|HU|ID|IE|IL|IM|IN|IO|IQ|IR|IS|IT|JE|JM|JO|JP|KE|KG|KH|KI|KM|KN|KP|KR|KW|KY|KZ|LA|LB|LC|LI|LK|LR|LS|LT|LU|LV|LY|MA|MC|MD|ME|MF|MG|MH|MK|ML|MM|MN|MO|MP|MQ|MR|MS|MT|MU|MV|MW|MX|MY|MZ|NA|NC|NE|NF|NG|NI|NL|NO|NP|NR|NU|NZ|OM|PA|PE|PF|PG|PH|PK|PL|PM|PN|PR|PS|PT|PW|PY|QA|RE|RO|RS|RU|RW|SA|SB|SC|SD|SE|SG|SH|SI|SJ|SK|SL|SM|SN|SO|SR|SS|ST|SV|SX|SY|SZ|TC|TD|TF|TG|TH|TJ|TK|TL|TM|TN|TO|TR|TT|TV|TW|TZ|UA|UG|UM|US|UY|UZ|VA|VC|VE|VG|VI|VN|VU|WF|WS|YE|YT|ZA|ZM|ZW)$"
+          }
+        },
+        "player_identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scheme", "key_version", "separation_context", "purpose"],
+          "properties": {
+            "scheme": {"const": "hmac-sha256"},
+            "key_version": {
+              "type": "string",
+              "pattern": "^kv-[A-Za-z0-9][A-Za-z0-9._-]{2,62}$"
+            },
+            "separation_context": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._/-]{2,127}$"
+            },
+            "purpose": {"const": "split-leakage-prevention"}
+          }
+        },
+        "retention": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["expires_at", "review_interval_days"],
+          "properties": {
+            "expires_at": {"$ref": "#/$defs/rfc3339UtcSeconds"},
+            "review_interval_days": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650
+            }
+          }
+        },
+        "deletion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "on_request",
+            "on_retention_expiry",
+            "procedure_id",
+            "verification_required"
+          ],
+          "properties": {
+            "on_request": {"const": true},
+            "on_retention_expiry": {"const": true},
+            "procedure_id": {"$ref": "#/$defs/opaqueReference"},
+            "verification_required": {"const": true}
+          }
+        },
+        "temporal_order": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["split_order", "allow_equal_boundary"],
+          "properties": {
+            "split_order": {
+              "type": "array",
+              "minItems": 2,
+              "uniqueItems": true,
+              "items": {"$ref": "#/$defs/canonicalId"}
+            },
+            "allow_equal_boundary": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1000000,
+      "items": {"$ref": "#/$defs/sample"}
+    }
+  },
+  "$defs": {
+    "safeString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "opaqueReference": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{1,126}[A-Za-z0-9]$"
+    },
+    "sourceReference": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 256,
+      "pattern": "^(?!.*(?:\\.\\.|//))[a-z0-9](?:[a-z0-9._-]{0,126}[a-z0-9])?(?:/[a-z0-9](?:[a-z0-9._-]{0,126}[a-z0-9])?)*$"
+    },
+    "canonicalId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]{0,126}[a-z0-9])?$"
+    },
+    "rfc3339UtcSeconds": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?!0000)[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"
+    },
+    "safePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!.*(?:^|/)(?:con|prn|aux|nul|clock\\$|com[1-9]|lpt[1-9])(?:\\.|/|$))[a-z0-9](?:[a-z0-9._-]{0,126}[a-z0-9])?(?:/[a-z0-9](?:[a-z0-9._-]{0,126}[a-z0-9])?)*$"
+    },
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "sha256",
+        "source",
+        "source_version",
+        "session",
+        "client",
+        "theme",
+        "deck",
+        "hashed_player_id",
+        "event_time",
+        "split_group",
+        "split",
+        "license"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/canonicalId"},
+        "path": {"$ref": "#/$defs/safePath"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "source": {"$ref": "#/$defs/sourceReference"},
+        "source_version": {"$ref": "#/$defs/safeString"},
+        "session": {"$ref": "#/$defs/canonicalId"},
+        "client": {"$ref": "#/$defs/canonicalId"},
+        "theme": {"$ref": "#/$defs/canonicalId"},
+        "deck": {"$ref": "#/$defs/canonicalId"},
+        "player_pseudonym": {"$ref": "#/$defs/canonicalId"},
+        "hashed_player_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "event_time": {"$ref": "#/$defs/rfc3339UtcSeconds"},
+        "split_group": {"$ref": "#/$defs/canonicalId"},
+        "split": {"$ref": "#/$defs/canonicalId"},
+        "license": {"$ref": "#/$defs/safeString"}
+      }
+    }
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "snapshot_date": "2026-07-17",
+  "scope": "Supplementary, region-focused public search across Asian, Indian, Russian and Canadian scholarly platforms after the 156-service attachment sweep.",
+  "evidence_boundary": "A retained result is a source claim or repository fact, not a Poker Arena benchmark result. Empty or blocked searches are inconclusive. No login, CAPTCHA bypass, robots bypass or credential-bearing request was used.",
+  "query_families": [
+    "poker OR Texas Hold'em OR Leduc",
+    "imperfect information OR reinforcement learning OR NFSP OR CFR",
+    "opponent modelling OR Bayesian player model",
+    "computer vision OR OCR OR calibration OR uncertainty",
+    "dataset OR code OR weights OR benchmark"
+  ],
+  "regions": [
+    {
+      "id": "asia",
+      "region": "Asia",
+      "languages": ["English", "Japanese", "Chinese", "Korean"],
+      "platforms": [
+        {
+          "name": "J-STAGE",
+          "url": "https://www.jstage.jst.go.jp/",
+          "access": "Direct records and PDFs",
+          "result": "One directly relevant NFSP/Leduc paper and one historical rough-set/fuzzy seven-card-stud agent; no reusable weights or production dataset."
+        },
+        {
+          "name": "CiNii Research",
+          "url": "https://cir.nii.ac.jp/",
+          "access": "Direct metadata index",
+          "result": "Rediscovered Libratus and related global literature; index metadata did not add a new regional implementation."
+        },
+        {
+          "name": "ChinaXiv",
+          "url": "https://chinaxiv.org/",
+          "access": "Direct records and Chinese/English queries",
+          "result": "Computer-vision, reinforcement-learning and calibration records were outside the poker/screen-reading domain."
+        },
+        {
+          "name": "KoreaScience",
+          "url": "https://koreascience.kr/",
+          "access": "Site-delimited public query only",
+          "result": "No high-signal poker record retained; this is not evidence of absence."
+        }
+      ]
+    },
+    {
+      "id": "canada",
+      "region": "Canada",
+      "languages": ["English", "French"],
+      "platforms": [
+        {
+          "name": "University of Alberta Computer Poker Research Group",
+          "url": "https://poker.cs.ualberta.ca/",
+          "access": "Direct publications and software pages",
+          "result": "CFR/CFR+, AIVAT, abstraction, opponent modelling and historical poker-agent evidence; formal two-player methods, not a drop-in multiplayer runtime."
+        },
+        {
+          "name": "MNI Open Research",
+          "url": "https://mniopenresearch.org/",
+          "access": "Direct records",
+          "result": "Validation and decoder-uncertainty methodology only; no poker asset."
+        },
+        {
+          "name": "PHH v3 / University of Toronto record",
+          "url": "https://zenodo.org/records/17136841",
+          "access": "Direct dataset record",
+          "result": "Largest historical poker-hand collection found; the 21,605,687 human NLHE hands are anonymized logs from July 1-23, 2009."
+        }
+      ]
+    },
+    {
+      "id": "russia",
+      "region": "Russia",
+      "languages": ["Russian", "English"],
+      "platforms": [
+        {
+          "name": "HSE University Student Theses",
+          "url": "https://www.hse.ru/en/edu/vkr/1047837931",
+          "access": "Direct thesis record and full-text link",
+          "result": "A 2025 bachelor thesis claims early LLM-enhanced poker results, but no pinned code, dataset, protocol or independently verified metrics were retained."
+        },
+        {
+          "name": "HSE University DDQN/DeepSeek thesis and public repository",
+          "url": "https://www.hse.ru/en/edu/vkr/1047501606",
+          "access": "Direct thesis record plus read-only static audit of the linked public GitHub repository",
+          "result": "An open PyPokerEngine fork, DDQN checkpoint and logs exist, but the evaluation trains during testing, lacks deterministic seeds/duplicate deals, and the DDQN update retains only the last action of each hand. It is reproducible evidence of a prototype, not a promotable model."
+        },
+        {
+          "name": "CyberLeninka",
+          "url": "https://cyberleninka.ru/",
+          "access": "Direct records and Russian-language site query",
+          "result": "Generic RL/computer-vision/game-AI surveys; no poker model, dataset or reproducible benchmark retained."
+        },
+        {
+          "name": "Preprints.ru",
+          "url": "https://preprints.ru/",
+          "access": "HTTP 502 in the audited snapshot",
+          "result": "Coverage inconclusive and never counted as an empty corpus."
+        }
+      ]
+    },
+    {
+      "id": "india",
+      "region": "India",
+      "languages": ["English"],
+      "platforms": [
+        {
+          "name": "IIT Kanpur course repository",
+          "url": "https://cse.iitk.ac.in/users/cs365/2013/submissions/~ayujain/cs365/project/slides.pdf",
+          "access": "Direct student-project slides",
+          "result": "Opponent hand-enumeration weights updated from observed raise/call/fold frequencies; no complete report, code, calibration or held-out result retained."
+        },
+        {
+          "name": "IIT Bombay R&D portal",
+          "url": "https://rnd.iitb.ac.in/node/2258",
+          "access": "Direct project summary",
+          "result": "Rummy-agent proposal combining Monte Carlo simulation and Bayesian opponent-hand prediction; no downloadable artifact or poker validation."
+        },
+        {
+          "name": "IIM Kozhikode working papers",
+          "url": "https://www.iimk.ac.in/uploads/publications/IIMK_WPS_536_ITS_2022_09_Upload_File.pdf",
+          "access": "Direct PDF",
+          "result": "Retrospective comparison of major poker bots; useful bibliography, no new algorithm, weights or dataset."
+        },
+        {
+          "name": "IndiaRxiv",
+          "url": "https://ops.iihr.res.in/index.php/IndiaRxiv",
+          "access": "Direct OJS page and public search",
+          "result": "No narrow poker/vision artifact retained; not evidence that the repository contains none."
+        }
+      ]
+    }
+  ],
+  "retained_findings": [
+    {
+      "id": "asia-jstage-nfsp-buffer",
+      "primary_url": "https://www.jstage.jst.go.jp/article/pjsai/JSAI2018/0/JSAI2018_1N301/_article/-char/en",
+      "source_fact": "The Leduc experiment separates exploration-originated actions from NFSP's supervised average-policy data and reports lower exploitability under fixed exploration.",
+      "inference": "Behavior-policy provenance belongs in every replay row; exploration transitions should be a controlled exclusion ablation for NFSP only.",
+      "decision": "Benchmark after the formal small-game adapter; do not transfer epsilon or performance numbers to NLHE."
+    },
+    {
+      "id": "canada-aivat",
+      "primary_url": "https://ojs.aaai.org/index.php/AAAI/article/view/11481",
+      "source_fact": "AIVAT is presented as an unbiased variance-reduction estimator and the paper reports 85% lower standard deviation in its HUNL match setting.",
+      "inference": "It may reduce evaluation cost after explicit chance history, known-policy probabilities and a validated value estimate exist.",
+      "decision": "Keep paired duplicate deals as control; add AIVAT only as a differential formal-lane challenger."
+    },
+    {
+      "id": "canada-cfr-plus",
+      "primary_url": "https://poker.cs.ualberta.ca/cfr_plus.html",
+      "source_fact": "The CPRG publishes the CFR+ implementation used for Cepheus and labels the source BSD-licensed.",
+      "inference": "It is a useful independent reference for heads-up limit formal tests, not a rules oracle for custom multiplayer no-limit betting.",
+      "decision": "Use only in an isolated, pinned reproduction if OpenSpiel differential tests leave a material gap."
+    },
+    {
+      "id": "russia-hse-llm-poker",
+      "primary_url": "https://www.hse.ru/en/edu/vkr/1047837931",
+      "source_fact": "The public bachelor-thesis summary claims LLM-enhanced agents outperform traditional solvers at detecting and exploiting archetypes.",
+      "inference": "Without immutable code, data, baselines, confidence intervals and leakage controls, the claim cannot support architecture or model promotion.",
+      "decision": "Quarantine as a hypothesis; do not replace deterministic rules, calibrated policy outputs or the existing copilot."
+    },
+    {
+      "id": "russia-hse-ddqn-static-audit",
+      "primary_url": "https://www.hse.ru/en/edu/vkr/1047501606",
+      "repository_url": "https://github.com/romanhse/PyPokerEngine_diploma",
+      "source_fact": "The linked repository was audited at commit 52fa10e7965e4351eb98a6532f67c38e4e50873e. It contains checkpoint SHA-256 687b16de0b41c967a9dec52c8ac37556955c9f4e48819e1fdee93979539fd2fa, an empty CFR notebook and a DDQN prototype whose replay records only the final action of each hand; training/evaluation are not separated and no seeds are fixed.",
+      "inference": "The public code improves auditability over a thesis summary, but its last-action reward, stale target after checkpoint load, ineffective per-sample importance weighting, mutable online evaluation and unpaired seats/deals invalidate a direct performance transfer.",
+      "decision": "Do not import the checkpoint, features or reported score. Retain the defect list as negative-test cases for the local grouped, paired and fail-closed evaluation pipeline."
+    },
+    {
+      "id": "india-iitk-opponent-weights",
+      "primary_url": "https://cse.iitk.ac.in/users/cs365/2013/submissions/~ayujain/cs365/project/slides.pdf",
+      "source_fact": "Student slides describe reweighting opponent hand enumerations from observed action frequencies.",
+      "inference": "This is a historical Bayesian-frequency baseline, not evidence that fixed action counts are calibrated under position, street or temporal shift.",
+      "decision": "The neutral Beta prior and held-out calibration remain safer; retain only as a baseline idea."
+    },
+    {
+      "id": "india-iitb-isba-patent",
+      "primary_url": "https://rnd.iitb.ac.in/node/2258",
+      "source_fact": "The IIT Bombay record for granted Indian patent 554181 describes a Rummy agent combining Monte Carlo rollouts, Bayesian opponent-hand prediction and rule-based move selection; the page provides no downloadable weights, dataset or controlled poker benchmark.",
+      "inference": "The modular decomposition is compatible with challenger experiments, but it neither establishes novelty for Poker Arena nor licenses a reusable implementation.",
+      "decision": "No integration. Keep Monte Carlo and opponent inference separated and benchmarked; request an authorized artifact and patent/licensing review before any reproduction."
+    }
+  ],
+  "integrity_incidents": [
+    {
+      "id": "india-ac-in-seo-poisoning",
+      "observation": "Several site-delimited results under compromised-looking Indian academic subpaths contained unrelated casino/app-store SEO pages and unsupported AI/odds claims.",
+      "risk": "Institutional-looking domains are not sufficient provenance; search-index poisoning can contaminate dataset discovery and literature receipts.",
+      "decision": "Excluded all such pages, retained no claims or downloads, and require title-author-venue/artifact consistency before any academic-domain source enters the evidence set."
+    }
+  ],
+  "decision_summary": {
+    "adopt_now": [
+      "Record behavior-policy and exploration provenance in strategic training data.",
+      "Treat AIVAT as a future formal-lane variance-reduction benchmark.",
+      "Require modern authorized external holdout for any behavioral model trained on PHH human logs."
+    ],
+    "quarantine": [
+      "Unreproduced LLM-versus-solver claims.",
+      "HSE DDQN checkpoint with training/evaluation leakage and incomplete transition credit assignment.",
+      "Student-project parameters without code or held-out evaluation.",
+      "IIT Bombay patented Rummy architecture without an open artifact or poker benchmark.",
+      "SEO-poisoned academic-domain pages."
+    ],
+    "no_promotable_regional_weight_or_dataset": true
+  }
+}

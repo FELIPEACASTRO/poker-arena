@@ -1,0 +1,45 @@
+{
+  "name": "poker-arena-frontend",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --configLoader runner",
+    "build": "tsc --noEmit && vite build --configLoader runner",
+    "preview": "vite preview --configLoader runner",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck:e2e": "tsc --noEmit --target ES2020 --lib ES2020,DOM --module ESNext --moduleResolution bundler --skipLibCheck --strict --noUnusedLocals --noUnusedParameters --noFallthroughCasesInSwitch e2e/navigation.spec.ts e2e/remote-consent.spec.ts",
+    "test:e2e": "..\\backend\\.venv\\Scripts\\python.exe e2e\\run_e2e.py",
+    "test:e2e:headed": "..\\backend\\.venv\\Scripts\\python.exe e2e\\run_e2e.py --headed",
+    "docs:navigation-guide": "..\\backend\\.venv\\Scripts\\python.exe e2e\\run_e2e.py --update-navigation-guide",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "framer-motion": "^12.41.0",
+    "lucide-react": "^1.21.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "eslint": "^10.5.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.62.0",
+    "vite": "8.1.0",
+    "vitest": "^4.1.9"
+  }
+}

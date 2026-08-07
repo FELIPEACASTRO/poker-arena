@@ -1,0 +1,95 @@
+name: poker-arena-production
+
+services:
+  gateway:
+    build:
+      context: ../..
+      dockerfile: deploy/production/gateway/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+      oauth2-proxy:
+        condition: service_started
+    ports:
+      - "80:8080"
+      - "443:8443"
+    environment:
+      POKER_PUBLIC_HOST: "${POKER_PUBLIC_HOST:?define POKER_PUBLIC_HOST}"
+      NGINX_ENVSUBST_FILTER: "^(POKER_PUBLIC_HOST|POKER_PROXY_SHARED_SECRET)$"
+      NGINX_ENVSUBST_OUTPUT_DIR: /tmp/nginx-conf
+    secrets:
+      - proxy_shared_secret
+      - tls_fullchain
+      - tls_private_key
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1770,uid=101,gid=101
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    networks: [edge, private]
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2
+    restart: unless-stopped
+    command: ["--config=/run/secrets/oauth2_proxy_config"]
+    secrets:
+      - oauth2_proxy_config
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1770
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    networks: [private, auth-egress]
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: deploy/production/backend.Dockerfile
+    restart: unless-stopped
+    environment:
+      POKER_PUBLIC_DEPLOYMENT: "1"
+      POKER_ALLOWED_HOSTS: "${POKER_PUBLIC_HOST:?define POKER_PUBLIC_HOST}"
+      POKER_ALLOWED_ORIGINS: "https://${POKER_PUBLIC_HOST:?define POKER_PUBLIC_HOST}"
+      POKER_API_TOKEN_FILE: /run/secrets/proxy_shared_secret
+      POKER_ROOT_PATH: /api
+      POKER_LOG_DIR: /var/lib/poker/logs
+      POKER_WARMUP: "1"
+    secrets:
+      - proxy_shared_secret
+    volumes:
+      - poker_logs:/var/lib/poker/logs
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1770,uid=10001,gid=10001
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import os,urllib.request; request=urllib.request.Request('http://127.0.0.1:8000/ready', headers={'Host': os.environ['POKER_ALLOWED_HOSTS']}); urllib.request.urlopen(request, timeout=3).read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks: [private]
+
+networks:
+  edge: {}
+  auth-egress: {}
+  private:
+    internal: true
+
+volumes:
+  poker_logs: {}
+
+secrets:
+  proxy_shared_secret:
+    file: "${POKER_PROXY_SHARED_SECRET_FILE:?arquivo externo obrigatório}"
+  tls_fullchain:
+    file: "${POKER_TLS_FULLCHAIN_FILE:?arquivo externo obrigatório}"
+  tls_private_key:
+    file: "${POKER_TLS_PRIVATE_KEY_FILE:?arquivo externo obrigatório}"
+  oauth2_proxy_config:
+    file: "${POKER_OAUTH2_PROXY_CONFIG_FILE:?arquivo externo obrigatório}"

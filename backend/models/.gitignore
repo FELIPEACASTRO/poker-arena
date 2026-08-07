@@ -1,0 +1,4 @@
+*.onnx
+*.zip
+!.gitignore
+!README.md

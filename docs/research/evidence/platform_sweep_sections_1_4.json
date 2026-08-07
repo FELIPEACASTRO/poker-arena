@@ -1,0 +1,391 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-07-17T23:32:33-03:00",
+  "source_inventory": "plataformas_concorrentes_equivalentes_arxiv (3).md",
+  "source_sha256": "8f411d8bac4d6f0ac4103d7eb9593406bd84b758e9ecc6e28dd8bc6364a08204",
+  "scope": {
+    "sections": [1, 2, 3, 4],
+    "platforms_expected": 54,
+    "platforms_audited": 54,
+    "objective": "Buscar evidência primária transferível ao Poker Arena em visão computacional, OCR, calibração, datasets, poker, jogos de informação imperfeita, modelagem de oponente, self-play e regras de decisão.",
+    "excluded_actions": [
+      "Não contornar robots.txt, CAPTCHA, login, paywall ou bloqueio anti-bot.",
+      "Não expor credenciais nem persistir arquivos de autenticação.",
+      "Não baixar pesos ou datasets completos sem licença, proveniência e finalidade aprovadas.",
+      "Não tratar preprint, snippet de índice ou métrica autorrelatada como reprodução independente."
+    ]
+  },
+  "method": {
+    "access_probe": "Cada uma das 54 URLs do inventário foi aberta no cliente de pesquisa. O resultado registra conteúdo acessível, shell JavaScript/redirecionamento, bloqueio ou erro observado; uma falha do cliente não prova indisponibilidade pública universal.",
+    "broad_search": "Foi executada pelo menos uma consulta site-specific por plataforma, com termos de poker, informação imperfeita, opponent modelling, self-play, OCR, visão, calibração e dataset; em plataformas biomédicas/ambientais a consulta enfatizou visão, OCR, calibração e datasets.",
+    "targeted_search": "Acervos com sinal receberam consultas mais estreitas. HAL, Zenodo, OpenReview, OSF e Figshare também foram interrogados por APIs públicas oficiais, com a semântica da contagem explicitada.",
+    "evidence_policy": "Evidência observada, inferência de transferência e limitação são campos distintos. Nenhuma alegação de ganho foi promovida a fato do projeto sem teste local e holdout externo.",
+    "date_and_timezone": "2026-07-17, America/Sao_Paulo"
+  },
+  "counts": {
+    "platforms_by_section": {"1": 24, "2": 7, "3": 16, "4": 7},
+    "research_client_accessible_or_partial": 34,
+    "research_client_limited_or_error": 20,
+    "broad_site_scoped_queries_attempted": 54,
+    "official_api_theme_queries_retained": 34,
+    "official_api_theme_queries_by_platform": {"HAL": 8, "Zenodo": 8, "OpenReview": 8, "OSF": 8, "Figshare": 2},
+    "platforms_with_directly_actionable_or_high_signal_technical_evidence": 9,
+    "platforms_without_retained_high_signal_technical_evidence": 45
+  },
+  "count_semantics": {
+    "warning": "As contagens não são comparáveis entre plataformas e podem mudar após a data do probe.",
+    "HAL": "numFound da API para consulta textual no índice HAL.",
+    "Zenodo": "hits.total da API de records para a consulta textual.",
+    "OpenReview": "count da API v2 para busca de notes; valores >=10000 são limite inferior/cap observado, não total exato.",
+    "OSF": "Busca por substring de título; para termos amplos só a primeira página e has_next foram observados, sem total confiável.",
+    "Figshare": "Resultados da API pública de articles/search; metadados, stemming e limite de offset tornam a contagem apenas um snapshot operacional."
+  },
+  "query_families": [
+    {
+      "id": "S1_S2_BROAD",
+      "sections": [1, 2],
+      "query_template": "site:{host} (poker OR OCR OR \"imperfect information\" OR \"opponent modeling\" OR \"self-play\" OR \"computer vision calibration\")",
+      "platforms_queried": 31,
+      "interpretation": "Consulta de triagem; zero/baixo sinal não demonstra ausência."
+    },
+    {
+      "id": "S3_S4_BROAD",
+      "sections": [3, 4],
+      "query_template": "site:{host} (poker OR OCR OR \"computer vision\" OR calibration OR dataset)",
+      "platforms_queried": 23,
+      "interpretation": "Consulta de triagem com termos adequados ao escopo biomédico, químico e ambiental."
+    }
+  ],
+  "official_api_counts": [
+    {
+      "platform": "HAL",
+      "api_documentation": "https://api.archives-ouvertes.fr/",
+      "results": {"poker": 179, "imperfect information": 338, "opponent modeling": 10, "self-play": 28, "OCR": 954, "computer vision": 9768, "calibration": 20874, "dataset": 32290},
+      "semantics": "API numFound; consultas sobrepostas e não deduplicadas."
+    },
+    {
+      "platform": "Zenodo",
+      "api_endpoint": "https://zenodo.org/api/records",
+      "results": {"poker": 203, "imperfect information": 92, "opponent modeling": 7, "self-play": 62, "OCR": 3370, "computer vision": 10954, "calibration": 20398, "dataset": 258298},
+      "semantics": "API hits.total; consultas sobrepostas e dependentes do índice na data do probe."
+    },
+    {
+      "platform": "OpenReview",
+      "api_documentation": "https://docs.openreview.net/reference/api-v2/openapi-definition",
+      "api_endpoint": "https://api2.openreview.net/notes/search",
+      "results": {"poker": 192, "imperfect information": 469, "opponent modeling": 110, "self-play": 576, "OCR": 1478, "computer vision": ">=10000", "calibration": ">=10000", "dataset": ">=10000"},
+      "semantics": "Busca de notes; >=10000 é limite inferior observado."
+    },
+    {
+      "platform": "OSF Preprints",
+      "api_documentation": "https://developer.osf.io/",
+      "api_endpoint": "https://api.osf.io/v2/preprints/",
+      "results": {"poker_title_substring": 4, "imperfect_information_title_substring": 0, "opponent_modeling_title_substring": 0, "self_play_title_substring": 0, "OCR_first_page": 10, "computer_vision_first_page": 10, "calibration_first_page": 10, "dataset_first_page": 10},
+      "semantics": "Título apenas; os quatro resultados de poker não eram técnicos. Termos amplos tinham has_next=true e não forneciam total confiável."
+    },
+    {
+      "platform": "Figshare",
+      "api_documentation": "https://docs.figshare.com/",
+      "api_endpoint": "https://api.figshare.com/v2/articles/search",
+      "results": {"poker": 159, "poker hand": 7},
+      "semantics": "Busca em metadados; os sete resultados de poker hand eram principalmente figuras de desempenho e não um novo corpus utilizável."
+    }
+  ],
+  "candidate_datasets": [
+    {
+      "id": "D01",
+      "name": "Poker Hand Histories (PHH) v3",
+      "platform": "Zenodo",
+      "url": "https://zenodo.org/records/17136841",
+      "doi": "10.5281/zenodo.17136841",
+      "observed_evidence": {
+        "size": "20.3 GB",
+        "variants": 11,
+        "file_md5": "5a49377ab4ea30db3aa887c8e0ce580f",
+        "contents_reported_by_record": [
+          "341,172,750 fixed-limit e 278,842,225 heads-up no-limit ACPC hands, com duplicatas incluídas",
+          "21,605,687 mãos humanas NLHE não corrompidas",
+          "10,000 mãos de Pluribus"
+        ]
+      },
+      "fit": "Alto para parser canônico, replay, regras, testes de invariantes e modelagem temporal; não contém imagens.",
+      "risks": ["Duplicatas explícitas", "mistura de variantes e fontes", "licença e direitos de cada subfonte precisam ser verificados antes de treino", "risco de leakage por mão, jogador e sessão"],
+      "decision": "Candidato prioritário sob ingestão versionada, deduplicação, split por fonte/jogador/sessão e auditoria de licença."
+    },
+    {
+      "id": "D02",
+      "name": "Mandine's Real Poker Hands (MRPH) Dataset",
+      "platform": "HAL + Kaggle",
+      "hal_url": "https://hal.science/hal-05640595v1",
+      "kaggle_url": "https://www.kaggle.com/datasets/arnaudlewandowski/mandines-real-poker-hands-mrph-dataset",
+      "kaggle_doi": "10.34740/kaggle/dsv/16370247",
+      "observed_evidence": {
+        "last_updated": "2026-06-02",
+        "archive_bytes": 288086864,
+        "files": 2281,
+        "images": 2277,
+        "image_extensions": {"JPEG": 1111, "JPG": 1166},
+        "labels_rows": 2277,
+        "task": "Classificação de uma mão física completa de exatamente cinco cartas em dez classes; o CSV não fornece caixas, rank ou suit por carta.",
+        "sources_described_in_readme": {"Poker Combos Roboflow": 140, "Poker Cards Roboflow": 176, "Doni Kurniawan Roboflow": 507, "author_photos": 1454},
+        "class_counts": {"HighCard": 320, "Flush": 309, "TwoPairs": 259, "Straight": 230, "FourOfAKind": 212, "ThreeOfAKind": 207, "RoyalFlush": 197, "Pair": 195, "StraightFlush": 179, "FullHouse": 169},
+        "metadata_license": "CC BY 4.0",
+        "readme_license": "CC BY-NC 4.0",
+        "sha256": {
+          "README.md": "4641C06E5CB93C2094EFD6F5C1B321B93962618ACED36D307D755E1D0AD5EB87",
+          "labels.csv": "FF929B98E126D2513A539C7F648F005968DAF1A3820A6A14B9EDE57B9B0BD209",
+          "poker_hands.owl": "0E54BE7D0ECE528910E7BD315A5953C30D090A3EBB2FB30ED20EBD4864D8EE29"
+        }
+      },
+      "analysis": [
+        "A distribuição quase balanceada das dez classes é incompatível com os priors naturais do poker; não usar para calibrar probabilidade de ocorrência.",
+        "Mistura fotos do autor e três fontes Roboflow; split aleatório de imagens pode memorizar baralho, fundo, sessão ou pipeline de augmentation.",
+        "Mãos físicas de cinco cartas têm desvio de domínio relevante frente a screenshots de mesas Hold'em.",
+        "A licença declarada no README conflita com a licença nos metadados Kaggle; os direitos das fontes upstream também devem ser comprovados."
+      ],
+      "decision": "QUARANTINE. Só usar como challenger/auxiliary após resolver licença e proveniência, criar split por fonte/sessão/baralho/fundo e avaliar em holdout real do produto."
+    },
+    {
+      "id": "D03",
+      "name": "Poker Cards FMJIO",
+      "platform": "Roboflow Universe (fonte upstream do MRPH)",
+      "url": "https://universe.roboflow.com/roboflow-jvuqo/poker-cards-fmjio",
+      "observed_evidence": {"license": "CC BY 4.0", "source_images": 442, "version_4_images": 899, "classes": 52, "task": "object detection"},
+      "decision": "Melhor candidato visual que rótulo de mão inteira, mas requer fixar versão, preservar imagens fonte sem leakage de augmentations e testar fora do domínio Roboflow."
+    },
+    {
+      "id": "D04",
+      "name": "Poker Hands by Doni Kurniawan",
+      "platform": "Roboflow Universe (fonte upstream do MRPH)",
+      "url": "https://universe.roboflow.com/desides-citra/poker-hands-by-doni-kurniawan",
+      "observed_evidence": {"license": "CC BY 4.0", "images": 1059, "classes": 56, "extra_noisy_classes_observed": ["d", "h", "TH", "objects"]},
+      "decision": "Não ingerir automaticamente; primeiro normalizar ontologia, revisar ruído por classe e construir split por cena/fonte."
+    }
+  ],
+  "high_signal_findings": [
+    {
+      "id": "F01",
+      "title": "Self-Play Reinforcement Learning under Imperfect Information in Big 2",
+      "platform": "OpenReview",
+      "url": "https://openreview.net/pdf/23db71c7221d2db821991ab3e6858d38fedb7b14.pdf",
+      "evidence": "Submissão/preprint relata, sob ambiente comum, PPO acima de Monte Carlo Q/SARSA/Q, benefício de entropia moderada e melhor resultado de self-play com política corrente frente a oponente fixo/checkpoint em orçamento finito.",
+      "inference_for_poker_arena": "Adicionar challenger controlado de self-play com política corrente, regularização de entropia e avaliação cruzada contra checkpoints; manter matriz de oponentes e exploitability/proxy, não só win rate contra si mesmo.",
+      "limitations": "Em revisão, jogo Big 2 e alegações não reproduzidas nesta auditoria."
+    },
+    {
+      "id": "F02",
+      "title": "Superhuman AI for Generals.io Using Self-Play Reinforcement Learning",
+      "platform": "OpenReview",
+      "url": "https://openreview.net/pdf?id=Rb79jWnVDX",
+      "evidence": "Submissão NExT-Game 2026 descreve simulador JAX, policy gradient regularizado e treinamento por quatro dias em 4xH200; o código era prometido após aceitação.",
+      "inference_for_poker_arena": "O ganho transferível é engenharia: simulador vetorizado, testes de paridade e avaliação contra população. O custo citado não justifica reproduzir antes de código/licença e ablação.",
+      "limitations": "Outro jogo, em revisão, código não disponível no momento observado e custo alto."
+    },
+    {
+      "id": "F03",
+      "title": "From Minimax to Self-Play: A Taxonomy of Artificial Intelligence Methods for Adversarial Board and Card Games",
+      "platform": "Preprints.org",
+      "url": "https://www.preprints.org/manuscript/202605.0057",
+      "evidence": "Survey não revisado discute ISMCTS, strategy fusion, planejamento anytime e robustez multioponente.",
+      "inference_for_poker_arena": "Usar a taxonomia para matriz de benchmark e registrar strategy fusion/non-locality como risco; não substituir CFR/MCCFR/Deep-CFR ou o baseline atual apenas com base no survey.",
+      "limitations": "Survey/preprint; sem reprodução ou artefato novo verificado."
+    },
+    {
+      "id": "F04",
+      "title": "3D2SMILES",
+      "platform": "ChemRxiv",
+      "url": "https://chemrxiv.org/engage/chemrxiv/article-details/67d9f6aa6dde43c908590f85",
+      "evidence": "Preprint de reconhecimento estrutural combina dados sintéticos e reais, múltiplas imagens e beam-search top-k; reporta top-1 de 62.0 e top-3 de 80.3 no próprio domínio.",
+      "inference_for_poker_arena": "Testar multi-crop/temporal ensemble e decoder estrutural que valide rank/suit/board contra regras, com top-k apenas quando a ambiguidade for explícita.",
+      "limitations": "Química, métricas autorrelatadas e não reproduzidas; números não transferem para cartas."
+    },
+    {
+      "id": "F05",
+      "title": "Closed-Loop: Vision-Guided Control",
+      "platform": "ChemRxiv",
+      "url": "https://chemrxiv.org/engage/chemrxiv/article-details/6842fee8c1cb1ecda0e37e5b",
+      "evidence": "Pipeline combina detecção YOLO, regras de fase e iluminação controlada em loop fechado.",
+      "inference_for_poker_arena": "Adicionar quality gates antes da inferência: resolução, blur, contraste, ROI completa, consistência temporal e abstention fail-closed.",
+      "limitations": "Automação laboratorial, não screenshots; não há efeito medido no projeto."
+    },
+    {
+      "id": "F06",
+      "title": "Can Vision-Language Models See the Vital Signs?",
+      "platform": "medRxiv",
+      "url": "https://www.medrxiv.org/content/10.64898/2026.06.10.26355351v1.full",
+      "evidence": "Preprint avalia 200 fotografias in-the-wild de monitores e relata Qwen3.5-9B com LoRA rank 8, ajustado com 80-120 imagens, passando de 0.953 para 0.994 e erro crítico de 0.0313 para 0.0063.",
+      "inference_for_poker_arena": "Executar apenas como challenger offline em ROIs ambíguas, comparando OCR especializado + regras; pequeno LoRA pode ser útil se latência, licença e calibração externa passarem.",
+      "limitations": "Preprint recente, amostra pequena, domínio médico e números não reproduzidos; modelo pesado para caminho de baixa latência."
+    },
+    {
+      "id": "F07",
+      "title": "Comparison of foundation models for external retinal image classification",
+      "platform": "medRxiv",
+      "url": "https://www.medrxiv.org/content/10.64898/2026.04.17.26351092v1.full",
+      "evidence": "Preprint relata AUROC interna de 0.90-0.98 caindo para 0.70-0.85 externamente e calibração deficiente para DINOv3/RETFound/VisionFM.",
+      "inference_for_poker_arena": "Tornar obrigatório holdout por site/tema/resolução/dispositivo/sessão, com ECE, Brier, reliability diagram e risco-cobertura; não selecionar só por accuracy/AUROC interna.",
+      "limitations": "Imagens retinianas e estudo não reproduzido; transferir o protocolo, não o efeito."
+    },
+    {
+      "id": "F08",
+      "title": "Reconstructing Nineteenth-Century River Water Levels from Scanned Documents",
+      "platform": "EarthArXiv",
+      "url": "https://eartharxiv.org/repository/view/10491/",
+      "evidence": "Workflow combina dewarping, extração por transformer, calibração pixel-para-curva, ground truth, provenance por página, dados versionados, flags de incerteza e verificações humanas direcionadas; o documento alerta contra separar fragmentos correlatos entre treino e teste.",
+      "inference_for_poker_arena": "Agrupar split por sessão/captura/site/tema/baralho/fundo e manter provenance+uncertainty por ROI; revisão humana deve focar baixa confiança, conflito temporal e violações de regra.",
+      "limitations": "Documentos históricos, não interface de poker."
+    },
+    {
+      "id": "F09",
+      "title": "Hybrid Multi-Agent AI/MCTS Systems for Complex Information-Imperfect Games",
+      "platform": "SSRN",
+      "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5784417",
+      "evidence": "Preprint de nove páginas relata 3,873 partidas geradas por MCTS, +15-25% de win rate e 70-80% de belief accuracy.",
+      "inference_for_poker_arena": "Somente ideia de challenger: separar belief model, planner e agente executor; exigir código, seeds, adversários externos, IC e exploitability antes de adoção.",
+      "limitations": "Pequeno, autorrelatado, sem evidência de poker real ou reprodução independente."
+    },
+    {
+      "id": "F10",
+      "title": "Controlled-illumination computer vision for smart drying",
+      "platform": "Organic Eprints",
+      "url": "https://orgprints.org/id/eprint/36551/",
+      "evidence": "Registro descreve iluminação 4200K, câmera/Raspberry Pi, features simples de morfologia/cor e calibração; relata R²P acima de 0.99 no próprio domínio.",
+      "inference_for_poker_arena": "Manter baseline barato de features/quality metrics e, em captura por câmera, padronizar iluminação/cor antes de escalar o modelo.",
+      "limitations": "Secagem agrícola; a métrica não é transferível e a página principal teve acesso limitado."
+    },
+    {
+      "id": "F11",
+      "title": "Cell Press Sneak Peek rights boundary",
+      "platform": "Cell Press Sneak Peek / SSRN",
+      "url": "https://www.ssrn.com/index.cfm/en/cell-press-sneak-peek/",
+      "evidence": "A página acessível declarava 11,432 itens e reservava direitos de text/data mining e AI training.",
+      "inference_for_poker_arena": "Metadados podem orientar leitura, mas conteúdo não deve virar corpus de treino sem autorização/licença explícita.",
+      "limitations": "Contagem dinâmica; não é achado técnico."
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "P0",
+      "action": "Instituir split anti-leakage por fonte, site, sessão, tema, resolução, baralho/fundo e cadeia de augmentation; proibir random image split como única evidência.",
+      "acceptance": "Manifesto de grupos, hash por ativo, teste de colisão/near-duplicate e holdout externo intocado."
+    },
+    {
+      "priority": "P0",
+      "action": "Adicionar calibração e selective prediction ao gate de visão.",
+      "acceptance": "ECE, Brier, NLL, reliability, risco-cobertura, erro crítico e métricas por domínio; thresholds derivados apenas do validation set."
+    },
+    {
+      "priority": "P0",
+      "action": "Manter MRPH em quarentena até resolver CC BY versus CC BY-NC e proveniência upstream.",
+      "acceptance": "Licença única comprovada, versões/fonte fixadas e revisão de leakage concluída."
+    },
+    {
+      "priority": "P1",
+      "action": "Avaliar Poker Cards FMJIO e MRPH como challengers auxiliares, nunca como benchmark canônico.",
+      "acceptance": "Ablation contra baseline em screenshot holdout real; melhoria com IC e sem piora de calibração/latência."
+    },
+    {
+      "priority": "P1",
+      "action": "Usar PHH v3 para testes de parser/regras e benchmark temporal de opponent modelling após dedup/licença.",
+      "acceptance": "Invariantes de hand history, splits por fonte/jogador/sessão, ausência de leakage e métricas contra população externa."
+    },
+    {
+      "priority": "P1",
+      "action": "Adicionar um decoder estrutural e validadores de estado entre visão e engine.",
+      "acceptance": "Cartas impossíveis/duplicadas, street incoerente, pot/bet inconsistente e conflito temporal geram abstention, não autocorreção silenciosa."
+    },
+    {
+      "priority": "P2",
+      "action": "Benchmarkar self-play current-policy versus checkpoint league/fixed opponents em experimento de um fator.",
+      "acceptance": "Seeds múltiplas, matriz de oponentes, IC, exploitability/proxy, custo e regressão contra baseline congelado."
+    }
+  ],
+  "regional_receipt": {
+    "requested_regions": ["Asia", "Canada", "Russia", "India"],
+    "scope_rule": "Este artefato cobre somente as seções 1-4. A contagem abaixo usa plataformas explicitamente regionais no inventário, sem inferir região pela audiência global de um repositório.",
+    "counts_within_sections_1_4": {"Asia": 1, "Canada": 0, "Russia": 0, "India": 0},
+    "asia": {
+      "platform": "Jxiv",
+      "country": "Japan",
+      "url": "https://jxiv.jst.go.jp/",
+      "local_language_queries_attempted": 3,
+      "query_terms": [
+        "ポーカー, テキサスホールデム, 不完全情報ゲーム, 自己対戦, 対戦相手モデリング",
+        "光学文字認識, OCR, コンピュータビジョン, 画像認識, キャリブレーション",
+        "poker, imperfect information, self-play, opponent modeling"
+      ],
+      "official_index_used": "Jxiv JST preprint pages and DOI records",
+      "direct_poker_or_game_asset_retained": 0,
+      "indirect_result": {
+        "title": "生成AI活用のための学内クラウドストレージを介したファイル自動処理マイクロサービス",
+        "url": "https://jxiv.jst.go.jp/index.php/jxiv/preprint/view/1364",
+        "doi": "10.51094/jxiv.1364",
+        "observation": "Descreve serviço local seguro para transcrição/OCR e processamento por IA; não oferece dataset, peso, benchmark de cartas ou ganho transferível demonstrado.",
+        "decision": "Não adotar; apenas confirmação de padrão arquitetural já conhecido: OCR isolado, logs e processamento local de dados sensíveis."
+      }
+    },
+    "out_of_scope_inventory_pointers": [
+      {"region": "India", "platform": "IndiaRxiv", "section": 7, "url": "https://ops.iihr.res.in/index.php/IndiaRxiv", "note": "Auditada no artefato das seções 5-8, não duplicada aqui."},
+      {"region": "Russia", "platform": "Preprints.ru", "section": 7, "url": "https://preprints.ru/", "note": "Auditada no artefato das seções 5-8, não duplicada aqui."},
+      {"region": "Asia", "platform": "ChinaXiv", "section": 7, "url": "http://chinaxiv.org/", "note": "Auditada no artefato das seções 5-8, não duplicada aqui."}
+    ],
+    "canada_note": "Nenhuma linha explicitamente canadense aparece nas seções 1-4. Repositórios globais não foram reclassificados como canadenses sem indicação no inventário.",
+    "blocking_policy": "Bloqueios são registrados; nenhum controle foi contornado. Quando disponível, usou-se somente índice oficial ou página primária pública."
+  },
+  "platform_audit": [
+    {"section":1,"name":"Advance — SAGE Preprints","url":"https://advance.sagepub.com/","direct_probe":"limited","observation":"403 no cliente de pesquisa.","search":"Consulta site-specific executada; sem evidência técnica retida.","relevance":"low"},
+    {"section":1,"name":"AIJR Preprints","url":"https://preprints.aijr.org/","direct_probe":"accessible_or_partial","observation":"Portal e busca acessíveis; aviso de conteúdo não revisado.","search":"Consulta ampla executada; nenhum ativo de poker/visão retido.","relevance":"low"},
+    {"section":1,"name":"AiraXiv","url":"https://airaxiv.com/","direct_probe":"accessible_or_partial","observation":"Portal acessível, com trilhas AI-generated/human e AI review.","search":"Consulta ampla executada; nenhum modelo/dataset útil retido.","relevance":"low"},
+    {"section":1,"name":"ARPHA Preprints","url":"https://preprints.arphahub.com/","direct_probe":"limited","observation":"403 no cliente de pesquisa.","search":"Fallback site-specific executado; sem evidência retida.","relevance":"low"},
+    {"section":1,"name":"Authorea","url":"https://www.authorea.com/","direct_probe":"limited","observation":"403 no cliente de pesquisa.","search":"Fallback site-specific executado; sem evidência retida.","relevance":"low"},
+    {"section":1,"name":"Cambridge Open Engage","url":"https://www.cambridge.org/engage/","direct_probe":"accessible_or_partial","observation":"Dashboard acessível, beta, 3,801 conteúdos vivos observados e link de API pública.","search":"Consulta ampla executada; sem ativo direto de poker retido.","relevance":"low_medium"},
+    {"section":1,"name":"EasyChair Preprints","url":"https://easychair.org/publications/preprints","direct_probe":"accessible_or_partial","observation":"Índice de preprints acessível.","search":"Consulta ampla executada; nenhum candidato de alta relevância.","relevance":"low"},
+    {"section":1,"name":"F1000Research","url":"https://f1000research.com/","direct_probe":"accessible_or_partial","observation":"Portal e pesquisa acessíveis.","search":"Consulta ampla executada; sinal indireto apenas.","relevance":"low"},
+    {"section":1,"name":"Figshare","url":"https://figshare.com/","direct_probe":"accessible_or_partial","observation":"Portal/API pública acessíveis.","search":"API: poker=159, poker hand=7; resultados técnicos eram sobretudo figuras, não corpus novo.","relevance":"medium_negative_result"},
+    {"section":1,"name":"HAL","url":"https://hal.science/","direct_probe":"accessible_or_partial","observation":"Landing parcialmente problemática, API oficial funcional.","search":"Oito consultas API; MRPH foi o principal novo candidato visual.","relevance":"high"},
+    {"section":1,"name":"Jxiv","url":"https://jxiv.jst.go.jp/","direct_probe":"accessible_or_partial","observation":"Portal oficial JST acessível após redirecionamento.","search":"Três consultas complementares em japonês/inglês; nenhum ativo direto de poker. O preprint jxiv.1364 sobre OCR local seguro foi retido apenas como evidência arquitetural indireta.","relevance":"low_medium_indirect"},
+    {"section":1,"name":"Octopus","url":"https://www.octopus.ac/","direct_probe":"accessible_or_partial","observation":"Portal acessível.","search":"Consulta ampla executada; nenhum ativo relevante retido.","relevance":"low"},
+    {"section":1,"name":"OpenReview","url":"https://openreview.net/","direct_probe":"accessible_or_partial","observation":"Portal e API v2 acessíveis.","search":"Oito consultas API; self-play Big 2 e Generals.io retidos como hipóteses, não reproduções.","relevance":"high"},
+    {"section":1,"name":"OSF Preprints","url":"https://osf.io/preprints/","direct_probe":"accessible_or_partial","observation":"Shell JavaScript; API oficial funcional.","search":"Oito consultas title-only; quatro resultados de poker não técnicos e nenhum ativo direto.","relevance":"medium_negative_result"},
+    {"section":1,"name":"Preprints.org","url":"https://www.preprints.org/","direct_probe":"accessible_or_partial","observation":"Conteúdo pesquisável acessível no cliente de pesquisa.","search":"Taxonomia de self-play/ISMCTS retida como survey não revisado.","relevance":"medium_high"},
+    {"section":1,"name":"PubPub","url":"https://www.pubpub.org/","direct_probe":"accessible_or_partial","observation":"Portal acessível.","search":"Consulta ampla executada; sem ativo direto.","relevance":"low"},
+    {"section":1,"name":"Qeios","url":"https://www.qeios.com/","direct_probe":"accessible_or_partial","observation":"Portal acessível.","search":"Consulta ampla executada; sem evidência técnica retida.","relevance":"low"},
+    {"section":1,"name":"Research Square","url":"https://www.researchsquare.com/","direct_probe":"accessible_or_partial","observation":"Portal acessível.","search":"Consulta ampla executada; sem ativo direto retido.","relevance":"low"},
+    {"section":1,"name":"ScienceOpen","url":"https://www.scienceopen.com/","direct_probe":"limited","observation":"403 no cliente de pesquisa.","search":"Fallback site-specific executado; sem evidência retida.","relevance":"low"},
+    {"section":1,"name":"SSRN","url":"https://www.ssrn.com/","direct_probe":"limited","observation":"Homepage 403; páginas primárias específicas apareceram no índice e foram acessadas sem bypass.","search":"Hybrid Multi-Agent AI/MCTS retido com baixa força; páginas Cell Press têm restrição de TDM/AI.","relevance":"medium"},
+    {"section":1,"name":"Synthical","url":"https://synthical.com/","direct_probe":"accessible_or_partial","observation":"Portal acessível no cliente de pesquisa.","search":"Consulta ampla executada; sem evidência retida.","relevance":"low"},
+    {"section":1,"name":"viXra","url":"https://www.vixra.org/","direct_probe":"accessible_or_partial","observation":"Portal acessível; 45,768 eprints observados e aviso explícito de não endosso.","search":"Consulta ampla executada; nada retido por baixa força e ausência de ativo verificável.","relevance":"low"},
+    {"section":1,"name":"WikiJournal Preprints","url":"https://en.wikiversity.org/wiki/WikiJournal_Preprints","direct_probe":"accessible_or_partial","observation":"Página acessível.","search":"Consulta ampla executada; nenhum candidato técnico.","relevance":"low"},
+    {"section":1,"name":"Zenodo","url":"https://zenodo.org/","direct_probe":"accessible_or_partial","observation":"Portal e API oficial acessíveis.","search":"Oito consultas API; PHH v3 é o ativo direto mais forte para regras/replay/modelagem.","relevance":"high"},
+    {"section":2,"name":"CERN Document Server","url":"https://cds.cern.ch/","direct_probe":"accessible_or_partial","observation":"DSpace/CERN acessível.","search":"Consulta ampla executada; sem candidato direto.","relevance":"low"},
+    {"section":2,"name":"Cryptology ePrint Archive","url":"https://eprint.iacr.org/","direct_probe":"limited","observation":"Abertura falhou e busca foi bloqueada por robots.txt; nenhuma nova tentativa de contorno.","search":"Consulta site-specific executada; sem sinal relevante.","relevance":"low"},
+    {"section":2,"name":"ECCC — Electronic Colloquium on Computational Complexity","url":"https://eccc.weizmann.ac.il/","direct_probe":"accessible_or_partial","observation":"Portal acessível.","search":"Consulta ampla executada; sem ativo de poker/visão.","relevance":"low"},
+    {"section":2,"name":"ECSarXiv","url":"https://ecsarxiv.org/","direct_probe":"accessible_or_partial","observation":"Redireciona para shell OSF.","search":"Consulta ampla executada; sem candidato.","relevance":"low"},
+    {"section":2,"name":"engrXiv","url":"https://engrxiv.org/","direct_probe":"accessible_or_partial","observation":"Portal acessível.","search":"Consulta ampla executada; nenhum ativo retido.","relevance":"low"},
+    {"section":2,"name":"Optimization Online","url":"https://optimization-online.org/","direct_probe":"accessible_or_partial","observation":"Portal acessível.","search":"Consulta ampla executada; nenhum algoritmo diretamente acionável.","relevance":"low_medium"},
+    {"section":2,"name":"TechRxiv","url":"https://www.techrxiv.org/","direct_probe":"limited","observation":"Erro no cliente de pesquisa.","search":"Fallback site-specific executado; sem evidência retida.","relevance":"low"},
+    {"section":3,"name":"Beilstein Archives","url":"https://www.beilstein-archives.org/xiv/","direct_probe":"accessible_or_partial","observation":"Portal e busca fulltext/título/resumo/keyword acessíveis.","search":"Consulta ampla executada; sem ativo relevante.","relevance":"low"},
+    {"section":3,"name":"BioHackrXiv","url":"https://biohackrxiv.org/","direct_probe":"limited","observation":"URL não pôde ser aberta com segurança/renderização pelo cliente.","search":"Fallback site-specific executado; nenhum candidato.","relevance":"low"},
+    {"section":3,"name":"bioRxiv","url":"https://www.biorxiv.org/","direct_probe":"limited","observation":"Homepage 403; páginas primárias indexadas específicas foram lidas sem bypass.","search":"Sinais de pipelines SAM/YOLO e PolliCrop eram indiretos; nenhum ativo de poker retido.","relevance":"medium_indirect"},
+    {"section":3,"name":"Cell Press Sneak Peek","url":"https://www.ssrn.com/index.cfm/en/cell-press-sneak-peek/","direct_probe":"accessible_or_partial","observation":"Página acessível, 11,432 itens observados e direitos TDM/AI reservados.","search":"Metadados apenas; nenhuma ingestão de conteúdo autorizada.","relevance":"low_rights_gate"},
+    {"section":3,"name":"ChemRxiv","url":"https://chemrxiv.org/","direct_probe":"accessible_or_partial","observation":"Dashboard e artigos específicos acessíveis.","search":"3D2SMILES e Closed-Loop retidos por técnicas de visão/estrutura/quality gate.","relevance":"high_transfer"},
+    {"section":3,"name":"EyeXiv","url":"https://eyexiv.org/","direct_probe":"limited","observation":"Erro de acesso/resolução no cliente.","search":"Fallback site-specific executado; sem candidato.","relevance":"low"},
+    {"section":3,"name":"FocUS Archive","url":"https://osf.io/preprints/focusarchive","direct_probe":"accessible_or_partial","observation":"Shell OSF acessível, conteúdo dependente de JavaScript.","search":"Consulta ampla executada; sem evidência retida.","relevance":"low"},
+    {"section":3,"name":"JMIR Preprints","url":"https://preprints.jmir.org/","direct_probe":"accessible_or_partial","observation":"Portal e páginas primárias acessíveis; alguns PDFs/ativos têm restrições.","search":"Metodologia de validação real-world/certainty é indireta; nenhum corpus autorizado.","relevance":"medium_indirect"},
+    {"section":3,"name":"medRxiv","url":"https://www.medrxiv.org/","direct_probe":"limited","observation":"Homepage falhou; páginas primárias específicas indexadas foram acessadas sem bypass.","search":"VLM vital signs e estudo de foundation-model shift/calibration retidos como evidência metodológica.","relevance":"high_transfer"},
+    {"section":3,"name":"MitoFit Preprints Archive","url":"https://www.mitofit.org/index.php/MitoFit_Preprints","direct_probe":"limited","observation":"Erro de acesso no cliente.","search":"Fallback executado; nenhum candidato.","relevance":"low"},
+    {"section":3,"name":"Preprints with The Lancet","url":"https://www.thelancet.com/preprints","direct_probe":"limited","observation":"Erro/bloqueio no cliente.","search":"Fallback executado; sem ativo transferível retido.","relevance":"low"},
+    {"section":3,"name":"PsyArXiv","url":"https://psyarxiv.com/","direct_probe":"accessible_or_partial","observation":"Redireciona ao shell OSF.","search":"Consulta ampla executada; sem candidato técnico direto.","relevance":"low_medium"},
+    {"section":3,"name":"SportRxiv","url":"https://sportrxiv.org/","direct_probe":"accessible_or_partial","observation":"Portal acessível após redirecionamento.","search":"Resultados de pose por webcam eram domínio indireto; nada retido para implementação.","relevance":"low_medium"},
+    {"section":3,"name":"Surgery Open Science First Look","url":"https://www.ssrn.com/index.cfm/en/surgery-open-science-first-look/","direct_probe":"limited","observation":"Erro/rota indisponível no cliente.","search":"Fallback executado; sem candidato.","relevance":"low"},
+    {"section":3,"name":"Therapoid","url":"https://therapoid.net/","direct_probe":"limited","observation":"Erro/redirecionamento sem acervo verificável no cliente.","search":"Fallback executado; sem candidato.","relevance":"low"},
+    {"section":3,"name":"VeriXiv","url":"https://verixiv.org/","direct_probe":"accessible_or_partial","observation":"Página/shell acessível, pouca informação renderizada.","search":"Consulta ampla executada; nenhum ativo retido.","relevance":"low"},
+    {"section":4,"name":"agriRxiv","url":"https://agrirxiv.org/","direct_probe":"limited","observation":"502/erro upstream observado.","search":"Fallback site-specific executado; sem candidato.","relevance":"low"},
+    {"section":4,"name":"Earth-prints Repository","url":"https://www.earth-prints.org/","direct_probe":"accessible_or_partial","observation":"DSpace acessível.","search":"Consulta ampla executada; nenhum item direto de poker.","relevance":"low"},
+    {"section":4,"name":"EarthArXiv","url":"https://eartharxiv.org/","direct_probe":"accessible_or_partial","observation":"Landing mínima, registros específicos acessíveis.","search":"Workflow de reconstrução de séries a partir de scans retido por provenance, dewarping, calibração e split.","relevance":"high_transfer"},
+    {"section":4,"name":"EcoEvoRxiv","url":"https://www.ecoevorxiv.com/","direct_probe":"limited","observation":"Erro SSL/acesso no cliente.","search":"Fallback executado; sem candidato.","relevance":"low"},
+    {"section":4,"name":"ESS Open Archive","url":"https://essopenarchive.org/","direct_probe":"limited","observation":"Erro/bloqueio no cliente.","search":"Fallback executado; sem candidato.","relevance":"low"},
+    {"section":4,"name":"Organic Eprints","url":"https://www.orgprints.org/","direct_probe":"limited","observation":"Homepage falhou no cliente; páginas primárias indexadas específicas foram acessadas sem bypass.","search":"Iluminação controlada e baseline de features simples retidos apenas como transferência metodológica.","relevance":"medium_transfer"},
+    {"section":4,"name":"PaleorXiv","url":"https://paleorxiv.org/","direct_probe":"limited","observation":"Erro no cliente ao seguir o redirecionamento OSF.","search":"Fallback executado; sem candidato.","relevance":"low"}
+  ]
+}

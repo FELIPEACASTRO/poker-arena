@@ -1,0 +1,563 @@
+{
+  "schema_version": "1.0",
+  "title": "Auditoria reproduzível das plataformas das seções 9–12",
+  "source_document": "plataformas_concorrentes_equivalentes_arxiv (3).md",
+  "source_sha256": "8f411d8bac4d6f0ac4103d7eb9593406bd84b758e9ecc6e28dd8bc6364a08204",
+  "observed_on": "2026-07-17",
+  "timezone": "America/Sao_Paulo",
+  "scope": {
+    "sections": [9, 10, 11, 12],
+    "platform_count": 47,
+    "themes": [
+      "poker e inteligência artificial",
+      "jogos de informação imperfeita",
+      "self-play por reinforcement learning",
+      "modelagem de oponentes",
+      "reconhecimento visual de cartas",
+      "OCR",
+      "calibração probabilística"
+    ]
+  },
+  "method": {
+    "homepage_probe": "GET público, sem login, paywall, bypass de robots ou credenciais; redirecionamentos normais foram seguidos.",
+    "api_probe": "Somente endpoints públicos documentados ou identificáveis na própria plataforma; nenhum token privado foi usado.",
+    "query_policy": "As mesmas sete consultas em inglês foram submetidas às APIs que permitiram busca. Contagens são snapshots do índice e não são comparáveis entre provedores.",
+    "evidence_rule": "HTTP/status/contagem/IDs são observações. Relevância e ações sugeridas são inferências explicitamente rotuladas. Um bloqueio de cliente automático não prova indisponibilidade para navegação humana."
+  },
+  "platforms": [
+    {
+      "section": 9,
+      "name": "Academia.edu",
+      "requested_url": "https://www.academia.edu/",
+      "probe": {"http_status": 403, "final_url": "https://www.academia.edu/", "observation": "Forbidden para o cliente de auditoria."},
+      "capabilities": ["rede social acadêmica", "busca e compartilhamento de manuscritos", "perfis de autores"],
+      "api": {"status": "não verificada", "limitation": "Nenhuma API pública estável de descoberta foi verificada; acesso automatizado bloqueado."},
+      "relevance": {"level": "baixa-média", "inference": "Útil apenas para descoberta manual de literatura cinzenta; metadados, licença e versionamento não devem alimentar treino automaticamente."}
+    },
+    {
+      "section": 9,
+      "name": "DASH — Digital Access to Scholarship at Harvard",
+      "requested_url": "https://dash.harvard.edu/",
+      "probe": {"http_status": 405, "final_url": "https://dash.harvard.edu/", "observation": "Homepage recusou este GET; os endpoints oficiais responderam 200."},
+      "capabilities": ["repositório institucional", "teses e artigos", "metadados e arquivos abertos"],
+      "api": {"status": "pública", "endpoints": ["https://dash.harvard.edu/server/api", "https://dash.harvard.edu/server/oai/request?verb=Identify"], "evidence": "DSpace 8.0; REST HAL e OAI-PMH responderam 200."},
+      "relevance": {"level": "média", "inference": "Fonte de teses e relatórios técnicos; colher metadados/OAI e validar licença do arquivo antes de uso."}
+    },
+    {
+      "section": 9,
+      "name": "DSpace@MIT",
+      "requested_url": "https://dspace.mit.edu/",
+      "probe": {"http_status": 405, "final_url": "https://dspace.mit.edu/", "observation": "Homepage recusou este GET; REST e OAI responderam 200."},
+      "capabilities": ["repositório institucional", "teses", "artigos", "software e relatórios"],
+      "api": {"status": "pública", "endpoints": ["https://dspace.mit.edu/server/api", "https://dspace.mit.edu/server/oai/request?verb=Identify"], "evidence": "DSpace 8.2; REST HAL e OAI-PMH responderam 200."},
+      "relevance": {"level": "média-alta", "inference": "Boa fonte para teses de IA, visão e jogos; priorizar busca por título/resumo e deduplicação por DOI/handle."}
+    },
+    {
+      "section": 9,
+      "name": "LSE Research Online",
+      "requested_url": "https://researchonline.lse.ac.uk/",
+      "probe": {"http_status": 200, "final_url": "https://researchonline.lse.ac.uk/", "page_title": "LSE Research Online"},
+      "capabilities": ["repositório EPrints", "economia", "ciências sociais", "working papers"],
+      "api": {"status": "pública", "endpoints": ["https://researchonline.lse.ac.uk/cgi/oai2?verb=Identify"], "evidence": "OAI-PMH respondeu 200."},
+      "relevance": {"level": "média", "inference": "Mais útil para teoria dos jogos, economia comportamental e desenho experimental do que para visão computacional."}
+    },
+    {
+      "section": 9,
+      "name": "Open Science Framework",
+      "requested_url": "https://osf.io/",
+      "probe": {"http_status": 200, "final_url": "https://osf.io/", "page_title": "OSF"},
+      "capabilities": ["projetos", "arquivos", "datasets", "pré-registros", "preprints", "DOIs"],
+      "api": {"status": "pública", "endpoints": ["https://api.osf.io/v2/"], "evidence": "JSON:API v2 respondeu 200 anonimamente."},
+      "relevance": {"level": "média-alta", "inference": "Útil para dados, código, protocolos e resultados negativos; exigir licença, proveniência, checksum e separação por grupo."}
+    },
+    {
+      "section": 9,
+      "name": "ResearchGate",
+      "requested_url": "https://www.researchgate.net/",
+      "probe": {"http_status": 403, "final_url": "https://www.researchgate.net/", "observation": "Forbidden para o cliente de auditoria."},
+      "capabilities": ["rede acadêmica", "perfis", "métricas", "cópias compartilhadas por autores"],
+      "api": {"status": "não verificada", "limitation": "Nenhuma API pública estável foi verificada; login/termos limitam automação."},
+      "relevance": {"level": "baixa-média", "inference": "Somente pista para localizar a versão canônica; não usar como origem automática de corpus."}
+    },
+    {
+      "section": 10,
+      "name": "Arabixiv",
+      "requested_url": "http://about.arabixiv.org/",
+      "probe": {"http_status": 200, "final_url": "https://zenodo.org/communities/arabixiv/about", "page_title": "ArabiXiv — Zenodo community", "observation": "Migração/redirecionamento para Zenodo."},
+      "capabilities": ["comunidade de registros no Zenodo", "DOIs", "arquivos e metadados"],
+      "api": {"status": "pública", "endpoints": ["https://zenodo.org/api/communities/arabixiv"], "evidence": "API Zenodo respondeu 200; comunidade atualizada em 2026-07-02."},
+      "relevance": {"level": "baixa para poker; média para OCR multilíngue", "inference": "Pode ampliar testes de OCR árabe, mas não fornece evidência direta para mesas de poker sem validação de domínio."}
+    },
+    {
+      "section": 10,
+      "name": "CogPrints",
+      "requested_url": "http://cogprints.org/",
+      "probe": {"http_status": 200, "final_url": "https://web-archive.southampton.ac.uk/cogprints.org/", "page_title": "Welcome to Cogprints", "observation": "Conteúdo preservado em arquivo web."},
+      "capabilities": ["arquivo legado de cognição", "browse e páginas estáticas"],
+      "api": {"status": "indisponível no arquivo", "endpoints_tested": ["https://web-archive.southampton.ac.uk/cogprints.org/cgi/oai2?verb=Identify"], "evidence": "OAI legado testado retornou 404."},
+      "relevance": {"level": "baixa", "inference": "Possível contexto histórico sobre decisão humana; não é fonte atual de modelos ou datasets."}
+    },
+    {
+      "section": 10,
+      "name": "ESSOAr — serviço anterior ao ESS Open Archive",
+      "requested_url": "https://www.essoar.org/",
+      "probe": {"http_status": 403, "final_url": "https://essopenarchive.org/", "observation": "Redireciona ao ESS Open Archive; destino bloqueou o cliente automático."},
+      "capabilities": ["preprints de ciências da Terra e espaço"],
+      "api": {"status": "não verificada", "limitation": "Destino respondeu 403 no probe."},
+      "relevance": {"level": "muito baixa", "inference": "Domínio não alinhado à solução; nenhuma ação recomendada."}
+    },
+    {
+      "section": 10,
+      "name": "Frenxiv",
+      "requested_url": "https://frenxiv.org/",
+      "probe": {"http_status": 200, "final_url": "https://frenxiv.org/", "page_title": "Frenxiv Papers", "observation": "Página oferece busca e submissão; rodapé/aviso visível é datado de 2020."},
+      "capabilities": ["preprints multidisciplinares", "busca", "submissão via conta OSF"],
+      "api": {"status": "não verificada", "limitation": "Nenhum endpoint público específico foi confirmado nesta auditoria."},
+      "relevance": {"level": "baixa", "inference": "Pode conter literatura cinzenta, mas a atualidade operacional deve ser confirmada antes de integração."}
+    },
+    {
+      "section": 10,
+      "name": "INA-Rxiv",
+      "requested_url": "https://osf.io/preprints/inarxiv/",
+      "probe": {"http_status": 200, "final_url": "https://osf.io/preprints/inarxiv/", "page_title": "OSF", "observation": "Provider legado acessível em modo de preservação."},
+      "capabilities": ["preprints existentes", "metadados OSF"],
+      "api": {"status": "pública para leitura", "endpoints": ["https://api.osf.io/v2/preprint_providers/inarxiv/"], "evidence": "API respondeu 200 e descrição informa encerramento do serviço."},
+      "relevance": {"level": "baixa", "inference": "Sem ganho direto para poker; apenas descoberta histórica/multilíngue."}
+    },
+    {
+      "section": 10,
+      "name": "LawArXiv",
+      "requested_url": "https://osf.io/preprints/lawarxiv/",
+      "probe": {"http_status": 200, "final_url": "https://osf.io/preprints/lawarxiv/", "page_title": "OSF", "observation": "Provider preservado, sem novas submissões."},
+      "capabilities": ["preprints jurídicos existentes", "metadados OSF"],
+      "api": {"status": "pública para leitura", "endpoints": ["https://api.osf.io/v2/preprint_providers/lawarxiv/"], "evidence": "API respondeu 200 e informa que não aceita novas submissões."},
+      "relevance": {"level": "muito baixa", "inference": "Somente questões regulatórias gerais; não oferece modelos/dados técnicos do domínio."}
+    },
+    {
+      "section": 10,
+      "name": "MarXiv",
+      "requested_url": "https://osf.io/preprints/marxiv/",
+      "probe": {"http_status": 200, "final_url": "https://osf.io/preprints/marxiv/", "page_title": "OSF", "observation": "Provider preservado, submissões encerradas."},
+      "capabilities": ["preprints de ciências marinhas existentes", "metadados OSF"],
+      "api": {"status": "pública para leitura", "endpoints": ["https://api.osf.io/v2/preprint_providers/marxiv/"], "evidence": "API respondeu 200 e informa fechamento das submissões."},
+      "relevance": {"level": "muito baixa", "inference": "Domínio sem alinhamento direto."}
+    },
+    {
+      "section": 10,
+      "name": "mp_arc — Mathematical Physics Preprint Archive",
+      "requested_url": "https://web.ma.utexas.edu/mp_arc/",
+      "probe": {"http_status": null, "final_url": null, "observation": "Timeout de conexão após 25 s; não foi repetido por outras rotas."},
+      "capabilities": ["arquivo legado de física matemática"],
+      "api": {"status": "não verificada", "limitation": "Homepage não respondeu no período do probe."},
+      "relevance": {"level": "muito baixa", "inference": "Não priorizar."}
+    },
+    {
+      "section": 10,
+      "name": "Nature Precedings",
+      "requested_url": "https://www.nature.com/npre/",
+      "probe": {"http_status": 200, "final_url": "https://www.nature.com/npre?error=cookies_not_supported", "page_title": "Nature Precedings", "observation": "Arquivo de pesquisa pré-publicação de 2007 a 2012."},
+      "capabilities": ["browse", "busca Nature", "DOIs", "PDFs preservados"],
+      "api": {"status": "sem API temática verificada", "limitation": "Coleção somente leitura; metadados por DOI podem ser resolvidos via Crossref."},
+      "relevance": {"level": "muito baixa", "inference": "Arquivo de ciências da vida; útil apenas para métodos históricos genéricos."}
+    },
+    {
+      "section": 10,
+      "name": "NutriXiv",
+      "requested_url": "https://osf.io/preprints/nutrixiv/",
+      "probe": {"http_status": 200, "final_url": "https://osf.io/preprints/nutrixiv/", "page_title": "OSF", "observation": "Provider preservado, sem novas submissões."},
+      "capabilities": ["preprints de nutrição existentes", "metadados OSF"],
+      "api": {"status": "pública para leitura", "endpoints": ["https://api.osf.io/v2/preprint_providers/nutrixiv/"], "evidence": "API respondeu 200 e informa que não aceita novos trabalhos."},
+      "relevance": {"level": "muito baixa", "inference": "Sem alinhamento com poker/visão."}
+    },
+    {
+      "section": 10,
+      "name": "PeerJ Preprints",
+      "requested_url": "https://peerj.com/preprints/",
+      "probe": {"http_status": 403, "final_url": "https://peerj.com/preprints/", "observation": "Forbidden para o cliente automático; PDFs históricos continuam indexados."},
+      "capabilities": ["arquivo legado de preprints", "DOIs", "PDFs"],
+      "api": {"status": "não verificada", "limitation": "Acesso automatizado à homepage bloqueado."},
+      "relevance": {"level": "baixa", "inference": "Biomedicina/ciências; usar Crossref/CORE para metadados, não integrar scraper."}
+    },
+    {
+      "section": 11,
+      "name": "alphaXiv",
+      "requested_url": "https://alphaxiv.org/",
+      "probe": {"http_status": 200, "final_url": "https://www.alphaxiv.org/", "page_title": "Explore | alphaXiv"},
+      "capabilities": ["descoberta de arXiv", "discussões", "resumos e recomendações"],
+      "api": {"status": "sem API pública estável verificada", "limitation": "Usar IDs arXiv como identificadores canônicos."},
+      "relevance": {"level": "média", "inference": "Boa interface de triagem; resumos/comentários são sinais secundários, não evidência científica."}
+    },
+    {
+      "section": 11,
+      "name": "ar5iv",
+      "requested_url": "https://ar5iv.labs.arxiv.org/",
+      "probe": {"http_status": 200, "final_url": "https://ar5iv.labs.arxiv.org/", "page_title": "ar5iv — Articles from arXiv.org as responsive HTML5 web documents"},
+      "capabilities": ["renderização HTML5 de artigos arXiv", "texto acessível e pesquisável"],
+      "api": {"status": "renderer por ID", "endpoints": ["https://ar5iv.labs.arxiv.org/html/{arxiv_id}"], "limitation": "Não é índice independente; busca/metadados devem vir do arXiv."},
+      "relevance": {"level": "alta como ferramenta", "inference": "Facilita extração/inspeção de papers selecionados, mas não deve substituir PDF/versão canônica."}
+    },
+    {
+      "section": 11,
+      "name": "BASE — Bielefeld Academic Search Engine",
+      "requested_url": "https://www.base-search.net/",
+      "probe": {"http_status": 200, "final_url": "https://www.base-search.net/", "page_title": "UniBi Security Check", "observation": "HTTP 200 serviu um desafio de segurança, não a aplicação de busca."},
+      "capabilities": ["agregação de repositórios", "busca open access", "OAI-PMH e API sob controle de acesso"],
+      "api": {"status": "bloqueada para este IP", "endpoints_tested": ["https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi?func=PerformSearch&query=poker&format=json", "https://oai.base-search.net/"], "evidence": "API retornou JSON 'Access denied'; documentação OAI informa restrição por IP."},
+      "relevance": {"level": "média-alta se autorizado", "inference": "Excelente para teses e literatura cinzenta, mas não há contagem válida nesta execução e não se deve contornar o controle."}
+    },
+    {
+      "section": 11,
+      "name": "CORE",
+      "requested_url": "https://core.ac.uk/",
+      "probe": {"http_status": 200, "final_url": "https://core.ac.uk/", "page_title": "The world’s largest collection of open access research papers"},
+      "capabilities": ["metadados e texto completo OA", "busca", "downloads", "recomendação", "agregação de repositórios"],
+      "api": {"status": "pública com rate limits", "endpoints": ["https://api.core.ac.uk/v3/search/works"], "evidence": "Busca anônima respondeu 200; sete temas medidos."},
+      "relevance": {"level": "alta", "inference": "Priorizar para teses/datasets e texto completo; deduplicar e verificar licença, grupos e qualidade antes de treino."}
+    },
+    {
+      "section": 11,
+      "name": "Crossref Metadata Search",
+      "requested_url": "https://search.crossref.org/",
+      "probe": {"http_status": 200, "final_url": "https://search.crossref.org/", "page_title": "Crossref Metadata Search"},
+      "capabilities": ["metadados DOI", "referências", "agências", "filtros e cursores"],
+      "api": {"status": "pública", "endpoints": ["https://api.crossref.org/works", "https://api.crossref.org/swagger-ui/index.html"], "evidence": "REST respondeu 200; sete temas medidos."},
+      "relevance": {"level": "alta para resolução/deduplicação", "inference": "Usar após descoberta para DOI, versão e metadados; query.bibliographic é ampla e não é ranker semântico."}
+    },
+    {
+      "section": 11,
+      "name": "DBLP",
+      "requested_url": "https://dblp.org/",
+      "probe": {"http_status": 200, "final_url": "https://dblp.org/", "page_title": "dblp: computer science bibliography"},
+      "capabilities": ["bibliografia de computação", "IDs estáveis", "XML/RDF/JSON", "links DOI/arXiv"],
+      "api": {"status": "pública", "endpoints": ["https://dblp.org/search/publ/api"], "evidence": "API respondeu 200; sete temas medidos, com quatro consultas repetidas em ritmo menor após reset de conexão."},
+      "relevance": {"level": "alta", "inference": "Índice de maior precisão temática para IA/CV; usar IDs DBLP para deduplicar e seguir DOI/arXiv."}
+    },
+    {
+      "section": 11,
+      "name": "Dimensions",
+      "requested_url": "https://app.dimensions.ai/",
+      "probe": {"http_status": 202, "final_url": "https://app.dimensions.ai/auth/landing?redirect=%2Fdiscover", "observation": "Redirecionamento para landing de autenticação."},
+      "capabilities": ["publicações", "grants", "patentes", "datasets", "ensaios clínicos", "analytics"],
+      "api": {"status": "condicionada a acesso", "documentation": "https://docs.dimensions.ai/dsl/", "limitation": "Não foi usado login/licença."},
+      "relevance": {"level": "média", "inference": "Bom para landscape e conexões grant/patente, mas não integra ao pipeline sem licença e termos explícitos."}
+    },
+    {
+      "section": 11,
+      "name": "EconPapers",
+      "requested_url": "https://econpapers.repec.org/",
+      "probe": {"http_status": 200, "final_url": "https://econpapers.repec.org/", "page_title": "EconPapers"},
+      "capabilities": ["RePEc", "working papers", "artigos de economia", "séries e autores"],
+      "api": {"status": "metadados RePEc", "limitation": "Nenhuma API JSON de busca geral foi verificada nesta auditoria."},
+      "relevance": {"level": "média", "inference": "Útil para teoria dos jogos, risco e comportamento; fraca para implementação de visão/ML."}
+    },
+    {
+      "section": 11,
+      "name": "Europe PMC",
+      "requested_url": "https://europepmc.org/",
+      "probe": {"http_status": 200, "final_url": "https://europepmc.org/", "page_title": "Europe PMC"},
+      "capabilities": ["literatura biomédica", "preprints", "texto completo", "citações", "anotações"],
+      "api": {"status": "pública", "endpoints": ["https://www.ebi.ac.uk/europepmc/webservices/rest/search"], "evidence": "REST respondeu 200; sete consultas exatas medidas."},
+      "relevance": {"level": "baixa para poker; média para metodologia", "inference": "Pode apoiar validação de calibração/OCR, mas busca exata mostrou forte desalinhamento de domínio."}
+    },
+    {
+      "section": 11,
+      "name": "Google Scholar",
+      "requested_url": "https://scholar.google.com/",
+      "probe": {"http_status": 200, "final_url": "https://scholar.google.com/", "page_title": "Google Acadêmico"},
+      "capabilities": ["busca acadêmica ampla", "cited by", "related articles", "perfis"],
+      "api": {"status": "sem API pública oficial", "limitation": "Não automatizar scraping; buscas não foram contadas."},
+      "relevance": {"level": "alta manual; baixa para pipeline reproduzível", "inference": "Usar para snowballing manual e confirmar citações em fontes primárias."}
+    },
+    {
+      "section": 11,
+      "name": "Hugging Face Papers",
+      "requested_url": "https://huggingface.co/papers",
+      "probe": {"http_status": 200, "final_url": "https://huggingface.co/papers/date/2026-07-17", "page_title": "Daily Papers - Hugging Face"},
+      "capabilities": ["daily/trending papers", "busca", "upvotes", "links arXiv", "associação com ecossistema HF"],
+      "api": {"status": "endpoint público observado", "endpoints": ["https://huggingface.co/api/papers/search"], "evidence": "Sete buscas responderam 200; cada uma retornou 120 itens, sem campo de total."},
+      "relevance": {"level": "alta para novidade", "inference": "Excelente radar de papers/modelos recentes; upvotes e ordem não substituem avaliação experimental."}
+    },
+    {
+      "section": 11,
+      "name": "IDEAS/RePEc",
+      "requested_url": "https://ideas.repec.org/",
+      "probe": {"http_status": 200, "final_url": "https://ideas.repec.org/", "page_title": "Economics and Finance Research | IDEAS/RePEc"},
+      "capabilities": ["busca RePEc", "autores", "séries", "citações e rankings"],
+      "api": {"status": "metadados RePEc", "limitation": "Nenhuma API JSON de busca geral foi verificada."},
+      "relevance": {"level": "média", "inference": "Complementa teoria de jogos/economia comportamental; não é fonte principal para OCR."}
+    },
+    {
+      "section": 11,
+      "name": "INSPIRE HEP",
+      "requested_url": "https://inspirehep.net/",
+      "probe": {"http_status": 200, "final_url": "https://inspirehep.net/", "page_title": "INSPIRE"},
+      "capabilities": ["literatura de física de altas energias", "citações", "autores", "dados e conferências"],
+      "api": {"status": "pública", "endpoints": ["https://inspirehep.net/api/literature"], "evidence": "Busca de teste respondeu 200."},
+      "relevance": {"level": "muito baixa", "inference": "Domínio não alinhado; não priorizar."}
+    },
+    {
+      "section": 11,
+      "name": "Internet Archive Scholar",
+      "requested_url": "https://scholar.archive.org/",
+      "probe": {"http_status": 200, "final_url": "https://scholar.archive.org/", "page_title": "Internet Archive Scholar"},
+      "capabilities": ["busca em literatura preservada", "full text", "links Fatcat/Internet Archive"],
+      "api": {"status": "não verificada nesta auditoria", "limitation": "O link histórico de documentação Fatcat sofreu timeout; nenhuma busca temática em lote foi executada."},
+      "relevance": {"level": "média", "inference": "Útil para recuperar papers órfãos; validar versão, licença e DOI antes de uso."}
+    },
+    {
+      "section": 11,
+      "name": "Lens",
+      "requested_url": "https://www.lens.org/",
+      "probe": {"http_status": 200, "final_url": "https://www.lens.org/", "page_title": "The Lens - Patent and Scholarly Search and Analysis"},
+      "capabilities": ["patentes", "literatura acadêmica", "citações", "analytics"],
+      "api": {"status": "acesso sob solicitação/conta", "documentation": "https://docs.api.lens.org/", "limitation": "Nenhuma credencial foi usada."},
+      "relevance": {"level": "média", "inference": "Útil para busca de patentes de card recognition/OCR; revisar termos antes de exportar dados."}
+    },
+    {
+      "section": 11,
+      "name": "NASA ADS",
+      "requested_url": "https://ui.adsabs.harvard.edu/",
+      "probe": {"http_status": 202, "final_url": "https://ui.adsabs.harvard.edu/", "observation": "Shell de aplicação entregue; conteúdo depende de JavaScript."},
+      "capabilities": ["astronomia e física", "citações", "bibliografias", "métricas"],
+      "api": {"status": "token necessário", "documentation": "https://ui.adsabs.harvard.edu/help/api/", "limitation": "Nenhum token foi usado."},
+      "relevance": {"level": "muito baixa", "inference": "Não priorizar para Poker Arena."}
+    },
+    {
+      "section": 11,
+      "name": "OpenAIRE Explore",
+      "requested_url": "https://explore.openaire.eu/",
+      "probe": {"http_status": 200, "final_url": "https://explore.openaire.eu/", "page_title": "OpenAIRE | Find and Share research"},
+      "capabilities": ["publicações", "datasets", "software", "projetos", "grants e organizações"],
+      "api": {"status": "pública com políticas próprias", "documentation": "https://graph.openaire.eu/docs/apis/graph-api/overview/", "evidence": "A documentação atual identifica V3 como a versão de produção recomendada."},
+      "relevance": {"level": "média-alta", "inference": "Boa para localizar datasets/software financiados na UE e ligar artefatos a projetos; ainda requer validação de licença e versão."}
+    },
+    {
+      "section": 11,
+      "name": "OpenAlex",
+      "requested_url": "https://openalex.org/",
+      "probe": {"http_status": 200, "final_url": "https://openalex.org/", "page_title": "OpenAlex"},
+      "capabilities": ["grafo de works/autores/instituições/fontes", "citações", "topics", "keywords", "snapshot"],
+      "api": {"status": "pública", "endpoints": ["https://api.openalex.org/works"], "evidence": "REST respondeu 200; sete temas medidos."},
+      "relevance": {"level": "alta", "inference": "Base principal para descoberta, deduplicação e citation chasing; busca full text tem recall alto e exige filtro/reranking."}
+    },
+    {
+      "section": 11,
+      "name": "OpenCitations",
+      "requested_url": "https://opencitations.net/",
+      "probe": {"http_status": 200, "final_url": "https://opencitations.net/", "page_title": "OpenCitations - Open Science Research Infrastructure"},
+      "capabilities": ["grafo aberto de citações", "metadados bibliográficos", "SPARQL e REST"],
+      "api": {"status": "pública", "documentation": "https://opencitations.net/index/api/v2", "limitation": "É orientada a identificadores/citações, não a busca temática em linguagem natural."},
+      "relevance": {"level": "média-alta", "inference": "Depois de obter DOI, usar para backward/forward chaining e auditoria de citações; não usar como primeiro buscador temático."}
+    },
+    {
+      "section": 11,
+      "name": "Papers with Code",
+      "requested_url": "https://paperswithcode.com/",
+      "probe": {"http_status": 200, "final_url": "https://huggingface.co/papers/trending", "page_title": "Trending Papers - Hugging Face", "observation": "O domínio e a antiga rota /api/v1/papers redirecionam para Hugging Face Papers."},
+      "capabilities": ["historicamente: papers, code, tasks, datasets e leaderboards", "atualmente: redirecionamento a HF Papers"],
+      "api": {"status": "API histórica não operacional como serviço independente", "endpoints_tested": ["https://paperswithcode.com/api/v1/papers/?q=poker"], "evidence": "Endpoint devolveu HTML de HF Papers após redirecionamento."},
+      "relevance": {"level": "alta como legado; nula como endpoint atual", "inference": "Não construir nova integração PWC; preservar IDs/links históricos e resolver código/modelos em arXiv, GitHub e HF."}
+    },
+    {
+      "section": 11,
+      "name": "PhilPapers",
+      "requested_url": "https://philpapers.org/",
+      "probe": {"http_status": 403, "final_url": "https://philpapers.org/", "observation": "Forbidden para o cliente automático."},
+      "capabilities": ["bibliografia de filosofia", "categorias", "perfis e discussões"],
+      "api": {"status": "não verificada", "limitation": "Sem acesso automatizado nesta auditoria."},
+      "relevance": {"level": "muito baixa", "inference": "Pode contextualizar ética/decisão, mas não melhora diretamente modelos ou dados."}
+    },
+    {
+      "section": 11,
+      "name": "PubMed",
+      "requested_url": "https://pubmed.ncbi.nlm.nih.gov/",
+      "probe": {"http_status": 403, "final_url": "https://pubmed.ncbi.nlm.nih.gov/", "observation": "Homepage bloqueou o cliente automático; E-utilities oficial respondeu 200."},
+      "capabilities": ["índice biomédico", "MeSH", "abstracts", "links PMC"],
+      "api": {"status": "pública", "endpoints": ["https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"], "evidence": "ESearch de teste respondeu 200."},
+      "relevance": {"level": "baixa para poker; média para calibração", "inference": "Usar apenas para métodos de calibração/avaliação em aplicações de alto risco, não para corpus de estratégia."}
+    },
+    {
+      "section": 11,
+      "name": "Scilit",
+      "requested_url": "https://www.scilit.com/",
+      "probe": {"http_status": 200, "final_url": "https://www.scilit.com/", "page_title": "Scientific & Scholarly Research Database | Scilit"},
+      "capabilities": ["literatura", "preprints", "autores", "métricas e busca"],
+      "api": {"status": "não verificada para acesso anônimo", "limitation": "Nenhuma API pública foi usada nesta auditoria."},
+      "relevance": {"level": "média-baixa", "inference": "Pode servir de segunda opinião de metadados; OpenAlex/Crossref/DBLP têm integração mais reproduzível."}
+    },
+    {
+      "section": 11,
+      "name": "SciRate",
+      "requested_url": "https://scirate.com/",
+      "probe": {"http_status": 403, "final_url": "https://scirate.com/", "observation": "Forbidden para o cliente automático."},
+      "capabilities": ["ratings e comentários da comunidade sobre arXiv", "categorias e feeds"],
+      "api": {"status": "sem API pública estável verificada", "limitation": "Não foi tentado contornar o 403."},
+      "relevance": {"level": "baixa-média", "inference": "Sinal social para triagem; jamais usar rating como métrica de qualidade científica."}
+    },
+    {
+      "section": 11,
+      "name": "Semantic Scholar",
+      "requested_url": "https://www.semanticscholar.org/",
+      "probe": {"http_status": 200, "final_url": "https://www.semanticscholar.org/", "page_title": "Semantic Scholar | AI-Powered Research Tool"},
+      "capabilities": ["grafo de papers/autores/citações", "recomendações", "datasets S2AG", "busca por relevância e bulk"],
+      "api": {"status": "pública com rate limits", "endpoints": ["https://api.semanticscholar.org/graph/v1/paper/search", "https://api.semanticscholar.org/graph/v1/paper/search/bulk", "https://api.semanticscholar.org/datasets/v1/release"], "evidence": "Endpoint de relevância devolveu 429 em 6/7 tentativas; endpoint bulk, mais lento, respondeu 200 para os sete temas."},
+      "relevance": {"level": "alta", "inference": "Usar bulk para recall e IDs; aplicar reranking próprio e cache. Não confundir citationCount com validade/adequação."}
+    },
+    {
+      "section": 12,
+      "name": "ASAPbio — Preprint Server Directory",
+      "requested_url": "https://asapbio.org/preprint-servers",
+      "probe": {"http_status": 200, "final_url": "https://asapbio.org/preprint-servers/", "page_title": "Preprint Servers – ASAPbio"},
+      "capabilities": ["diretório de servidores", "disciplinas", "políticas e links"],
+      "api": {"status": "sem API pública verificada", "limitation": "Diretório web, não corpus temático."},
+      "relevance": {"level": "média como metadiretório", "inference": "Útil para expandir a lista de fontes, não para obter diretamente modelos/pesos."}
+    },
+    {
+      "section": 12,
+      "name": "DOAPR — Directory of Open Access Preprint Repositories",
+      "requested_url": "https://doapr.coar-repositories.org/",
+      "probe": {"http_status": 200, "final_url": "https://doapr.coar-repositories.org/", "page_title": "Directory of Open Access Preprint Repositories: Home"},
+      "capabilities": ["diretório COAR de repositórios de preprints", "browse e busca"],
+      "api": {"status": "não verificada", "endpoints_tested": ["https://doapr.coar-repositories.org/server/api"], "evidence": "Rota DSpace presumida retornou 404; nenhuma API foi inferida a partir disso."},
+      "relevance": {"level": "média como metadiretório", "inference": "Serve para descobrir repositórios adicionais; a coleta deve ocorrer nos endpoints oficiais de cada repositório."}
+    },
+    {
+      "section": 12,
+      "name": "OpenDOAR",
+      "requested_url": "https://v2.sherpa.ac.uk/opendoar/",
+      "probe": {"http_status": 200, "final_url": "https://opendoar.ac.uk:443/", "page_title": "OpenDOAR"},
+      "capabilities": ["diretório global de repositórios", "busca por país/assunto/software", "registros curados"],
+      "api": {"status": "chave necessária", "endpoints_tested": ["https://v2.sherpa.ac.uk/cgi/retrieve"], "evidence": "Endpoint retornou 400: parâmetro api-key ausente."},
+      "relevance": {"level": "média-alta como descoberta de fontes", "inference": "Pode localizar OAI/DSpace/EPrints relevantes; não usar sem chave autorizada nem tratar ausência de consulta como zero."}
+    },
+    {
+      "section": 12,
+      "name": "ROAR — Registry of Open Access Repositories",
+      "requested_url": "http://roar.eprints.org/",
+      "probe": {"http_status": 200, "final_url": "https://roar.eprints.org/", "page_title": "Welcome to the Registry of Open Access Repositories"},
+      "capabilities": ["registro de repositórios", "browse", "gráficos de crescimento", "metadados EPrints"],
+      "api": {"status": "OAI-PMH público", "endpoints": ["https://roar.eprints.org/cgi/oai2?verb=Identify"], "evidence": "OAI-PMH respondeu 200."},
+      "relevance": {"level": "média como metadiretório", "inference": "Útil para descobrir endpoints, mas atualidade de cada registro deve ser reprobeada."}
+    },
+    {
+      "section": 12,
+      "name": "SPI-Hub — Scholarly Publishing Information Hub",
+      "requested_url": "https://spi-hub.app.vumc.org/pp-service/browse",
+      "probe": {"http_status": 200, "final_url": "https://spi-hub.app.vumc.org/pp-service/browse", "page_title": "SPI-Hub: Scholarly Publishing Information Hub | Browse List of Preprint Servers"},
+      "capabilities": ["diretório de servidores de preprint", "políticas e características de serviços", "browse"],
+      "api": {"status": "sem API pública verificada", "limitation": "Interface web usada somente para catálogo/políticas."},
+      "relevance": {"level": "média como controle de governança", "inference": "Útil para confirmar status e políticas antes de colher uma fonte; não fornece diretamente corpus técnico."}
+    }
+  ],
+  "thematic_searches": {
+    "queries": [
+      {"theme": "poker_ai", "text": "poker artificial intelligence"},
+      {"theme": "imperfect_information", "text": "imperfect information games"},
+      {"theme": "self_play", "text": "self play reinforcement learning games"},
+      {"theme": "opponent_modeling", "text": "opponent modeling games"},
+      {"theme": "card_recognition", "text": "playing card recognition computer vision"},
+      {"theme": "ocr", "text": "optical character recognition deep learning"},
+      {"theme": "calibration", "text": "probability calibration neural networks"}
+    ],
+    "results": {
+      "openalex": [
+        {"theme": "poker_ai", "reported_count": 5166, "request_url": "https://api.openalex.org/works?search=poker+artificial+intelligence&per-page=2&select=id%2Cdoi%2Ctitle%2Cpublication_year%2Ccited_by_count", "top_id": "W2574978968", "top_title": "DeepStack: Expert-level artificial intelligence in heads-up no-limit poker", "top_doi": "10.1126/science.aam6960"},
+        {"theme": "imperfect_information", "reported_count": 60826, "request_url": "https://api.openalex.org/works?search=imperfect+information+games&per-page=2&select=id%2Cdoi%2Ctitle%2Cpublication_year%2Ccited_by_count", "top_id": "W2086312499", "top_title": "Lossless abstraction of imperfect information games", "top_doi": "10.1145/1284320.1284324"},
+        {"theme": "self_play", "reported_count": 61234, "request_url": "https://api.openalex.org/works?search=self+play+reinforcement+learning+games&per-page=2&select=id%2Cdoi%2Ctitle%2Cpublication_year%2Ccited_by_count", "top_id": "W2902907165", "top_title": "A general reinforcement learning algorithm that masters chess, shogi, and Go through self-play", "top_doi": "10.1126/science.aar6404"},
+        {"theme": "opponent_modeling", "reported_count": 67018, "request_url": "https://api.openalex.org/works?search=opponent+modeling+games&per-page=2&select=id%2Cdoi%2Ctitle%2Cpublication_year%2Ccited_by_count", "top_id": "W166690062", "top_title": "Opponent Modeling in Real-Time Strategy Games"},
+        {"theme": "card_recognition", "reported_count": 48934, "request_url": "https://api.openalex.org/works?search=playing+card+recognition+computer+vision&per-page=2&select=id%2Cdoi%2Ctitle%2Cpublication_year%2Ccited_by_count", "top_id": "W3040838455", "top_title": "Event-Based Vision: A Survey", "precision_warning": "O primeiro resultado não é reconhecimento de cartas; forte falso positivo."},
+        {"theme": "ocr", "reported_count": 39507, "request_url": "https://api.openalex.org/works?search=optical+character+recognition+deep+learning&per-page=2&select=id%2Cdoi%2Ctitle%2Cpublication_year%2Ccited_by_count", "top_id": "W2784570262", "top_title": "Deep learning with Python", "precision_warning": "Resultado amplo, não OCR específico."},
+        {"theme": "calibration", "reported_count": 124113, "request_url": "https://api.openalex.org/works?search=probability+calibration+neural+networks&per-page=2&select=id%2Cdoi%2Ctitle%2Cpublication_year%2Ccited_by_count", "top_id": "W2626967530", "top_title": "On Calibration of Modern Neural Networks", "top_doi": "10.48550/arXiv.1706.04599"}
+      ],
+      "crossref": [
+        {"theme": "poker_ai", "reported_count": 1335608, "request_url": "https://api.crossref.org/works?query.bibliographic=poker+artificial+intelligence&rows=2&select=DOI%2Ctitle%2Cpublished%2Cis-referenced-by-count%2CURL", "top_doi": "10.1016/j.artint.2010.12.005", "top_title": "Computer poker: A review"},
+        {"theme": "imperfect_information", "reported_count": 2866464, "request_url": "https://api.crossref.org/works?query.bibliographic=imperfect+information+games&rows=2&select=DOI%2Ctitle%2Cpublished%2Cis-referenced-by-count%2CURL", "top_doi": "10.7551/mitpress/9674.003.0007", "top_title": "Games with Imperfect Information"},
+        {"theme": "self_play", "reported_count": 4065627, "request_url": "https://api.crossref.org/works?query.bibliographic=self+play+reinforcement+learning+games&rows=2&select=DOI%2Ctitle%2Cpublished%2Cis-referenced-by-count%2CURL", "top_doi": "10.1007/978-3-030-59238-7_7", "top_title": "Self-Play"},
+        {"theme": "opponent_modeling", "reported_count": 1269603, "request_url": "https://api.crossref.org/works?query.bibliographic=opponent+modeling+games&rows=2&select=DOI%2Ctitle%2Cpublished%2Cis-referenced-by-count%2CURL", "top_doi": "10.3390/g12030070", "top_title": "Formalizing Opponent Modeling with the Rock, Paper, Scissors Game"},
+        {"theme": "card_recognition", "reported_count": 3278314, "request_url": "https://api.crossref.org/works?query.bibliographic=playing+card+recognition+computer+vision&rows=2&select=DOI%2Ctitle%2Cpublished%2Cis-referenced-by-count%2CURL", "top_doi": "10.1109/cvpr.2017.363", "top_title": "Level Playing Field for Million Scale Face Recognition", "precision_warning": "Falso positivo lexical."},
+        {"theme": "ocr", "reported_count": 4757774, "request_url": "https://api.crossref.org/works?query.bibliographic=optical+character+recognition+deep+learning&rows=2&select=DOI%2Ctitle%2Cpublished%2Cis-referenced-by-count%2CURL", "top_doi": "10.1109/ICSADL61749.2024.00070", "top_title": "Automatic English Character Entry System based on Novel Optical Character Recognition Algorithm"},
+        {"theme": "calibration", "reported_count": 2172916, "request_url": "https://api.crossref.org/works?query.bibliographic=probability+calibration+neural+networks&rows=2&select=DOI%2Ctitle%2Cpublished%2Cis-referenced-by-count%2CURL", "top_doi": "10.1504/IJADS.2026.10069617", "top_title": "Credit scoring using neural networks and SURE posterior probability calibration"}
+      ],
+      "semantic_scholar_bulk": [
+        {"theme": "poker_ai", "reported_count": 215, "request_url": "https://api.semanticscholar.org/graph/v1/paper/search/bulk?query=poker+artificial+intelligence&fields=title%2Cyear%2Curl%2CcitationCount%2CexternalIds", "top_id": "00f5c93ed1619f972642360db52dfd79c615453d", "top_title": "Using counterfactual regret minimization to create competitive multiplayer poker agents", "top_doi": "10.1145/1838206.1838229"},
+        {"theme": "imperfect_information", "reported_count": 1784, "request_url": "https://api.semanticscholar.org/graph/v1/paper/search/bulk?query=imperfect+information+games&fields=title%2Cyear%2Curl%2CcitationCount%2CexternalIds", "top_id": "00314c680192fdf5e711e0d23c1f6d44cc89e65b", "top_title": "The Impact of Monitoring in Infinitely Repeated Games: Perfect, Public, and Private"},
+        {"theme": "self_play", "reported_count": 423, "request_url": "https://api.semanticscholar.org/graph/v1/paper/search/bulk?query=self+play+reinforcement+learning+games&fields=title%2Cyear%2Curl%2CcitationCount%2CexternalIds", "top_id": "0113edfd40caceeece37ebd8af62171530ba97c6", "top_title": "Managing an Agent's Self-Presentational Strategies During an Interaction", "precision_warning": "Primeiro item não é o alvo; reranking obrigatório."},
+        {"theme": "opponent_modeling", "reported_count": 2137, "request_url": "https://api.semanticscholar.org/graph/v1/paper/search/bulk?query=opponent+modeling+games&fields=title%2Cyear%2Curl%2CcitationCount%2CexternalIds", "top_id": "000351d89ee73f2fa721961129ec9c0758cf20ca", "top_title": "Coordinating Human and Agent Behavior in Collective-Risk Scenarios", "precision_warning": "Bulk é ordenado por ID, não relevância."},
+        {"theme": "card_recognition", "reported_count": 23, "request_url": "https://api.semanticscholar.org/graph/v1/paper/search/bulk?query=playing+card+recognition+computer+vision&fields=title%2Cyear%2Curl%2CcitationCount%2CexternalIds", "top_id": "05270aad7e4c67772961a0db34125b2f90482562", "top_title": "Playing Cards Classification and Detection Using Sequential CNN Model Through Machine Learning Techniques Using Artificial Intelligence", "top_doi": "10.1109/ICEMPS60684.2024.10559365"},
+        {"theme": "ocr", "reported_count": 1387, "request_url": "https://api.semanticscholar.org/graph/v1/paper/search/bulk?query=optical+character+recognition+deep+learning&fields=title%2Cyear%2Curl%2CcitationCount%2CexternalIds", "top_id": "001ea1d89ae3ddf823afe35518c442c1c339d3f4", "top_title": "Real-Time License Plate Recognition and Alert System"},
+        {"theme": "calibration", "reported_count": 769, "request_url": "https://api.semanticscholar.org/graph/v1/paper/search/bulk?query=probability+calibration+neural+networks&fields=title%2Cyear%2Curl%2CcitationCount%2CexternalIds", "top_id": "004ef5c36573e5f6cf112330b3e7200cb6cbad72", "top_title": "Can Machine-learning Techniques Be Used for 5-year Survival Prediction of Patients With Chondrosarcoma?"}
+      ],
+      "dblp": [
+        {"theme": "poker_ai", "reported_count": 7, "request_url": "https://dblp.org/search/publ/api?q=poker+artificial+intelligence&format=json&h=2", "top_id": "conf/aaai/ZhaoYLLX22", "top_title": "AlphaHoldem: High-Performance Artificial Intelligence for Heads-Up No-Limit Poker via End-to-End Reinforcement Learning", "top_doi": "10.1609/aaai.v36i4.20394"},
+        {"theme": "imperfect_information", "reported_count": 261, "request_url": "https://dblp.org/search/publ/api?q=imperfect+information+games&format=json&h=2", "top_id": "phd/hal/Soullard25"},
+        {"theme": "self_play", "reported_count": 6, "request_url": "https://dblp.org/search/publ/api?q=self+play+reinforcement+learning+games&format=json&h=2", "top_id": "journals/corr/abs-2506-24119", "top_title": "SPIRAL", "top_doi": "10.48550/arXiv.2506.24119"},
+        {"theme": "opponent_modeling", "reported_count": 15, "request_url": "https://dblp.org/search/publ/api?q=opponent+modeling+games&format=json&h=2", "top_id": "journals/corr/abs-2508-17671", "top_title": "Consistent Opponent Modeling of Static Opponents in Imperfect-Information Games", "top_doi": "10.48550/arXiv.2508.17671"},
+        {"theme": "card_recognition", "reported_count": 0, "request_url": "https://dblp.org/search/publ/api?q=playing+card+recognition+computer+vision&format=json&h=2", "top_id": null},
+        {"theme": "ocr", "reported_count": 14, "request_url": "https://dblp.org/search/publ/api?q=optical+character+recognition+deep+learning&format=json&h=2", "top_id": "conf/csps/WangGZYHLWYZ18", "top_doi": "10.1007/978-981-13-6508-9_12"},
+        {"theme": "calibration", "reported_count": 2, "request_url": "https://dblp.org/search/publ/api?q=probability+calibration+neural+networks&format=json&h=2", "top_id": "journals/tmi/ZhangDYCD20", "top_doi": "10.1109/TMI.2020.2990625"}
+      ],
+      "core": [
+        {"theme": "poker_ai", "reported_count": 217, "request_url": "https://api.core.ac.uk/v3/search/works?q=poker+artificial+intelligence&limit=2", "top_id": 4763091, "top_title": "Applying machine learning techniques to an imperfect information game", "download_url": "https://core.ac.uk/download/11310605.pdf"},
+        {"theme": "imperfect_information", "reported_count": 2144, "request_url": "https://api.core.ac.uk/v3/search/works?q=imperfect+information+games&limit=2", "top_id": 2527328},
+        {"theme": "self_play", "reported_count": 293, "request_url": "https://api.core.ac.uk/v3/search/works?q=self+play+reinforcement+learning+games&limit=2", "top_id": 2862138},
+        {"theme": "opponent_modeling", "reported_count": 197, "request_url": "https://api.core.ac.uk/v3/search/works?q=opponent+modeling+games&limit=2", "top_id": 4763091},
+        {"theme": "card_recognition", "reported_count": 23, "request_url": "https://api.core.ac.uk/v3/search/works?q=playing+card+recognition+computer+vision&limit=2", "top_id": 75580422, "top_title": "Anglo-American Playing Cards Identification Based on Counting Each Symbols and Scale Invariant Feature Transform (SIFT)", "download_url": "https://core.ac.uk/download/270215513.pdf"},
+        {"theme": "ocr", "reported_count": 425, "request_url": "https://api.core.ac.uk/v3/search/works?q=optical+character+recognition+deep+learning&limit=2", "top_id": 16959344, "top_title": "An application of deep learning in character recognition: An overview", "top_doi": "10.1007/978-3-030-11479-4_3"},
+        {"theme": "calibration", "reported_count": 319, "request_url": "https://api.core.ac.uk/v3/search/works?q=probability+calibration+neural+networks&limit=2", "top_id": 7499547, "precision_warning": "Primeiro resultado não trata diretamente de calibração de classificadores."}
+      ],
+      "hugging_face_papers": [
+        {"theme": "poker_ai", "returned_count": 120, "reported_total": null, "request_url": "https://huggingface.co/api/papers/search?q=poker+artificial+intelligence", "top_id": "2201.11580", "top_title": "DecisionHoldem: Safe Depth-Limited Solving With Diverse Opponents for Imperfect-Information Games", "url": "https://huggingface.co/papers/2201.11580"},
+        {"theme": "imperfect_information", "returned_count": 120, "reported_total": null, "request_url": "https://huggingface.co/api/papers/search?q=imperfect+information+games", "top_id": "2212.12567", "top_title": "Adapting to game trees in zero-sum imperfect information games", "url": "https://huggingface.co/papers/2212.12567"},
+        {"theme": "self_play", "returned_count": 120, "reported_total": null, "request_url": "https://huggingface.co/api/papers/search?q=self+play+reinforcement+learning+games", "top_id": "2506.07468", "url": "https://huggingface.co/papers/2506.07468"},
+        {"theme": "opponent_modeling", "returned_count": 120, "reported_total": null, "request_url": "https://huggingface.co/api/papers/search?q=opponent+modeling+games", "top_id": "2108.01843", "top_title": "Model-Based Opponent Modeling", "url": "https://huggingface.co/papers/2108.01843"},
+        {"theme": "card_recognition", "returned_count": 120, "reported_total": null, "request_url": "https://huggingface.co/api/papers/search?q=playing+card+recognition+computer+vision", "top_id": "2504.04783", "precision_warning": "Resultado é card-based games, não reconhecimento visual."},
+        {"theme": "ocr", "returned_count": 120, "reported_total": null, "request_url": "https://huggingface.co/api/papers/search?q=optical+character+recognition+deep+learning", "top_id": "2402.02246", "url": "https://huggingface.co/papers/2402.02246"},
+        {"theme": "calibration", "returned_count": 120, "reported_total": null, "request_url": "https://huggingface.co/api/papers/search?q=probability+calibration+neural+networks", "top_id": "1706.04599", "top_title": "On Calibration of Modern Neural Networks", "url": "https://huggingface.co/papers/1706.04599"}
+      ],
+      "europe_pmc_exact_phrase": [
+        {"theme": "poker_ai", "reported_count": 0, "request_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE_ABS%3A%22poker+artificial+intelligence%22&format=json&pageSize=2&resultType=core"},
+        {"theme": "imperfect_information", "reported_count": 8, "request_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE_ABS%3A%22imperfect+information+games%22&format=json&pageSize=2&resultType=core", "top_id": "PPR1192464", "top_title": "Hybrid Multi-Agent AI/MCTS Systems for Complex Information-Imperfect Games", "top_doi": "10.22541/au.176405957.77536600/v1"},
+        {"theme": "self_play", "reported_count": 0, "request_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE_ABS%3A%22self+play+reinforcement+learning+games%22&format=json&pageSize=2&resultType=core"},
+        {"theme": "opponent_modeling", "reported_count": 0, "request_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE_ABS%3A%22opponent+modeling+games%22&format=json&pageSize=2&resultType=core"},
+        {"theme": "card_recognition", "reported_count": 0, "request_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE_ABS%3A%22playing+card+recognition+computer+vision%22&format=json&pageSize=2&resultType=core"},
+        {"theme": "ocr", "reported_count": 0, "request_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE_ABS%3A%22optical+character+recognition+deep+learning%22&format=json&pageSize=2&resultType=core"},
+        {"theme": "calibration", "reported_count": 0, "request_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE_ABS%3A%22probability+calibration+neural+networks%22&format=json&pageSize=2&resultType=core"}
+      ]
+    },
+    "blocked_or_migrated_searches": [
+      {"platform": "BASE", "query": "poker artificial intelligence", "request_url": "https://www.base-search.net/Search/Results?lookfor=poker+artificial+intelligence&type=all&oaboost=1&ling=1", "http_status": 200, "result": "UniBi Security Check; nenhuma contagem obtida."},
+      {"platform": "BASE API", "query": "poker", "request_url": "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi?func=PerformSearch&query=poker&format=json", "http_status": 200, "result": "JSON Access denied for IP/user agent; nenhuma contagem obtida."},
+      {"platform": "Papers with Code", "query": "poker", "request_url": "https://paperswithcode.com/api/v1/papers/?q=poker", "http_status": 200, "final_url": "https://huggingface.co/papers/trending", "result": "HTML de HF Papers; sem API PWC independente."},
+      {"platform": "arXiv Atom", "queries_attempted": 7, "endpoint": "https://export.arxiv.org/api/query", "result": "Quatro respostas 429/Too Many Requests e três timeouts; nenhuma contagem reportada. O intervalo entre consultas foi superior a 3 s."},
+      {"platform": "Semantic Scholar relevance search", "queries_attempted": 7, "endpoint": "https://api.semanticscholar.org/graph/v1/paper/search", "result": "Seis respostas 429; uma resposta 200 (self-play, total 5528). O endpoint bulk foi usado depois, sem chave, em ritmo menor e está registrado acima."}
+    ]
+  },
+  "high_value_primary_evidence": [
+    {"topic": "poker solving", "title": "DeepStack: Expert-level artificial intelligence in heads-up no-limit poker", "doi": "10.1126/science.aam6960", "openalex_id": "W2574978968", "url": "https://doi.org/10.1126/science.aam6960", "observed_signal": "Primeiro resultado relevante no OpenAlex para poker AI; 813 citações reportadas no snapshot.", "inference": "Referência obrigatória para continual re-solving e value functions; não transfere automaticamente a 6-max."},
+    {"topic": "poker reinforcement learning", "title": "AlphaHoldem", "doi": "10.1609/aaai.v36i4.20394", "dblp_id": "conf/aaai/ZhaoYLLX22", "url": "https://dblp.org/rec/conf/aaai/ZhaoYLLX22", "observed_signal": "Primeiro resultado DBLP para poker AI.", "inference": "Candidato de ablação/benchmark de RL em heads-up; escopo e protocolo devem ser preservados."},
+    {"topic": "safe depth-limited solving", "title": "DecisionHoldem", "arxiv_id": "2201.11580", "url": "https://huggingface.co/papers/2201.11580", "observed_signal": "Primeiro resultado HF Papers para poker AI.", "inference": "Relevante para combinar diversidade de oponentes e search; exigir reprodução antes de adoção."},
+    {"topic": "opponent modeling", "title": "Model-Based Opponent Modeling", "arxiv_id": "2108.01843", "url": "https://huggingface.co/papers/2108.01843", "observed_signal": "Primeiro resultado HF Papers da consulta de opponent modeling.", "inference": "Apoia separar belief/modelo do oponente da política base e avaliar exploração versus robustez."},
+    {"topic": "opponent modeling recente", "title": "Consistent Opponent Modeling of Static Opponents in Imperfect-Information Games", "arxiv_id": "2508.17671", "dblp_id": "journals/corr/abs-2508-17671", "url": "https://dblp.org/rec/journals/corr/abs-2508-17671", "observed_signal": "Primeiro resultado DBLP em 2026-07-17 para opponent modeling games.", "inference": "Candidato de leitura/replicação; verificar pressuposto de oponente estático antes de aplicar a jogadores adaptativos."},
+    {"topic": "calibration", "title": "On Calibration of Modern Neural Networks", "arxiv_id": "1706.04599", "doi": "10.48550/arXiv.1706.04599", "url": "https://huggingface.co/papers/1706.04599", "observed_signal": "Primeiro resultado relevante no OpenAlex e HF Papers.", "inference": "Temperature scaling é baseline obrigatório, mas deve ser ajustado somente em validation set independente e comparado com ECE adaptativa, NLL e Brier."},
+    {"topic": "playing-card vision", "title": "Playing Cards Classification and Detection Using Sequential CNN Model Through Machine Learning Techniques Using Artificial Intelligence", "doi": "10.1109/ICEMPS60684.2024.10559365", "semantic_scholar_id": "05270aad7e4c67772961a0db34125b2f90482562", "url": "https://www.semanticscholar.org/paper/05270aad7e4c67772961a0db34125b2f90482562", "observed_signal": "Primeiro registro do bulk Semantic Scholar para a consulta específica; 1 citação reportada.", "inference": "Evidência fraca/recente: serve como comparação bibliográfica, não como justificativa para substituir o detector atual."},
+    {"topic": "playing-card classical vision", "title": "Anglo-American Playing Cards Identification Based on Counting Each Symbols and SIFT", "core_id": 75580422, "url": "https://core.ac.uk/download/270215513.pdf", "observed_signal": "Primeiro resultado CORE específico; duplicata do mesmo trabalho apareceu no segundo resultado.", "inference": "SIFT/counting é baseline clássico útil para teste de regressão e revela a necessidade de deduplicação; não prova robustez em screenshots."}
+  ],
+  "recommended_actions": [
+    {"priority": "P0", "action": "Criar um pipeline de descoberta em camadas: DBLP/HF/OpenAlex para candidatos; Crossref para DOI/versão; Semantic Scholar/OpenCitations para citation chasing; CORE/OSF/DSpace para full text/dados.", "basis": "inference supported by observed API availability and false-positive patterns"},
+    {"priority": "P0", "action": "Persistir query, timestamp, provider, raw count, IDs e URL; não comparar counts entre índices nem transformar 120 itens HF em total.", "basis": "evidence: different search semantics, fixed HF returned_count, broad Crossref/OpenAlex counts"},
+    {"priority": "P0", "action": "Aplicar reranking supervisionado por critérios do projeto: domínio poker, 2–9 jogadores, NLHE, observabilidade, licença, código/pesos, protocolo e split por fonte/grupo.", "basis": "evidence: first-result false positives in card recognition, OCR, calibration and Semantic Scholar bulk"},
+    {"priority": "P1", "action": "Adicionar DeepStack, AlphaHoldem, DecisionHoldem e Model-Based Opponent Modeling a uma matriz de replicação, sem alegar transferência para 6-max até existir benchmark controlado.", "basis": "primary identifiers found across independent indexes"},
+    {"priority": "P1", "action": "Para visão, manter o trabalho CNN 2024 e SIFT 2017 apenas como baselines; exigir dataset de screenshots reais, groups independentes, mAP50-95/per-class, OCR CER e calibração antes de promoção.", "basis": "direct card-specific hits are scarce and weakly cited"},
+    {"priority": "P1", "action": "Implementar temperature scaling como baseline pós-hoc e medir NLL, Brier, ECE adaptativa e reliability diagrams em holdout independente.", "basis": "On Calibration of Modern Neural Networks was consistently retrieved"},
+    {"priority": "P2", "action": "Solicitar acesso oficial ao BASE/OpenDOAR apenas se a lacuna de literatura cinzenta justificar; não contornar security checks nem coletar Academia/ResearchGate/Scholar por scraping.", "basis": "observed access controls and lack of stable public APIs"},
+    {"priority": "P2", "action": "Remover Papers with Code como dependência viva da arquitetura e redirecionar descoberta recente a HF Papers + repositório de código canônico.", "basis": "observed PWC domain/API redirect to HF Papers"}
+  ],
+  "limitations": [
+    "Snapshot mutável de 2026-07-17; rankings, contagens e redirecionamentos podem mudar.",
+    "Não houve acesso a conteúdo atrás de login/paywall nem uso de credenciais privadas.",
+    "403/405/202/security-check descrevem este cliente e instante; não provam indisponibilidade a uma pessoa no navegador.",
+    "As consultas são deliberadamente iguais entre provedores; como a semântica de busca difere, os counts medem universos distintos.",
+    "Top results são retornos do índice, não uma aprovação científica; avisos de precisão registram falsos positivos observados.",
+    "Nenhum paper/modelo/dataset foi incorporado ao produto nesta etapa; recomendações exigem gates de licença, reproduzibilidade e validação externa."
+  ]
+}

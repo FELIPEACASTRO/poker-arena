@@ -1,0 +1,6 @@
+Swagger UI 5.17.14 license pointer
+
+The official swagger-ui-dist@5.17.14 npm tarball does not publish this
+webpack-referenced filename. Its verbatim upstream Apache-2.0 LICENSE and
+NOTICE are stored in LICENSE and NOTICE beside this file. See receipt.json
+for package origin and SHA-256 checksums.

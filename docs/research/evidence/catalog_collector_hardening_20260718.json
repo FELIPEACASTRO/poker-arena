@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-07-18",
+  "historical_snapshot": "docs/research/evidence/catalog_search_snapshot_20260718.json",
+  "historical_snapshot_collector_sha256": "9865f06769a5ce07330eb4f087cf32c9c1ed9f27596d87e29ca7181c519e4749",
+  "hardened_collector": "backend/scripts/catalog_search_receipt.py",
+  "hardened_collector_sha256": "612ab5f2b98e8c68637b678347b8041eb4429543fb5614dcd0bca76a8e8e96e1",
+  "transport_controls": {
+    "environment_and_system_proxies_disabled": true,
+    "redirects_refused": true,
+    "https_only": true,
+    "userinfo_and_nondefault_ports_refused": true,
+    "hosts_and_api_path_prefixes_allowlisted": true
+  },
+  "evidence_boundary": "This receipt records a post-collection hardening change. The historical snapshot was not recollected or rewritten, and therefore retains the SHA-256 of the collector that actually produced it."
+}

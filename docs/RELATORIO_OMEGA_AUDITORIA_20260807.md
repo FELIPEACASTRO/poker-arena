@@ -251,7 +251,7 @@ execução sobre árvore limpa.
 | T38 Build/toolchain | Sim | Sim | build TS, lint, format policy, notebooks, pinned tools | Ω26,Ω45,Ω46 | gate integral | bit-reproducibility não provada |
 | T39 Dependências | Sim | Sim | locks, npm audit, pip-audit | 0 | advisory snapshot: 0 conhecidas | vulnerabilidade desconhecida |
 | T40 Config/flags | Sim | Sim | env allowlist, startup fail-closed | Ω19 | config/API tests | drift do host da banca |
-| T41 Deploy/release | Sim | Pendente | clean tree e distribution contract | Ω13 | gate será registrado na §18 | assinatura/SLSA externa ausente |
+| T41 Deploy/release | Sim | Sim | clean tree e distribution contract | Ω13,Ω46 | gate 16/16 e preflight na §18 | assinatura/SLSA externa ausente |
 | T42 Cloud/container | Parcial | Parcial | compose/nginx static contract | 0 | deploy validator | sem deploy real e sem quotas cgroup |
 | T43 Confiabilidade | Sim | Sim | fault injection/readiness/idempotência | Ω20,Ω21,Ω28 | tests regressão | soak multi-dia ausente |
 | T44 Performance/capacidade | Sim | Sim | receipt P95 5 cenários com source+lock+runtime instalado | Ω03,Ω35,Ω43 | receipt v4 versionado | 7 amostras/cenário, host único |
@@ -359,7 +359,7 @@ execução sobre árvore limpa.
 | C07 | fixture sintética é reconhecida | screenshot real rotulado não é | demo fixture | real_eval | resolvida | fixture prova pipeline, não generalização |
 | C08 | fidelidade a regras | house rules não são universais | README | TDA/Robert/PokerKit | resolvida | perfil e exceção odd-chip documentados |
 | C09 | VLM pode ajudar | transmissão remota amplia risco | feature | privacy threat model | resolvida localmente | desabilitado na banca; consentimento explícito fora dela |
-| C10 | gates finais ainda não executados no snapshot limpo | novos bugs ainda podem existir mesmo após aprovação | estado pré-release | natureza incompleta de testes | pendente/permanente | preencher §18; conclusão nunca usa “bug-free” |
+| C10 | gates finais ainda não executados no snapshot limpo | novos bugs ainda podem existir mesmo após aprovação | estado pré-release | natureza incompleta de testes | resolvida no snapshot/permanente no desconhecido | gate 16/16 e preflight na §18; conclusão nunca usa “bug-free” |
 | C11 | “quota de logs” parecia global | limite implementado é 64 MiB por arquivo | texto anterior | código/refutação | resolvida no relatório | classes T18/T30/T48/T79 rebaixadas e risco total explícito |
 | C12 | receipt válido em qualquer ambiente/idade | medição só vale no runtime e janela declarados | verifier anterior | TEVV/refutação | resolvida | fingerprint exato + expiração de 30 dias |
 | C13 | lock/hash estreito provaria o runtime medido | módulos/dependências/CPU omitidos podiam variar | receipt anterior | refutação de closure | resolvida | package Python completo + lock + todas as distribuições/versões instaladas; novo receipt v4 obrigatório |
@@ -484,7 +484,7 @@ execução sobre árvore limpa.
 44. **LLM virou fato sem grounding?** Não; F3 é proposta diagnóstica e se abstém.
 45. **Agente tem agency excessiva?** Agente independente foi read-only; correções ficaram no agente principal.
 46. **Correção enfraqueceu testes?** Não; ONNX ficou mais real e o oracle de raise mais estrito.
-47. **Correção criou regressão?** Nenhuma nos testes focados; o gate clean-tree ainda será registrado na §18 e não exclui regressão desconhecida.
+47. **Correção criou regressão?** O primeiro gate revelou Ω46 e foi reprovado; após a correção, 1093 backend, 77 frontend e 9 E2E passaram no gate clean-tree. Isso não exclui regressão desconhecida.
 48. **Há causa alternativa?** Sim em alguns casos; contradições e house rules preservam alternativas.
 49. **Segundo revisor reproduziria?** Os gates, receipts, hashes e casos dirigidos, sim. Os três fuzzes ad hoc históricos não integralmente: seeds/resultados existem, mas os harnesses não foram preservados e não são usados como gate.
 50. **Há evidência independente do efeito final?** Sim para casos dirigidos, replay, contratos Ω42/Ω43 e execução focada; fuzz ad hoc é apenas histórico e não há evidência externa de generalização visual.
@@ -501,7 +501,25 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\assets\validar.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\assets\preflight_banca.ps1
 ```
 
-Resultado do snapshot final: **a preencher após commit e execução clean-tree**.
+O primeiro run clean-tree, sobre `c0d87f6`, foi corretamente **reprovado em 2/16 etapas**:
+coverage excedeu o timeout de 600 s e o E2E remoto ainda esperava o identificador de redação
+anterior. Nenhum dos dois foi ocultado. A correção Ω46 gerou o snapshot funcional
+`05f86e7be94b2410220aa123413fc96a45af4a4f`.
+
+Resultado autoritativo após a correção: **16/16 gates aprovados** em árvore limpa; duração do
+wrapper 836,7 s. Evidência observada:
+
+- backend: **1093/1093** testes; branch coverage satisfez o gate `>=85%`;
+- Ruff lint + política de formato, notebook security lint e mypy: aprovados;
+- contrato de distribuição, scanner da raiz (`0` achados), OpenAPI e perfil público: aprovados;
+- `pip-audit` do export locked e `npm audit --audit-level=high`: aprovados;
+- frontend: **77/77** testes, **9/9 E2E**, build TypeScript/Vite e ESLint aprovados;
+- `assets/preflight_banca.ps1`: `READY_FOR_LOCAL_DEFENSE`, Git limpo, rede não necessária,
+  VLM remoto desativado, `secret_findings=0`, F1 bloqueado para decisão e latência warm
+  observada de 1122,4 ms no fixture sintético.
+
+Depois desta atualização documental, o mesmo gate e o preflight devem ser repetidos no
+commit final para que o relatório também pertença ao snapshot validado.
 
 ### Rubrica no escopo local supervisionado
 

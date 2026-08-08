@@ -49,6 +49,26 @@ comprovadas, nunca como aprovadas.
   obrigatórias antes de qualquer uso fora da banca. Receipts de promoção F2 e de desempenho
   expiram após 30 dias; mudança no pipeline, código ligado, ambiente ou lock os invalida antes.
 
+## Confiabilidade da inteligência competitiva
+
+- Perfis competitivos usam exclusivamente eventos da sessão local e uma identidade interna
+  imutável. Não importam históricos externos, não compartilham perfis e não fornecem conselho
+  para mesas reais.
+- Cada frequência contextual preserva sucessos e oportunidades. A média posterior Beta(1,1),
+  o intervalo Wilson 95% da frequência observada e a fração operacional de evidência são
+  grandezas distintas e devem permanecer nomeadas separadamente na API e na interface.
+- A camada se abstém antes de 12 oportunidades e classifica 12–29 como evidência emergente;
+  esses limiares são decisões operacionais da demonstração, não constantes universais nem
+  resultado de teste de poder.
+- Posição exata/regional, papel pré-flop (RFI, limp, isolamento, call/3-bet/4-bet,
+  squeeze, roubo/defesa e blind-versus-blind), resposta a aposta/raise e ordem IP/OOP são
+  calculados antes da ação ser aplicada. Contagens ambíguas ou fora do contrato falham
+  explicitamente.
+- EWMA é somente um resumo heurístico de recência. Nenhuma frequência, intervalo, rótulo de
+  estilo ou mudança recente altera a política de um bot nesta versão.
+- Os sinais são pré-definidos e não sustentam inferência causal, significância estatística,
+  força da mão privada, vantagem estratégica ou generalização para jogadores externos.
+
 ## Desempenho e disponibilidade
 
 - O endpoint de saúde deve responder sem carregar modelos pesados. Readiness degrada de

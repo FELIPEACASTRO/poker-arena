@@ -34,6 +34,7 @@ from ..engine.game import Hand
 from ..engine.player import Player, PlayerStatus
 from ..engine.table import Table
 from .bot_factory import create_bot
+from .competitive_intelligence import build_profile
 from .match_log import MatchLogCheckpoint, MatchLogger
 from .views import (
     ActionView,
@@ -514,13 +515,21 @@ class GameSession:
         seat = self._hand.to_act
         player = self._hand.players[seat]
         to_call = self._hand.amount_to_call()
+        in_position = self._postflop_in_position(seat)
         aggressive = at == ActionType.RAISE or (
             at == ActionType.ALL_IN and player.current_bet + player.stack > self._hand.current_bet
         )
         self._hand.apply(action)  # valida antes de publicar efeitos observáveis
         if self._opp_model is not None:  # auto-learning: aprende o estilo do humano
             self._opp_model.observe(action_type, to_call=to_call, aggressive=aggressive)
-        self._log_action(seat, action, None, aggressive=aggressive)
+        self._log_action(
+            seat,
+            action,
+            None,
+            aggressive=aggressive,
+            to_call=to_call,
+            in_position=in_position,
+        )
         self._record(seat, action)
         self._advance()
         self._version += 1
@@ -686,6 +695,7 @@ class GameSession:
                 player_id=player_id,
                 name=info["name"],
                 level=info["level"],
+                position=info["position"],
                 stack=p["stack"],
                 delta=p["stack"] - p["buy_in_total"],
                 buy_in_total=p["buy_in_total"],
@@ -705,6 +715,7 @@ class GameSession:
                     )
                     for b, (hands, vp, pf) in p["pos"].items()
                 ],
+                competitive_profile=build_profile(p),
             )
 
         bots = [_bot_stat(player_id) for player_id in player_ids]
@@ -801,12 +812,20 @@ class GameSession:
         if self._human_seat is None:  # laboratório: raciocínio didático desta jogada
             self._last_reasoning = self._build_reasoning(seat, obs, action, ins)
         player = hand.players[seat]
+        in_position = self._postflop_in_position(seat)
         aggressive = action.type == ActionType.RAISE or (
             action.type == ActionType.ALL_IN
             and player.current_bet + player.stack > hand.current_bet
         )
         hand.apply(action)
-        self._log_action(seat, action, ins, aggressive=aggressive)
+        self._log_action(
+            seat,
+            action,
+            ins,
+            aggressive=aggressive,
+            to_call=obs.to_call,
+            in_position=in_position,
+        )
         self._record(seat, action)
 
     def _build_reasoning(
@@ -828,11 +847,20 @@ class GameSession:
         ins: BotInsight | None,
         *,
         aggressive: bool | None = None,
+        to_call: int = 0,
+        in_position: bool | None = None,
     ) -> None:
         p = self._hand.players[seat]
         street = _STREET.get(len(self._hand.board), str(len(self._hand.board)))
         if self._stats is not None:
-            self._stats.action(self._player_id(p), action.type.value, street, aggressive=aggressive)
+            self._stats.action(
+                self._player_id(p),
+                action.type.value,
+                street,
+                aggressive=aggressive,
+                to_call=to_call,
+                in_position=in_position,
+            )
         if self._logger is not None:
             self._logger.action(
                 seat,
@@ -845,6 +873,25 @@ class GameSession:
                 _cards(self._hand.board),
                 _insight_dict(ins),
             )
+
+    def _postflop_in_position(self, seat: int) -> bool | None:
+        """Whether ``seat`` acts last among players still able to act post-flop."""
+        hand = self._hand
+        if not hand.board:
+            return None
+        active = [
+            index
+            for index, player in enumerate(hand.players)
+            if player.status == PlayerStatus.ACTIVE
+        ]
+        if seat not in active:
+            return None
+        n = len(hand.players)
+
+        def order(index: int) -> int:
+            return (index - hand.button - 1) % n
+
+        return order(seat) == max(order(index) for index in active)
 
     def _finish_hand(self) -> None:
         winners = self._hand.resolve()

@@ -321,6 +321,22 @@ def test_watch_mode_steps_through_a_hand(client):
     assert all(s["kind"] != "human" for s in data["seats"])
     assert all(s["cards"] is not None for s in data["seats"])  # cartas abertas
     assert data["phase"] in ("bot_turn", "hand_over")
+    assert data["watch_stats"]["bots"]
+    for bot in data["watch_stats"]["bots"]:
+        assert bot["position"]
+        profile = bot["competitive_profile"]
+        assert profile["version"] == "ci-local-v1"
+        assert profile["scope"] == "local_session_only"
+        assert profile["authority"] == "descriptive_only_no_action_advice"
+        assert profile["minimum_opportunities"] == 12
+        assert profile["signals"]
+        assert any(
+            signal["key"] == f"position_exact_{bot['position']}_vpip"
+            and signal["opportunities"] == 1
+            for signal in profile["signals"]
+        )
+        assert all(0 <= signal["evidence_fraction"] <= 1 for signal in profile["signals"])
+        assert all(signal["ready"] is False for signal in profile["signals"])
     for _ in range(200):
         st = client.get(f"/tables/{tid}").json()
         if st["phase"] == "bot_turn":

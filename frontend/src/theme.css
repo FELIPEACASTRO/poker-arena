@@ -822,6 +822,18 @@ body {
 /* stats extras de HUD (WTSD, W$SD, VPIP por região) */
 .style-extra { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 5px; }
 .style-extra > span { font-size: 10px; color: var(--text-dim); background: var(--surface-3); padding: 1px 7px; border-radius: var(--r-pill); cursor: help; }
+.ci-details { margin-top: 5px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); padding: 6px 8px; }
+.ci-details > summary { cursor: pointer; font-size: 10px; color: var(--text); font-weight: 650; }
+.ci-details > summary b { color: var(--accent); margin-left: 4px; }
+.ci-scope, .ci-method, .ci-recency { margin: 6px 0 0; font-size: 9px; line-height: 1.35; color: var(--text-faint); }
+.ci-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: 7px; }
+.ci-signal { min-width: 0; border-left: 2px solid var(--border); padding-left: 6px; display: flex; flex-direction: column; gap: 1px; }
+.ci-signal.ready { border-left-color: var(--accent); }
+.ci-signal > span { color: var(--text-dim); font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ci-signal > b { color: var(--text); font-size: 10px; font-weight: 650; }
+.ci-signal > b small { display: block; color: var(--text-faint); font-size: 8px; font-weight: 400; }
+.ci-recency { color: var(--text-dim); }
+@media (max-width: 720px) { .ci-grid { grid-template-columns: 1fr; } }
 
 /* estatísticas da sessão */
 .sess-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }

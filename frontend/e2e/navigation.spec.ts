@@ -372,6 +372,14 @@ test('modo laboratório cobre configuração, painéis, pausa, velocidade e pass
   await expect(page.getByText('Placar do laboratório')).toBeVisible()
   await expect(page.getByText('Estilo de cada IA')).toBeVisible()
   await expect(page.getByText('Estatísticas da sessão')).toBeVisible()
+  const competitiveProfile = page.locator('details.ci-details').first()
+  await expect(competitiveProfile).toBeVisible()
+  await competitiveProfile.locator('summary').click()
+  await expect(
+    competitiveProfile.getByText('Sessão local · somente descritivo · nenhuma ação recomendada'),
+  ).toBeVisible()
+  await expect(competitiveProfile.getByText(/abstém/).first()).toBeVisible()
+  await expect(competitiveProfile.getByText(/Frequência não prova causa/)).toBeVisible()
 
   await page.getByRole('button', { name: 'Pausar' }).click()
   await expect(page.getByRole('button', { name: 'Continuar' })).toBeVisible()

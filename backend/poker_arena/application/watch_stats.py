@@ -28,6 +28,13 @@ from __future__ import annotations
 
 from collections import deque
 
+from .competitive_intelligence import (
+    EXACT_POSITIONS,
+    new_context_counts,
+    record_context,
+    update_ewma,
+)
+
 _AGGR = {"raise", "all_in"}  # ações agressivas
 _VPIP = {"call", "raise", "all_in"}  # entrou voluntariamente no pote
 _POSTFLOP = {"flop", "turn", "river"}
@@ -76,6 +83,10 @@ def _new_per() -> dict:
         "buy_in_total": 0,
         # por região: bucket -> [mãos, vpip, pfr]
         "pos": {b: [0, 0, 0] for b in POS_BUCKETS},
+        # por posição canônica exata: posição -> [mãos, vpip, pfr]
+        "pos_exact": {position: [0, 0, 0] for position in EXACT_POSITIONS},
+        "ci": new_context_counts(),
+        "ci_ewma_aggression": None,
     }
 
 
@@ -93,10 +104,16 @@ class WatchStats:
         self._pfr_hand: set[str] = set()
         self._saw_flop_hand: set[str] = set()
         self._bucket_hand: dict[str, str] = {}  # player_id -> região nesta mão
+        self._preflop_acted: set[str] = set()
+        self._preflop_voluntary_seen = False
+        self._preflop_raises = 0
+        self._preflop_opener_position: str | None = None
+        self._preflop_callers_after_raise = 0
+        self._position_hand: dict[str, str] = {}
         self._hand_player_ids: set[str] = set()
         self._hand_open = False
 
-    def _ensure(self, player_id: str, name: str, level: str, seat: int) -> None:
+    def _ensure(self, player_id: str, name: str, level: str, seat: int, position: str) -> None:
         if player_id not in self.per:
             self.per[player_id] = _new_per()
         self.info[player_id] = {
@@ -104,6 +121,7 @@ class WatchStats:
             "name": name,
             "level": level,
             "seat": seat,
+            "position": position,
         }  # cadeira mais recente
 
     def begin_hand(self, seats: list[dict]) -> None:
@@ -124,10 +142,22 @@ class WatchStats:
         self._pfr_hand.clear()
         self._saw_flop_hand.clear()
         self._bucket_hand.clear()
+        self._preflop_acted.clear()
+        self._preflop_voluntary_seen = False
+        self._preflop_raises = 0
+        self._preflop_opener_position = None
+        self._preflop_callers_after_raise = 0
+        self._position_hand.clear()
         for s in seats:
             player_id = _player_key(s)
             is_new = player_id not in self.per
-            self._ensure(player_id, s["name"], s["level"], s["seat"])
+            self._ensure(
+                player_id,
+                s["name"],
+                s["level"],
+                s["seat"],
+                s.get("position", ""),
+            )
             p = self.per[player_id]
             p["hands_dealt"] += 1
             p["stack"] = s["start"]
@@ -135,8 +165,12 @@ class WatchStats:
                 p["start"] = s["start"]
                 p["buy_in_total"] = s["start"]
             bucket = bucket_of(s.get("position", ""))
+            exact_position = s.get("position", "")
             self._bucket_hand[player_id] = bucket
+            self._position_hand[player_id] = exact_position
             p["pos"][bucket][0] += 1
+            if exact_position in p["pos_exact"]:
+                p["pos_exact"][exact_position][0] += 1
         self._start_set = True
         self._hand_open = True
 
@@ -169,6 +203,8 @@ class WatchStats:
         street: str,
         *,
         aggressive: bool | None = None,
+        to_call: int = 0,
+        in_position: bool | None = None,
     ) -> None:
         if not self._hand_open:
             raise ValueError("ação recebida sem uma mão estatística aberta")
@@ -178,20 +214,78 @@ class WatchStats:
             raise ValueError("ação ou rua estatística inválida")
         if aggressive is not None and type(aggressive) is not bool:
             raise ValueError("flag de agressão deve ser booleana")
+        if type(to_call) is not int or to_call < 0:
+            raise ValueError(
+                "valor a pagar da inteligência competitiva deve ser inteiro não negativo"
+            )
+        if in_position is not None and type(in_position) is not bool:
+            raise ValueError("contexto IP/OOP deve ser booleano")
         p = self.per[player_id]
         is_aggressive = action_type in _AGGR if aggressive is None else aggressive
         p["actions"] += 1
+        p["ci_ewma_aggression"] = update_ewma(p["ci_ewma_aggression"], is_aggressive)
         if is_aggressive:
             p["aggressive"] += 1
         if street == "preflop":
+            first_decision = player_id not in self._preflop_acted
+            position = self._position_hand[player_id]
+            unopened = not self._preflop_voluntary_seen
+            raises_before = self._preflop_raises
+            facing_raise = raises_before >= 1 and to_call > 0
+            if first_decision and unopened:
+                record_context(p["ci"], "preflop_open_raise", is_aggressive)
+                record_context(p["ci"], "preflop_limp", action_type == "call")
+                if position in {"CO", "BTN", "SB"}:
+                    record_context(p["ci"], "late_position_steal", is_aggressive)
+                if position == "SB":
+                    record_context(p["ci"], "blind_vs_blind_sb_open", is_aggressive)
+            if first_decision and raises_before == 0 and not unopened:
+                record_context(p["ci"], "preflop_isolation_raise", is_aggressive)
+            if first_decision and raises_before == 1 and to_call > 0:
+                record_context(p["ci"], "preflop_three_bet", is_aggressive)
+                if self._preflop_callers_after_raise >= 1:
+                    record_context(p["ci"], "preflop_squeeze", is_aggressive)
+            if first_decision and raises_before == 2 and to_call > 0:
+                record_context(p["ci"], "preflop_four_bet", is_aggressive)
+            if first_decision and facing_raise:
+                record_context(p["ci"], "preflop_fold_to_raise", action_type == "fold")
+                record_context(p["ci"], "preflop_call_vs_raise", action_type == "call")
+                if self._bucket_hand[player_id] == "blinds":
+                    record_context(p["ci"], "blind_defense", action_type != "fold")
+                if (
+                    raises_before == 1
+                    and position in {"SB", "BB"}
+                    and self._preflop_opener_position in {"CO", "BTN", "SB"}
+                ):
+                    record_context(p["ci"], "blind_fold_to_steal", action_type == "fold")
+                if (
+                    raises_before == 1
+                    and position == "BB"
+                    and self._preflop_opener_position == "SB"
+                ):
+                    record_context(p["ci"], "blind_vs_blind_bb_defense", action_type != "fold")
             if action_type in _VPIP:
                 self._vpip_hand.add(player_id)
             if is_aggressive:
                 self._pfr_hand.add(player_id)
+                self._preflop_raises += 1
+                if raises_before == 0:
+                    self._preflop_opener_position = position
+                self._preflop_callers_after_raise = 0
+            elif action_type == "call" and raises_before >= 1:
+                self._preflop_callers_after_raise += 1
+            if action_type in _VPIP:
+                self._preflop_voluntary_seen = True
+            self._preflop_acted.add(player_id)
         elif street in _POSTFLOP:
             # Compatibilidade defensiva com chamadores legados; a sessão normal
             # marca todos os sobreviventes pelo evento ``street_started``.
             self._saw_flop_hand.add(player_id)
+            if to_call > 0:
+                record_context(p["ci"], "postflop_fold_to_bet", action_type == "fold")
+            if in_position is not None:
+                key = "postflop_aggression_ip" if in_position else "postflop_aggression_oop"
+                record_context(p["ci"], key, is_aggressive)
 
     def finish_hand(
         self,
@@ -242,12 +336,18 @@ class WatchStats:
                 bucket = self._bucket_hand.get(player_id)
                 if bucket:
                     self.per[player_id]["pos"][bucket][1] += 1
+                position = self._position_hand.get(player_id)
+                if position in self.per[player_id]["pos_exact"]:
+                    self.per[player_id]["pos_exact"][position][1] += 1
         for player_id in self._pfr_hand:
             if player_id in self.per:
                 self.per[player_id]["pfr"] += 1
                 bucket = self._bucket_hand.get(player_id)
                 if bucket:
                     self.per[player_id]["pos"][bucket][2] += 1
+                position = self._position_hand.get(player_id)
+                if position in self.per[player_id]["pos_exact"]:
+                    self.per[player_id]["pos_exact"][position][2] += 1
         for player_id in self._saw_flop_hand:
             if player_id in self.per:
                 self.per[player_id]["saw_flop"] += 1
@@ -267,4 +367,6 @@ class WatchStats:
             self.per[player_id]["stack"] = r["end"]
         self.timeline.append({"stacks": {_player_key(r): r["end"] for r in result}})
         self._hand_player_ids.clear()
+        self._preflop_acted.clear()
+        self._position_hand.clear()
         self._hand_open = False

@@ -144,6 +144,12 @@ missão narrativa, exercícios de recuperação, flashcards e feedback explicati
 [`GUIA_PEDAGOGICO_POKER_ARENA.html`](docs/GUIA_PEDAGOGICO_POKER_ARENA.html).
 Validação reproduzível: `cd frontend; npm.cmd run docs:pedagogical-guide`.
 
+O Modo Laboratório também expõe inteligência competitiva contextual por posição e papel,
+com numerador/denominador, suavização Beta(1,1), intervalo Wilson, recência e abstenção.
+Ela usa apenas a sessão local, não recomenda ações e não altera a política dos bots. O
+protocolo, as 23 fontes primárias/oficiais e os limites de transferibilidade estão no
+[`mapa sistemático de inteligência competitiva`](docs/research/COMPETITIVE_INTELLIGENCE_20260808.md).
+
 **Manual:** em dois terminais abertos na raiz do projeto:
 
 ```powershell

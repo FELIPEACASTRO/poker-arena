@@ -23,6 +23,88 @@ function useColors(): Record<string, string> {
 const DIM = 'var(--text-dim)'
 const MIN_STYLE_HANDS = 30
 const MIN_POSITION_HANDS = 20
+const CI_BASE_KEYS = [
+  'preflop_open_raise',
+  'preflop_limp',
+  'preflop_isolation_raise',
+  'preflop_three_bet',
+  'preflop_call_vs_raise',
+  'preflop_squeeze',
+  'preflop_four_bet',
+  'postflop_fold_to_bet',
+  'postflop_aggression_ip',
+  'postflop_aggression_oop',
+]
+
+function competitiveKeys(bot: BotStat): string[] {
+  const keys = [
+    `position_exact_${bot.position}_vpip`,
+    `position_exact_${bot.position}_pfr`,
+    ...CI_BASE_KEYS,
+  ]
+  if (['CO', 'BTN', 'SB'].includes(bot.position)) keys.push('late_position_steal')
+  if (['SB', 'BB'].includes(bot.position)) keys.push('blind_defense', 'blind_fold_to_steal')
+  if (bot.position === 'SB') keys.push('blind_vs_blind_sb_open')
+  if (bot.position === 'BB') keys.push('blind_vs_blind_bb_defense')
+  return keys
+}
+
+function ciPct(value: number | null): string {
+  return value == null ? '—' : pct(value)
+}
+
+function recencyLabel(direction: string): string {
+  if (direction === 'more_aggressive') return 'mais agressivo recentemente'
+  if (direction === 'more_passive') return 'mais passivo recentemente'
+  if (direction === 'stable') return 'sem desvio recente relevante'
+  return 'recência ainda sem amostra'
+}
+
+function CompetitiveProfileBlock({ bot }: { bot: BotStat }) {
+  const profile = bot.competitive_profile
+  if (!profile) return null
+  const signals = competitiveKeys(bot).map((key) => profile.signals.find((signal) => signal.key === key)).filter(
+    (signal) => signal != null,
+  )
+  return (
+    <details className="ci-details">
+      <summary>
+        Inteligência contextual <b>{bot.position || 'posição pendente'}</b>
+      </summary>
+      <p className="ci-scope">Sessão local · somente descritivo · nenhuma ação recomendada</p>
+      <div className="ci-grid">
+        {signals.map((signal) => (
+          <div className={'ci-signal ' + (signal.ready ? 'ready' : 'waiting')} key={signal.key}>
+            <span>{signal.label}</span>
+            {signal.ready ? (
+              <b>
+                {ciPct(signal.posterior_mean)}{' '}
+                <small>
+                  IC95 {ciPct(signal.interval95_low)}–{ciPct(signal.interval95_high)} · n=
+                  {signal.opportunities}
+                </small>
+              </b>
+            ) : (
+              <b>
+                abstém{' '}
+                <small>
+                  n={signal.opportunities}/{profile.minimum_opportunities}
+                </small>
+              </b>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="ci-recency">
+        Recência EWMA: {recencyLabel(profile.recency.direction)} · {profile.recency.actions} ações
+      </p>
+      <p className="ci-method">
+        Média {profile.posterior_method}; {profile.interval_method}. Frequência não prova causa nem
+        força estratégica.
+      </p>
+    </details>
+  )
+}
 
 function styleTag(b: BotStat): string {
   const loose = b.vpip >= 0.55
@@ -145,6 +227,7 @@ export function StylePanel() {
                   </span>
                 ))}
             </div>
+            <CompetitiveProfileBlock bot={b} />
           </div>
         ))}
       </div>

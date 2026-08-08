@@ -446,6 +446,17 @@
             "title": "Buy In Total",
             "type": "integer"
           },
+          "competitive_profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompetitiveProfileSchema"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Inteligência competitiva contextual da sessão local, com oportunidades, suavização, incerteza e abstenção. Não contém conselho de ação."
+          },
           "delta": {
             "description": "Resultado líquido: stack atual menos todos os buy-ins/recompras (fichas).",
             "title": "Delta",
@@ -483,6 +494,22 @@
             "minLength": 32,
             "pattern": "^[0-9a-f]{32}$",
             "title": "Player Id",
+            "type": "string"
+          },
+          "position": {
+            "description": "Posição exata do competidor na mão atual.",
+            "enum": [
+              "SB",
+              "BB",
+              "UTG",
+              "UTG+1",
+              "MP",
+              "LJ",
+              "HJ",
+              "CO",
+              "BTN"
+            ],
+            "title": "Position",
             "type": "string"
           },
           "positions": {
@@ -527,6 +554,7 @@
           "player_id",
           "name",
           "level",
+          "position",
           "stack",
           "delta",
           "buy_in_total",
@@ -588,6 +616,232 @@
           "points"
         ],
         "title": "ChipSeriesSchema",
+        "type": "object"
+      },
+      "CompetitiveProfileSchema": {
+        "description": "Perfil contextual somente da sessão local; nunca escolhe a próxima ação.",
+        "properties": {
+          "authority": {
+            "pattern": "^descriptive_only_no_action_advice$",
+            "title": "Authority",
+            "type": "string"
+          },
+          "interval_method": {
+            "title": "Interval Method",
+            "type": "string"
+          },
+          "minimum_opportunities": {
+            "minimum": 1.0,
+            "title": "Minimum Opportunities",
+            "type": "integer"
+          },
+          "posterior_method": {
+            "title": "Posterior Method",
+            "type": "string"
+          },
+          "recency": {
+            "$ref": "#/components/schemas/CompetitiveRecencySchema"
+          },
+          "scope": {
+            "pattern": "^local_session_only$",
+            "title": "Scope",
+            "type": "string"
+          },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/CompetitiveTendencySchema"
+            },
+            "title": "Signals",
+            "type": "array"
+          },
+          "version": {
+            "pattern": "^ci-local-v[0-9]+$",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "scope",
+          "authority",
+          "posterior_method",
+          "interval_method",
+          "minimum_opportunities",
+          "signals",
+          "recency"
+        ],
+        "title": "CompetitiveProfileSchema",
+        "type": "object"
+      },
+      "CompetitiveRecencySchema": {
+        "description": "Sinal EWMA descritivo; não é teste causal nem diagnóstico psicológico.",
+        "properties": {
+          "actions": {
+            "minimum": 0.0,
+            "title": "Actions",
+            "type": "integer"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": -1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta"
+          },
+          "direction": {
+            "pattern": "^(insufficient|stable|more_aggressive|more_passive)$",
+            "title": "Direction",
+            "type": "string"
+          },
+          "ewma_aggression": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ewma Aggression"
+          },
+          "long_run_aggression": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Long Run Aggression"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "actions",
+          "direction",
+          "ready"
+        ],
+        "title": "CompetitiveRecencySchema",
+        "type": "object"
+      },
+      "CompetitiveTendencySchema": {
+        "description": "Uma frequência contextual com numerador, denominador e incerteza explícitos.",
+        "properties": {
+          "context": {
+            "title": "Context",
+            "type": "string"
+          },
+          "evidence": {
+            "pattern": "^(insufficient|emerging|stable)$",
+            "title": "Evidence",
+            "type": "string"
+          },
+          "evidence_fraction": {
+            "description": "Fração operacional min(1, oportunidades/30); não é probabilidade nem confiança estatística.",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Evidence Fraction",
+            "type": "number"
+          },
+          "family": {
+            "title": "Family",
+            "type": "string"
+          },
+          "interval95_high": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval95 High"
+          },
+          "interval95_low": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval95 Low"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "observed_rate": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Rate"
+          },
+          "opportunities": {
+            "minimum": 0.0,
+            "title": "Opportunities",
+            "type": "integer"
+          },
+          "posterior_mean": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Posterior Mean",
+            "type": "number"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "successes": {
+            "minimum": 0.0,
+            "title": "Successes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "family",
+          "context",
+          "successes",
+          "opportunities",
+          "posterior_mean",
+          "evidence_fraction",
+          "evidence",
+          "ready"
+        ],
+        "title": "CompetitiveTendencySchema",
         "type": "object"
       },
       "CopilotRequest": {

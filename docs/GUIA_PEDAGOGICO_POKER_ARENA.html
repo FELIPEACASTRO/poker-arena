@@ -1048,6 +1048,42 @@
           O painel “como o bot pensou” mostra sinais e critérios implementados. Ele <strong>não é prova
           de interpretabilidade causal</strong> de uma rede neural e não demonstra optimalidade GTO.
         </div>
+        <h3>Inteligência competitiva: observar sem adivinhar</h3>
+        <p>
+          No Laboratório, cada perfil resume apenas o que aconteceu <strong>nesta sessão local</strong>.
+          A pergunta correta não é “qual porcentagem apareceu?”, mas “em quantas oportunidades ela
+          poderia ter aparecido?”. Uma 3-bet em uma oportunidade é 100% observado, porém ainda é uma
+          amostra frágil; o sistema se abstém em vez de transformar um caso em personalidade.
+        </p>
+        <figure class="visual-card">
+          <img src="research/competitive_intelligence_pipeline.png" alt="Fluxo auditável da inteligência competitiva: eventos locais, contexto por posição e papel, contagens, incerteza, abstenção e perfil descritivo sem conselho de ação." />
+          <figcaption class="visual-caption"><b>Do evento ao perfil.</b> Posição, papel e ordem definem a oportunidade; contagens e incerteza vêm antes de qualquer interpretação.</figcaption>
+        </figure>
+        <div class="grid-3">
+          <article class="concept-card info"><h4>Denominador primeiro</h4><p>RFI, 3-bet, defesa de blind e fold diante de aposta só contam quando o jogador realmente teve aquela oportunidade.</p></article>
+          <article class="concept-card good"><h4>Incerteza visível</h4><p>O painel separa taxa observada, média Beta(1,1), intervalo Wilson 95%, tamanho da amostra e recência EWMA.</p></article>
+          <article class="concept-card warn"><h4>Limite de autoridade</h4><p>O perfil descreve. Não estima cartas privadas, não prova causa, não muda a política do bot e não serve como assistência em mesa real.</p></article>
+        </div>
+        <table>
+          <thead><tr><th>Posição do anexo</th><th>Pergunta competitiva medida</th><th>Limite da leitura</th></tr></thead>
+          <tbody>
+            <tr><td>UTG / UTG+1</td><td>Abriu, entrou de limp ou respondeu a raise quando teve oportunidade?</td><td>A posição não prova força nem revela as cartas.</td></tr>
+            <tr><td>MP / Lojack</td><td>Abriu pote, isolou limper ou continuou diante de raise?</td><td>Uma ação não define um estilo permanente.</td></tr>
+            <tr><td>Hijack / Cutoff / Botão</td><td>Qual a frequência de RFI e tentativa de roubo quando todos desistiram antes?</td><td>Roubo é um papel observável, não uma recomendação automática.</td></tr>
+            <tr><td>Small Blind</td><td>Abriu blind-versus-blind, defendeu, desistiu ou voltou aumento?</td><td>O sistema não prescreve ranges para jogar fora de posição.</td></tr>
+            <tr><td>Big Blind</td><td>Defendeu contra roubo ou contra abertura do SB quando enfrentou raise?</td><td>O blind já pago não cria obrigação de continuar.</td></tr>
+            <tr><td>Qualquer posição elegível</td><td>Call, 3-bet, squeeze, 4-bet e agressão IP/OOP, sempre com denominador.</td><td>Frequência não identifica intenção, blefe ou causalidade.</td></tr>
+          </tbody>
+        </table>
+        <div class="scenario">
+          <strong>Analogia da moeda.</strong> Ver uma cara em um lançamento não prova que a moeda sempre
+          dará cara. Do mesmo modo, “1 sucesso em 1 oportunidade” exige abstenção; posição e papel
+          explicam o contexto, enquanto o intervalo comunica o quanto ainda não sabemos.
+        </div>
+        <details>
+          <summary>Recuperação ativa: por que o sistema não conclui “agressivo” após uma única 3-bet?</summary>
+          <div>Porque 1/1 tem denominador mínimo, intervalo amplo e alto risco de coincidência. A versão local exige 12 oportunidades para deixar de se abster e só chama a evidência de estável a partir de 30; esses limites são operacionais, não uma lei universal do poker.</div>
+        </details>
         <div class="quiz" data-answer="c" data-checkpoint="bots">
           <h4>Checkpoint 4: qual nível é o melhor comparador para saber se “qualquer lógica” supera o acaso?</h4>
           <div class="quiz-options">
@@ -1246,7 +1282,7 @@
         <h3>O que a evidência local realmente sustenta</h3>
         <div class="evidence-strip">
           <article class="evidence-metric"><b>16/16</b><strong>gates do pacote</strong><p>Testes, tipos, contratos, segurança, dependências, frontend e E2E no snapshot auditado.</p></article>
-          <article class="evidence-metric"><b>5 × 7</b><strong>amostras de latência</strong><p>Receipt v5 recalculável, P95 máximo 902,198 ms para orçamento local de 2.500 ms.</p></article>
+          <article class="evidence-metric"><b>5 × 7</b><strong>amostras de latência</strong><p>Receipt v5 recalculável, P95 máximo 1.774,475 ms para orçamento local de 2.500 ms.</p></article>
           <article class="evidence-metric"><b>GO local</b><strong>preflight da banca</strong><p>Árvore limpa, rede desnecessária, VLM remoto desligado e fixture canônica exata.</p></article>
           <article class="evidence-metric"><b>N/A externo</b><strong>limite científico</strong><p>Generalização visual real, GTO, produção multi-tenant e dinheiro real não são alegados.</p></article>
         </div>

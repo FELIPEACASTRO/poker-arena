@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .competitive_intelligence import CompetitiveProfile
+
 
 @dataclass(frozen=True)
 class InsightView:
@@ -255,6 +257,7 @@ class BotStatView:
     player_id: str
     name: str
     level: str
+    position: str
     stack: int
     delta: int  # resultado líquido: stack atual - total de buy-ins/recompras
     buy_in_total: int
@@ -266,6 +269,7 @@ class BotStatView:
     wtsd: float = 0.0  # % das mãos com flop visto em que chegou ao showdown
     wsd: float = 0.0  # % dos showdowns que venceu
     positions: list[PosStatView] = field(default_factory=list)  # VPIP/PFR por região
+    competitive_profile: CompetitiveProfile | None = None
 
 
 @dataclass(frozen=True)

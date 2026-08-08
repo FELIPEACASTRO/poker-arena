@@ -1,0 +1,214 @@
+[
+  {
+    "title": "Opponent Modeling in Poker",
+    "authors": "Darse Billings; Denis Papp; Jonathan Schaeffer; Duane Szafron",
+    "year": 1998,
+    "source": "AAAI",
+    "url": "https://cdn.aaai.org/AAAI/1998/AAAI98-070.pdf",
+    "relevance_score": 5,
+    "abstract": "Modelo explícito de oponentes e adaptação dinâmica no Loki para Texas Hold'em."
+  },
+  {
+    "title": "Bayes' Bluff: Opponent Modelling in Poker",
+    "authors": "Finnegan Southey; Michael Bowling; Bryce Larson; Carmelo Piccione; Neil Burch; Darse Billings; Chris Rayner",
+    "year": 2005,
+    "source": "UAI/arXiv",
+    "url": "https://arxiv.org/abs/1207.1411",
+    "relevance_score": 5,
+    "abstract": "Separa incerteza do jogo e da estratégia do oponente, atualizando um posterior sobre estratégias."
+  },
+  {
+    "title": "Effective Short-Term Opponent Exploitation in Simplified Poker",
+    "authors": "Bret Hoehn; Finnegan Southey; Robert C. Holte; Valeriy Bulitko",
+    "year": 2005,
+    "source": "AAAI",
+    "url": "https://new.aaai.org/Library/AAAI/2005/aaai05-123.php",
+    "relevance_score": 4,
+    "abstract": "Compara estimação de parâmetros e experts em Kuhn poker sob poucas mãos."
+  },
+  {
+    "title": "Particle Filtering for Dynamic Agent Modelling in Simplified Poker",
+    "authors": "Nolan Bard; Michael Bowling",
+    "year": 2007,
+    "source": "AAAI",
+    "url": "https://f.aaai.org/Library/AAAI/2007/aaai07-081.php",
+    "relevance_score": 5,
+    "abstract": "Usa filtros de partículas para rastrear adversários estáticos e dinâmicos em Kuhn poker."
+  },
+  {
+    "title": "Balancing Safety and Exploitability in Opponent Modeling",
+    "authors": "Zhikun Wang; Abdeslam Boularias; Katharina Muelling; Jan Peters",
+    "year": 2011,
+    "source": "AAAI",
+    "doi": "10.1609/aaai.v25i1.7981",
+    "url": "https://ojs.aaai.org/index.php/AAAI/article/view/7981",
+    "relevance_score": 5,
+    "abstract": "Representa um conjunto plausível de estratégias e condiciona exploração à precisão do modelo."
+  },
+  {
+    "title": "Learning Strategies for Opponent Modeling in Poker",
+    "authors": "Omer Ekmekci; Volkan Sirin",
+    "year": 2013,
+    "source": "AAAI Workshop",
+    "url": "https://cdn.aaai.org/ocs/ws/ws1059/7132-30507-1-PB.pdf",
+    "relevance_score": 4,
+    "abstract": "Explora features contextuais e ensembles para prever ações em heads-up limit Hold'em."
+  },
+  {
+    "title": "Using Bayesian Networks to Model a Poker Player",
+    "authors": "Andrew Heiberg",
+    "year": 2013,
+    "source": "AAAI Workshop",
+    "url": "https://cdn.aaai.org/ocs/ws/ws1085/7160-30514-1-PB.pdf",
+    "relevance_score": 4,
+    "abstract": "Modela ações e crenças ocultas, destacando o viés de seleção dos showdowns."
+  },
+  {
+    "title": "Online Implicit Agent Modelling",
+    "authors": "Nolan Bard; Michael Johanson; Neil Burch; Michael Bowling",
+    "year": 2013,
+    "source": "AAMAS",
+    "url": "https://aamas.csc.liv.ac.uk/Proceedings/aamas2013/docs/p255.pdf",
+    "relevance_score": 5,
+    "abstract": "Seleciona respostas robustas de um portfólio sem estimar toda a estratégia do adversário."
+  },
+  {
+    "title": "Bayesian Opponent Exploitation in Imperfect-Information Games",
+    "authors": "Sam Ganzfried; Qingyun Sun",
+    "year": 2016,
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/1603.03491",
+    "relevance_score": 4,
+    "abstract": "Formaliza prior, posterior e resposta em jogos de informação imperfeita."
+  },
+  {
+    "title": "Opponent Modeling in Deep Reinforcement Learning",
+    "authors": "He He; Jordan Boyd-Graber; Kevin Kwok; Hal Daume III",
+    "year": 2016,
+    "source": "ICML/PMLR",
+    "url": "https://proceedings.mlr.press/v48/he16.html",
+    "relevance_score": 3,
+    "abstract": "Contrasta modelagem explícita com representações implícitas e mixture-of-experts."
+  },
+  {
+    "title": "Bayesian Clustering of Player Styles for Multiplayer Games",
+    "authors": "Aline Normoyle; Shane Jensen",
+    "year": 2015,
+    "source": "AAAI AIIDE",
+    "doi": "10.1609/aiide.v11i1.12805",
+    "url": "https://ojs.aaai.org/index.php/AIIDE/article/view/12805",
+    "relevance_score": 3,
+    "abstract": "Permite estilos híbridos e número não fixado de clusters em logs multiplayer."
+  },
+  {
+    "title": "Learning about the opponent in automated bilateral negotiation: a comprehensive survey of opponent modeling techniques",
+    "authors": "Tim Baarslag; Mark J. C. Hendrikx; Koen V. Hindriks; Catholijn M. Jonker",
+    "year": 2016,
+    "source": "Autonomous Agents and Multi-Agent Systems",
+    "doi": "10.1007/s10458-015-9309-1",
+    "url": "https://link.springer.com/article/10.1007/s10458-015-9309-1",
+    "relevance_score": 3,
+    "abstract": "Taxonomia e métricas para modelagem online de oponentes em informação incompleta."
+  },
+  {
+    "title": "AIVAT: A New Variance Reduction Technique for Agent Evaluation in Imperfect Information Games",
+    "authors": "Neil Burch; Martin Schmid; Matej Moravcik; Dustin Morrill; Michael Bowling",
+    "year": 2018,
+    "source": "AAAI",
+    "doi": "10.1609/aaai.v32i1.11481",
+    "url": "https://ojs.aaai.org/index.php/AAAI/article/view/11481",
+    "relevance_score": 4,
+    "abstract": "Reduz variância na avaliação de agentes quando políticas conhecidas e valores auxiliares existem."
+  },
+  {
+    "title": "Safe Opponent-Exploitation Subgame Refinement",
+    "authors": "Mingyang Liu; Chengjie Wu; Qihan Liu; Yansen Jing; Jun Yang; Pingzhong Tang; Chongjie Zhang",
+    "year": 2022,
+    "source": "NeurIPS",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2022/hash/b12a1d1014e952e676f5d6931d03241a-Abstract-Conference.html",
+    "relevance_score": 4,
+    "abstract": "Interpola exploração e segurança com limites de exploitability em subgames."
+  },
+  {
+    "title": "Opponent Modeling in Multiplayer Imperfect-Information Games",
+    "authors": "Sam Ganzfried; Kevin A. Wang; Max Chiswick",
+    "year": 2022,
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2212.06027",
+    "relevance_score": 4,
+    "abstract": "Estuda observações repetidas e exploração em três jogadores de Kuhn poker."
+  },
+  {
+    "title": "Opponent-Model Search in Games with Incomplete Information",
+    "authors": "Junkang Li; Bruno Zanuttini; Veronique Ventos",
+    "year": 2024,
+    "source": "AAAI",
+    "doi": "10.1609/aaai.v38i9.28844",
+    "url": "https://ojs.aaai.org/index.php/AAAI/article/view/28844",
+    "relevance_score": 4,
+    "abstract": "Computa estratégias ótimas ou robustas para diferentes formas de conhecimento do oponente."
+  },
+  {
+    "title": "Identifying Features for Bluff Detection in No-Limit Texas Hold'em",
+    "authors": "Razvan Ranca",
+    "year": 2013,
+    "source": "AAAI Workshop",
+    "url": "https://cdn.aaai.org/ocs/ws/ws1038/7109-30520-1-PB.pdf",
+    "relevance_score": 4,
+    "abstract": "Usa posição, pote, raise/pote, força do flop e histórico pré-flop como features contextuais; não valida inferência causal."
+  },
+  {
+    "title": "Data Biased Robust Counter Strategies",
+    "authors": "Michael Johanson; Michael Bowling",
+    "year": 2009,
+    "source": "AISTATS/PMLR",
+    "url": "https://proceedings.mlr.press/v5/johanson09a.html",
+    "relevance_score": 5,
+    "abstract": "Equilibra exploração de dados do adversário e robustez quando a amostra é incompleta ou a estratégia muda."
+  },
+  {
+    "title": "Bayes-Relational Learning of Opponent Models from Incomplete Information in No-Limit Poker",
+    "authors": "Marc Ponsen; Jan Ramon; Tom Croonenborghs; Kurt Driessens; Karl Tuyls",
+    "year": 2008,
+    "source": "AAAI",
+    "url": "https://cdn.aaai.org/AAAI/2008/AAAI08-244.pdf",
+    "relevance_score": 5,
+    "abstract": "Adapta um prior geral ao jogador específico em NLHE e aprende com informação incompleta, incluindo diferenças de tamanho de call/bet."
+  },
+  {
+    "title": "Safe and Robust Subgame Exploitation in Imperfect Information Games",
+    "authors": "Zhenxing Ge; Zheng Xu; Tianyu Ding; Linjian Meng; Bo An; Wenbin Li; Yang Gao",
+    "year": 2024,
+    "source": "ICML/PMLR",
+    "url": "https://proceedings.mlr.press/v235/ge24b.html",
+    "relevance_score": 4,
+    "abstract": "Propõe exploração robusta e segura diante de modelos imprecisos, avaliada em jogos de poker."
+  },
+  {
+    "title": "StratFormer: Adaptive Opponent Modeling and Exploitation in Imperfect-Information Games",
+    "authors": "Andy Caen; Mark H. M. Winands; Dennis J. N. J. Soemers",
+    "year": 2026,
+    "source": "arXiv preprint",
+    "url": "https://arxiv.org/abs/2604.25796",
+    "relevance_score": 3,
+    "abstract": "Transformer com bucket-rate features e currículo de exploração, avaliado em Leduc."
+  },
+  {
+    "title": "Programas, Ferramentas e Serviços proibidos",
+    "authors": "PokerStars",
+    "year": 2026,
+    "source": "Política oficial do operador",
+    "url": "https://www.pokerstars.com/pt-BR/poker/room/prohibited/",
+    "relevance_score": 5,
+    "abstract": "Proíbe RTA, datamining e compartilhamento em massa de estatísticas de adversários."
+  },
+  {
+    "title": "Online Poker Security Ecology Policy",
+    "authors": "GGPoker",
+    "year": 2026,
+    "source": "Política oficial do operador",
+    "url": "https://legal.ggpoker.com/network/security-ecology-policy/",
+    "relevance_score": 5,
+    "abstract": "Proíbe RTA, bots, solvers, charts e HUDs que influenciem decisões em jogo."
+  }
+]

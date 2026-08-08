@@ -1,6 +1,6 @@
 {
   "schema_version": 5,
-  "created_at_utc": "2026-08-08T14:55:53.658457+00:00",
+  "created_at_utc": "2026-08-08T16:45:35.559345+00:00",
   "scope": "local_post_hand_latency_only_not_strategy_quality",
   "environment": {
     "python": "3.11.15",
@@ -308,7 +308,7 @@
     ]
   },
   "implementation_binding": {
-    "sha256": "ceaf5c8ac71a8c19428ecc7d13c2b58e5e930170a5559a398955f41c30bb35f2",
+    "sha256": "6ba67e2e52da643bcd5b4b1b0a92ee32df066875b02e6930faf189a671e9f596",
     "files": {
       "scripts/copilot_performance_benchmark.py": "3b3657cadb514c1b47c5bd89f266254a789b43f08082b97b8140b6f5501555b3",
       "poker_arena/__init__.py": "16a5e60843efe443b39e3e9223d8e9b48f7051cb4719e3f5c683d6e592b52c92",
@@ -317,18 +317,19 @@
       "poker_arena/api/dependencies.py": "a245630ffbdec4cac8c088d43cf35c244557d78a2aad777b4050c8bfda287902",
       "poker_arena/api/mappers.py": "2b882b562271e5a5a2ff3d36a1219a21d6ffd702403771324b7eb67326802856",
       "poker_arena/api/openapi_contract.py": "59883a95e221b8faa2e49dfa55ad50b5d0ee622919ebf1cf3d72bda3fc6b6325",
-      "poker_arena/api/schemas.py": "acb82371043360683a820678014cf11f1a9c4268d8bd97e492ff1822d7911e3a",
+      "poker_arena/api/schemas.py": "4206eb12fff653c655a4f5a4f392e33c29a33548f4e653cca1c04cb0dbd5f28a",
       "poker_arena/application/__init__.py": "9447c4aaf8399726a7c8b23fe3aa94478c0ca379dabe564aa6a09f1d6570dddf",
       "poker_arena/application/analysis.py": "d0999ee0576a87ae20effd0bf9e128bcc9802220f4bb4fbd28f6b30b30e884e2",
       "poker_arena/application/bot_factory.py": "767a5ac0c75d762c1162b348579258d70e8a9819b1bc3225dd4dda26eba8ba69",
+      "poker_arena/application/competitive_intelligence.py": "b84008e2b2bb4c63700cd7119bc415a8baeed0b8f2011d2f495a334b4266f3ae",
       "poker_arena/application/copilot.py": "a3bce7dcc6cdc179cf45fa9fa834a516571e8956f130defa7be9800e92b56ea3",
-      "poker_arena/application/game_session.py": "f2e2423df6d136981cc55b40dd67c4ef3b4b7e3c5eed19434442c09ee910a457",
+      "poker_arena/application/game_session.py": "462ad9788a11e9ed341c3eec8ea344db6dcefd52074ee603cef268d6d14fe058",
       "poker_arena/application/match_log.py": "ad50ee35b88371d46fb27a4b3759290d823b36b3a65d82be87008d0353eac5fc",
       "poker_arena/application/positions.py": "6fe6f5ed1234229c972121149df17e54eb8012435d3d936178132d3959afb665",
       "poker_arena/application/reasoning.py": "80d8380d89e45c1511e36b5ab1ba413b6cb2e222d7a8df54f8dd9b7b3d088ed8",
       "poker_arena/application/session_repository.py": "0a59dd23b94658cbe52b2da604b8c5fd4b56de31aab5d5c6fe912681d55ab622",
-      "poker_arena/application/views.py": "88c81444c32461fee0008f1e77b3815de8bc2b9b54f0e49debe7f0acd38391b2",
-      "poker_arena/application/watch_stats.py": "61107f96e0105e5272ef4d227759f042db74a26303d212cbe62f706414c01a53",
+      "poker_arena/application/views.py": "d5cc3df0ce40f0ebe0d67883156db6b18f91a2b50b1f696c2b003dd397e43d5a",
+      "poker_arena/application/watch_stats.py": "cd7d90b3bdd7240ec77f84ccbccc02b0bd87226bc482b565a21e1ed73d677a75",
       "poker_arena/bots/__init__.py": "1d024c5e4b3eb32022c43015a3c98c74dbe2d211db4684d1a3161c95b2c433bb",
       "poker_arena/bots/_policy.py": "a777191f8f9357dabeefe9f90669db7bf37a0400ec5f35686b902f9d8f21ed13",
       "poker_arena/bots/adaptive_bot.py": "3c457a2e0a35f4b4ed5daa195802b4140936b5e4f36dcab9d9ec274307259b20",
@@ -377,19 +378,19 @@
       "name": "river-heads-up-exact",
       "iterations": 7,
       "samples_ms": [
-        45.238,
-        42.629,
-        39.866,
-        37.675,
-        39.905,
-        39.917,
-        50.226
+        90.1,
+        116.625,
+        93.934,
+        102.407,
+        85.284,
+        90.355,
+        86.078
       ],
       "latency_ms": {
-        "min": 37.675,
-        "median": 39.917,
-        "p95_nearest_rank": 50.226,
-        "max": 50.226
+        "min": 85.284,
+        "median": 90.355,
+        "p95_nearest_rank": 116.625,
+        "max": 116.625
       },
       "equity_method": "exact-river-heads-up",
       "equity_trials": 990,
@@ -400,19 +401,19 @@
       "name": "preflop-heads-up-adaptive",
       "iterations": 7,
       "samples_ms": [
-        331.262,
-        219.742,
-        263.033,
-        248.043,
-        308.714,
-        248.94,
-        218.683
+        693.665,
+        537.345,
+        705.242,
+        673.986,
+        675.864,
+        649.799,
+        901.211
       ],
       "latency_ms": {
-        "min": 218.683,
-        "median": 248.94,
-        "p95_nearest_rank": 331.262,
-        "max": 331.262
+        "min": 537.345,
+        "median": 675.864,
+        "p95_nearest_rank": 901.211,
+        "max": 901.211
       },
       "equity_method": "monte-carlo-uniform-range",
       "equity_trials": 5000,
@@ -423,19 +424,19 @@
       "name": "preflop-six-max",
       "iterations": 7,
       "samples_ms": [
-        685.623,
-        866.779,
-        934.584,
-        788.64,
-        914.025,
-        1048.71,
-        851.807
+        1774.475,
+        1486.361,
+        1066.441,
+        609.995,
+        598.601,
+        727.18,
+        782.286
       ],
       "latency_ms": {
-        "min": 685.623,
-        "median": 866.779,
-        "p95_nearest_rank": 1048.71,
-        "max": 1048.71
+        "min": 598.601,
+        "median": 782.286,
+        "p95_nearest_rank": 1774.475,
+        "max": 1774.475
       },
       "equity_method": "monte-carlo-uniform-range",
       "equity_trials": 5000,
@@ -446,19 +447,19 @@
       "name": "preflop-nine-max",
       "iterations": 7,
       "samples_ms": [
-        1457.75,
-        1206.582,
-        1354.681,
-        1507.023,
-        1121.772,
-        1230.966,
-        1331.549
+        978.853,
+        1098.095,
+        989.486,
+        862.638,
+        853.194,
+        863.649,
+        983.719
       ],
       "latency_ms": {
-        "min": 1121.772,
-        "median": 1331.549,
-        "p95_nearest_rank": 1507.023,
-        "max": 1507.023
+        "min": 853.194,
+        "median": 978.853,
+        "p95_nearest_rank": 1098.095,
+        "max": 1098.095
       },
       "equity_method": "monte-carlo-uniform-range",
       "equity_trials": 5000,
@@ -469,19 +470,19 @@
       "name": "flop-six-max",
       "iterations": 7,
       "samples_ms": [
-        969.662,
-        894.415,
-        738.515,
-        694.159,
-        666.901,
-        628.101,
-        673.397
+        813.562,
+        1043.593,
+        1084.315,
+        797.674,
+        709.954,
+        671.921,
+        696.784
       ],
       "latency_ms": {
-        "min": 628.101,
-        "median": 694.159,
-        "p95_nearest_rank": 969.662,
-        "max": 969.662
+        "min": 671.921,
+        "median": 797.674,
+        "p95_nearest_rank": 1084.315,
+        "max": 1084.315
       },
       "equity_method": "monte-carlo-uniform-range",
       "equity_trials": 5000,

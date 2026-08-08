@@ -440,6 +440,55 @@ class PosStatSchema(BaseModel):
     pfr: float = Field(description="PFR na região, em [0,1].")
 
 
+class CompetitiveTendencySchema(BaseModel):
+    """Uma frequência contextual com numerador, denominador e incerteza explícitos."""
+
+    key: str
+    label: str
+    family: str
+    context: str
+    successes: int = Field(ge=0)
+    opportunities: int = Field(ge=0)
+    observed_rate: float | None = Field(default=None, ge=0, le=1)
+    posterior_mean: float = Field(ge=0, le=1)
+    interval95_low: float | None = Field(default=None, ge=0, le=1)
+    interval95_high: float | None = Field(default=None, ge=0, le=1)
+    evidence_fraction: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "Fração operacional min(1, oportunidades/30); não é probabilidade nem "
+            "confiança estatística."
+        ),
+    )
+    evidence: str = Field(pattern="^(insufficient|emerging|stable)$")
+    ready: bool
+
+
+class CompetitiveRecencySchema(BaseModel):
+    """Sinal EWMA descritivo; não é teste causal nem diagnóstico psicológico."""
+
+    actions: int = Field(ge=0)
+    ewma_aggression: float | None = Field(default=None, ge=0, le=1)
+    long_run_aggression: float | None = Field(default=None, ge=0, le=1)
+    delta: float | None = Field(default=None, ge=-1, le=1)
+    direction: str = Field(pattern="^(insufficient|stable|more_aggressive|more_passive)$")
+    ready: bool
+
+
+class CompetitiveProfileSchema(BaseModel):
+    """Perfil contextual somente da sessão local; nunca escolhe a próxima ação."""
+
+    version: str = Field(pattern="^ci-local-v[0-9]+$")
+    scope: str = Field(pattern="^local_session_only$")
+    authority: str = Field(pattern="^descriptive_only_no_action_advice$")
+    posterior_method: str
+    interval_method: str
+    minimum_opportunities: int = Field(ge=1)
+    signals: list[CompetitiveTendencySchema]
+    recency: CompetitiveRecencySchema
+
+
 class BotStatSchema(BaseModel):
     """Estatística ao vivo de um bot no Modo Laboratório."""
 
@@ -452,6 +501,7 @@ class BotStatSchema(BaseModel):
     )
     name: str = Field(description="Nome do bot.")
     level: str = Field(description="Nível de IA.")
+    position: PositionName = Field(description="Posição exata do competidor na mão atual.")
     stack: int = Field(description="Fichas atuais.")
     delta: int = Field(
         description="Resultado líquido: stack atual menos todos os buy-ins/recompras (fichas)."
@@ -478,6 +528,13 @@ class BotStatSchema(BaseModel):
     )
     positions: list[PosStatSchema] = Field(
         default=[], description="VPIP/PFR por região da mesa (cedo/meio/tarde/blinds)."
+    )
+    competitive_profile: CompetitiveProfileSchema | None = Field(
+        default=None,
+        description=(
+            "Inteligência competitiva contextual da sessão local, com oportunidades, "
+            "suavização, incerteza e abstenção. Não contém conselho de ação."
+        ),
     )
 
 

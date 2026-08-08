@@ -215,7 +215,7 @@ RAM/disco/hardware da banca.
 | Raise incontestável | motor oferecia raise 332; PokerKit rejeitava | repro versionado passa; fuzz ad hoc histórico seed 20260810, 20k casos, `bad=[]`, mantido apenas como apoio | harness ad hoc não foi preservado; não conta como gate reproduzível |
 | Review sizing | raise 40 e raise 60 davam match | mismatch explícito 40≠60 | subconjunto PHH NT |
 | Frontend | 2 warnings ESLint | 79/79 testes; lint sem aviso; build aprovado | browser/hardware local |
-| Copiloto | receipt anterior invalidado por mudança de source/runtime | receipt v5 final SHA-256 `FE7B92627E0AA91DD0E48E9C5CF1C6BB13BEC960AB54705337A3699FDB81FCE3`: P95 máximo 1507,023 ms em 5 cenários, budget 2500 ms | 7 amostras brutas/cenário; binding `ceaf5c8a…30bb35f2`; versões instaladas e CPU vinculadas; não é comparação entre hosts |
+| Copiloto | receipt anterior invalidado por mudança de source/runtime | receipt v5 final SHA-256 `B6F8889B90BB3443856D531ED7754D23A7CD9C95B017DCC0C052EF566A22A081`: P95 máximo 1774,475 ms em 5 cenários, budget 2500 ms | 7 amostras brutas/cenário; binding `6ba67e2e…71e9f596`; versões instaladas e CPU vinculadas; não é comparação entre hosts |
 | Contenção do host | execução incidental sob forte carga chegou a 2607,209 ms e falhou | receipt falho descartado; medição Ω48 aprovou mesmo com um processo externo CPU-bound observável | fechar workloads concorrentes no preflight da banca; o run Ω48 não é benchmark isolado |
 | Equity exata | Monte Carlo 400 variava | 990 enumerações; erro numérico 0 no domínio | HU river/range uniforme |
 | Avaliação real F1 | alegação não medida | 0/1 exato, abstenção, 10,08 s; F2 ausente | amostra de conveniência |
@@ -589,7 +589,7 @@ O contrato Ω47 torna o veredito da release executável: sucesso retorna
 `release_decision=GO`, `release_scope=LOCAL_MASTER_DEFENSE` e lista capacidades externas em
 `out_of_scope`; falha retorna `release_decision=BLOCKED`. O wrapper PowerShell só imprime
 `RELEASE_DECISION=GO; SCOPE=LOCAL_MASTER_DEFENSE` depois de receber exit code 0. A suíte final
-contém **1135 testes backend**, **79 frontend** e **13 E2E**. O commit que contém esta seção só
+contém **1141 testes backend**, **80 frontend** e **13 E2E**. O commit que contém esta seção só
 é liberado depois de repetir os 16 gates e o preflight em árvore limpa; qualquer falha revoga
 o GO.
 
@@ -606,6 +606,23 @@ com amostras recomputáveis, além de contrato semântico/numérico do log. Ante
 passar, o receipt deve ser novamente vinculado ao pacote modificado e o novo commit deve
 percorrer integralmente os 16 gates e o preflight. Nenhuma aprovação histórica substitui
 esse requisito.
+
+### Rodada Ω65 — inteligência competitiva contextual e posicional
+
+- mapa sistemático rápido: 23 fontes primárias/oficiais deduplicadas, incluindo trabalhos
+  de modelagem bayesiana, dinâmica, robusta e baseada em features posicionais;
+- perfil `ci-local-v1` por identidade imutável, limitado à sessão local e sem autoridade
+  para aconselhar ações;
+- VPIP/PFR global, regional e por posição exata; oportunidades separadas para RFI, limp,
+  isolamento, call/3-bet/4-bet, squeeze, roubo/defesa, blind-versus-blind, resposta a
+  aposta e agressão IP/OOP;
+- média posterior Beta(1,1), intervalo Wilson 95%, numerador/denominador, fração operacional
+  de evidência, abstenção antes de 12 oportunidades e EWMA de recência;
+- a política dos bots não consome o novo perfil. Predição de range, clustering, transformer,
+  filtro de partículas e best response permanecem não promovidos por falta de dataset e
+  validação externa apropriados;
+- a coleta atual encontrou 1141 testes backend; 80 testes frontend e 13 E2E passaram em
+  rodadas dirigidas. Os 16 gates integrais continuam obrigatórios no commit limpo candidato.
 
 ### Rubrica no escopo local supervisionado
 

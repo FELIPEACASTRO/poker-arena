@@ -99,11 +99,45 @@ export interface PosStat {
   vpip: number // 0..1
   pfr: number // 0..1
 }
+export interface CompetitiveTendency {
+  key: string
+  label: string
+  family: string
+  context: string
+  successes: number
+  opportunities: number
+  observed_rate: number | null
+  posterior_mean: number
+  interval95_low: number | null
+  interval95_high: number | null
+  evidence_fraction: number
+  evidence: 'insufficient' | 'emerging' | 'stable'
+  ready: boolean
+}
+export interface CompetitiveRecency {
+  actions: number
+  ewma_aggression: number | null
+  long_run_aggression: number | null
+  delta: number | null
+  direction: 'insufficient' | 'stable' | 'more_aggressive' | 'more_passive'
+  ready: boolean
+}
+export interface CompetitiveProfile {
+  version: string
+  scope: 'local_session_only'
+  authority: 'descriptive_only_no_action_advice'
+  posterior_method: string
+  interval_method: string
+  minimum_opportunities: number
+  signals: CompetitiveTendency[]
+  recency: CompetitiveRecency
+}
 export interface BotStat {
   seat: number
   player_id: string
   name: string
   level: string
+  position: StandardPosition | ''
   stack: number
   delta: number
   buy_in_total: number
@@ -115,6 +149,7 @@ export interface BotStat {
   wtsd: number // 0..1 — viu o flop e chegou ao showdown
   wsd: number // 0..1 — showdowns vencidos
   positions: PosStat[] // VPIP/PFR por região da mesa
+  competitive_profile?: CompetitiveProfile | null
 }
 export interface ChipSeries {
   seat: number

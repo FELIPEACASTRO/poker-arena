@@ -12,3 +12,4 @@ permanecer coerentes com as decisões aceitas abaixo.
 | [0005](0005-promocao-cientifica-de-modelos-fail-closed.md) | Promoção de visão condicionada a holdout externo e receipt reproduzível | Aceita; nenhum modelo atual promovido |
 | [0006](0006-distribuicao-canonica-unica.md) | Uma única distribuição canônica em monólito modular | Aceita |
 | [0007](0007-autorizacao-visual-apenas-com-evidencia-externa.md) | Somente F2 externamente validado autoriza decisão | Aceita; F1/VLM são diagnósticos |
+| [0008](0008-inteligencia-competitiva-contextual-descritiva.md) | Perfil contextual local com incerteza, abstenção e sem autoridade de ação | Aceita |

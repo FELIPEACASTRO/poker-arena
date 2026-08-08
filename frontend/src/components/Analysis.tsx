@@ -244,10 +244,13 @@ export function ProfilePanel() {
         </p>
       ) : (
         <p className="profile-txt">
-          A IA aprendeu: você desiste <b className="mono">{pctOf(a.your_profile_fold)}</b> diante de
+          Leitura provisória: você desiste <b className="mono">{pctOf(a.your_profile_fold)}</b> diante de
           apostas e joga{' '}
           <b>{a.your_profile_aggr > 0.55 ? 'agressivo' : a.your_profile_aggr < 0.45 ? 'passivo' : 'equilibrado'}</b>
-          . {a.your_profile_fold > 0.55 ? 'O Adaptativo vai te blefar mais.' : ''}
+          .{' '}
+          {a.your_profile_fold > 0.55
+            ? 'O Adaptativo pondera esse sinal com a evidência disponível; não é diagnóstico nem certeza.'
+            : 'A frequência observada não prova intenção nem causa.'}
         </p>
       )}
     </div>

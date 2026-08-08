@@ -83,6 +83,9 @@ def test_stop_script_only_targets_processes_recorded_by_this_project():
     assert "commandtype application" in script
     assert "get-verifiedownedtree" in script
     assert "stop-verifiedidentity" in script
+    assert "invoke-taskkill" in script
+    assert "$previouserroractionpreference" in script
+    assert "presenca sem identidade verificavel e bloqueio" in script
     assert "starttime.touniversaltime().ticks" in script
     assert "nativeprocesstree" in script
     assert "createtoolhelp32snapshot" in script
@@ -118,7 +121,11 @@ def test_launchers_use_pid_managed_start_and_never_install_at_runtime():
     assert "pythonsafepath" in start
     assert "/ready" in start
     assert "http://127.0.0.1:5173/?view=capture" in start
-    assert "http://127.0.0.1:5173/?view=capture" in menu
+    assert "-showurlsonly" in menu
+    assert 'if /i "%~1"=="start"' in menu
+    assert 'if /i "%~1"=="stop"' in menu
+    assert 'if /i "%~1"=="urls"' in menu
+    assert "--no-browser" in menu
     assert "setenvironmentvariable($name, $null, 'process')" in start
     assert "/pid $root.id /t /f" in start
     assert "stop-startedtree" in start
@@ -136,13 +143,32 @@ def test_launchers_use_pid_managed_start_and_never_install_at_runtime():
     assert "exit /b 1" in stop_block
 
 
+def test_launcher_catalogs_every_operational_entry_point():
+    start = _text("assets/start.ps1")
+
+    for url in (
+        "http://127.0.0.1:5173/",
+        "http://127.0.0.1:5173/?view=capture",
+        "http://127.0.0.1:5173/?view=copilot",
+        "http://127.0.0.1:8000/docs",
+        "http://127.0.0.1:8000/redoc",
+        "http://127.0.0.1:8000/openapi.json",
+        "http://127.0.0.1:8000/health",
+        "http://127.0.0.1:8000/ready",
+        "ws://127.0.0.1:8000/tables/{table_id}/ws",
+    ):
+        assert url in start
+    assert "show-solutionurls" in start
+    assert "todos os endpoints rest" in start
+
+
 def test_stop_script_terminates_only_the_verified_recorded_process_tree():
     script = _text("assets/stop.ps1")
 
     assert "actualexecutable -ine $record.executable" in script
     assert "startticks" in script
     assert "taskkill" in script
-    assert "/pid $process.id /t" in script
+    assert "invoke-taskkill $process.id" in script
     assert "readallbytes($pidfile)" in script
     assert "get-sha256hex" in script
     assert "registro de pid mudou durante o encerramento" in script

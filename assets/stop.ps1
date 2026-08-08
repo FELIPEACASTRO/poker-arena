@@ -207,6 +207,11 @@ function Stop-VerifiedIdentity([object]$Identity) {
         $actualTicks = $current.StartTime.ToUniversalTime().Ticks
         $actualPath = [IO.Path]::GetFullPath($current.Path)
     } catch {
+        # O processo pode terminar entre Get-Process e Refresh/Path. Ausencia
+        # confirmada e sucesso; presenca sem identidade verificavel e bloqueio.
+        if ($null -eq (Get-Process -Id ([int]$Identity.pid) -ErrorAction SilentlyContinue)) {
+            return
+        }
         throw "Nao foi possivel reverificar PID $($Identity.pid) no fallback."
     }
     if ($actualTicks -ne [long]$Identity.startTicks -or
@@ -217,6 +222,24 @@ function Stop-VerifiedIdentity([object]$Identity) {
     [void]$current.WaitForExit(5000)
     if (-not $current.HasExited) {
         throw "PID $($Identity.pid) permaneceu ativo apos fallback nativo."
+    }
+}
+
+function Invoke-Taskkill([int]$TargetPid, [switch]$Force) {
+    # Windows PowerShell 5 promotes native stderr to NativeCommandError when the
+    # script uses ErrorActionPreference=Stop. taskkill may legitimately report
+    # that a graceful tree stop needs /F, so isolate only this native call and
+    # let the verified process state below decide whether escalation is needed.
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        if ($Force) {
+            & $taskkill /PID $TargetPid /T /F 2>$null | Out-Null
+        } else {
+            & $taskkill /PID $TargetPid /T 2>$null | Out-Null
+        }
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
     }
 }
 
@@ -340,10 +363,10 @@ foreach ($record in $validated) {
         continue
     }
     $ownedTree = @(Get-VerifiedOwnedTree $record)
-    & $taskkill /PID $process.Id /T | Out-Null
+    Invoke-Taskkill $process.Id
     [void]$process.WaitForExit(5000)
     if (-not $process.HasExited) {
-        & $taskkill /PID $process.Id /T /F | Out-Null
+        Invoke-Taskkill $process.Id -Force
         [void]$process.WaitForExit(5000)
     }
     if (-not $process.HasExited) {
@@ -374,7 +397,11 @@ foreach ($record in $validated) {
             $candidate.Refresh()
             return $candidate.StartTime.ToUniversalTime().Ticks -eq [long]$_.startTicks
         } catch {
-            return $true
+            # Evita falso positivo se o processo terminou entre a consulta e
+            # a leitura da identidade; PID presente/reutilizado segue bloqueado.
+            return $null -ne (
+                Get-Process -Id ([int]$_.pid) -ErrorAction SilentlyContinue
+            )
         }
     })
     if ($remaining.Count -ne 0) {

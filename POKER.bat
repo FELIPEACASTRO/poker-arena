@@ -8,6 +8,15 @@ if not exist "%POWERSHELL_EXE%" (
   exit /b 1
 )
 
+if /i "%~1"=="start" goto cli_start
+if /i "%~1"=="iniciar" goto cli_start
+if /i "%~1"=="stop" goto cli_stop
+if /i "%~1"=="parar" goto cli_stop
+if /i "%~1"=="urls" goto cli_urls
+if /i "%~1"=="open" goto cli_open
+if /i "%~1"=="abrir" goto cli_open
+if not "%~1"=="" goto cli_usage
+
 :menu
 cls
 echo(
@@ -18,7 +27,7 @@ echo   =====================================================
 echo(
 echo      [1]  Iniciar   (backend + frontend + navegador)
 echo      [2]  Parar     (encerra os servidores)
-echo      [3]  Abrir no navegador
+echo      [3]  Mostrar URLs e abrir no navegador
 echo      [4]  Validar   (testes + build + lint)
 echo      [5]  Preflight banca (offline + visao + seguranca)
 echo      [0]  Sair
@@ -54,8 +63,48 @@ timeout /t 2 >nul
 goto menu
 
 :open
-start "" "http://127.0.0.1:5173/?view=capture"
+"%POWERSHELL_EXE%" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%~dp0assets\start.ps1" -ShowUrlsOnly -OpenBrowser
+if errorlevel 1 (
+  echo   [ERRO] Nao foi possivel listar/abrir as URLs.
+  pause
+)
 goto menu
+
+:cli_start
+if "%~2"=="" goto cli_start_browser
+if /i "%~2"=="--no-browser" goto cli_start_no_browser
+goto cli_usage
+
+:cli_start_browser
+"%POWERSHELL_EXE%" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%~dp0assets\start.ps1" -OpenBrowser
+exit /b %errorlevel%
+
+:cli_start_no_browser
+"%POWERSHELL_EXE%" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%~dp0assets\start.ps1"
+exit /b %errorlevel%
+
+:cli_stop
+if not "%~2"=="" goto cli_usage
+"%POWERSHELL_EXE%" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%~dp0assets\stop.ps1"
+exit /b %errorlevel%
+
+:cli_urls
+if not "%~2"=="" goto cli_usage
+"%POWERSHELL_EXE%" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%~dp0assets\start.ps1" -ShowUrlsOnly
+exit /b %errorlevel%
+
+:cli_open
+if not "%~2"=="" goto cli_usage
+"%POWERSHELL_EXE%" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%~dp0assets\start.ps1" -ShowUrlsOnly -OpenBrowser
+exit /b %errorlevel%
+
+:cli_usage
+echo Uso:
+echo   POKER.bat start [--no-browser]
+echo   POKER.bat stop
+echo   POKER.bat urls
+echo   POKER.bat open
+exit /b 2
 
 :validate
 echo(

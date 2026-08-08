@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param([switch]$OpenBrowser)
+param(
+    [switch]$OpenBrowser,
+    [switch]$ShowUrlsOnly
+)
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Split-Path $PSScriptRoot -Parent))
@@ -13,6 +16,31 @@ $backendPort = 8000
 $frontendPort = 5173
 $frontendApi = "http://127.0.0.1:$backendPort"
 $pidSchema = 'poker-arena-pids-v1'
+
+function Show-SolutionUrls {
+    Write-Host ''
+    Write-Host 'URLs operacionais do Poker Arena (somente neste computador):'
+    Write-Host '  Arena principal......... http://127.0.0.1:5173/'
+    Write-Host '  Captura supervisionada.. http://127.0.0.1:5173/?view=capture'
+    Write-Host '  Copiloto de estudo....... http://127.0.0.1:5173/?view=copilot'
+    Write-Host '  API / Swagger............ http://127.0.0.1:8000/docs'
+    Write-Host '  API / ReDoc.............. http://127.0.0.1:8000/redoc'
+    Write-Host '  Contrato OpenAPI......... http://127.0.0.1:8000/openapi.json'
+    Write-Host '  Saude.................... http://127.0.0.1:8000/health'
+    Write-Host '  Prontidao................ http://127.0.0.1:8000/ready'
+    Write-Host '  WebSocket de mesa........ ws://127.0.0.1:8000/tables/{table_id}/ws'
+    Write-Host '  Todos os endpoints REST estao catalogados no Swagger e no OpenAPI.'
+    Write-Host ''
+}
+
+if ($ShowUrlsOnly) {
+    Show-SolutionUrls
+    if ($OpenBrowser) {
+        Start-Process 'http://127.0.0.1:5173/?view=capture'
+    }
+    exit 0
+}
+
 if (-not ('PokerArena.NativeProcessTree' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
@@ -464,6 +492,7 @@ try {
 
 Write-Host "Poker Arena iniciado: backend PID $($backend.Id), frontend PID $($frontend.Id)."
 Write-Host "Logs: $runtimeDir"
+Show-SolutionUrls
 if ($OpenBrowser) {
     Start-Process 'http://127.0.0.1:5173/?view=capture'
 }

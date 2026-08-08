@@ -88,10 +88,24 @@ uma certificação formal de todas as regras possíveis.
 ```
 [1] Iniciar   (backend + frontend + navegador)
 [2] Parar     (encerra os servidores)
-[3] Abrir no navegador
+[3] Mostrar URLs e abrir no navegador
 [4] Validar   (testes + build + lint)
 [5] Preflight banca (offline + visão + segurança)
 ```
+
+O mesmo launcher também pode ser chamado de forma não interativa, a partir da raiz:
+
+```bat
+POKER.bat start
+POKER.bat start --no-browser
+POKER.bat urls
+POKER.bat stop
+```
+
+Depois que os dois servidores respondem, o launcher imprime todos os pontos de entrada
+operacionais: arena, captura supervisionada, copiloto, Swagger, ReDoc, OpenAPI, saúde,
+prontidão e o modelo da URL WebSocket. A listagem usa somente `127.0.0.1`; o catálogo
+completo dos endpoints REST fica no Swagger/OpenAPI.
 
 Antes da apresentação local, execute a opção **5** e prossiga somente se ela imprimir
 `RELEASE_DECISION=GO; SCOPE=LOCAL_MASTER_DEFENSE` e `READY_FOR_LOCAL_DEFENSE`. O roteiro completo está em

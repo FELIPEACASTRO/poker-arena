@@ -4,6 +4,8 @@
 > com o protocolo Omega v3 e a refutação independente posterior, está em
 > `RELATORIO_OMEGA_AUDITORIA_20260807.md`: **GO — `LOCAL_MASTER_DEFENSE`**. Contagens,
 > tag e estados de componentes abaixo não descrevem o HEAD ou a decisão de release atuais.
+> O índice vigente e a inteligência contextual implementada em 2026-08-08 estão em
+> `README.md` e `research/COMPETITIVE_INTELLIGENCE_20260808.md`.
 
 ## Parecer executivo
 

@@ -645,7 +645,7 @@ class OptionSchema(BaseModel):
 
 
 class CopilotRequest(StrictRequest):
-    """Um SPOT descrito pelo usuário para o Copiloto revisar (pós-jogo, offline)."""
+    """Um SPOT atual, hipotético ou histórico descrito para análise local/offline."""
 
     hole: list[str] = Field(
         min_length=2,

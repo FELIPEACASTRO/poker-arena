@@ -1,5 +1,10 @@
 # Varredura de 156 plataformas para a Poker Arena — 2026-07-17
 
+> **Evidência datada.** O estado implementado em 2026-08-08 — perfis contextuais locais,
+> posicionais, descritivos e sem autoridade de ação — está em
+> [`COMPETITIVE_INTELLIGENCE_20260808.md`](COMPETITIVE_INTELLIGENCE_20260808.md). Recomendações
+> futuras deste snapshot continuam futuras salvo evidência explícita em documento posterior.
+
 > **Snapshot reproduzível, não censo eterno nem benchmark de produção.** Todos os 156 URLs
 > oficiais do catálogo fornecido foram inventariados e sondados. A busca de conteúdo foi feita
 > em cada serviço que expunha pesquisa pública utilizável e, nos agregadores, por famílias

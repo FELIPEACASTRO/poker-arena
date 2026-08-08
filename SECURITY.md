@@ -22,6 +22,10 @@ tipo de exposição e passos mínimos de reprodução; substitua valores por `[R
   monitor ou guia do navegador falham fechado.
 - Envio a VLM remoto exige TLS, host aprovado, redaction, autenticação e consentimento efêmero.
 - F1 e VLM não calibrados nunca autorizam recomendação estratégica.
+- Perfis competitivos são calculados somente em memória a partir da sessão local, não
+  importam históricos de terceiros e não têm autoridade para recomendar ou alterar ações.
+- A recomendação do Copiloto é destinada ao laboratório local, estudo e simulação. Não use
+  captura, perfil ou conselho durante partidas de terceiros quando a plataforma proíba RTA.
 
 ## Dependências e releases
 

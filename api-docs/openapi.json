@@ -846,7 +846,7 @@
       },
       "CopilotRequest": {
         "additionalProperties": false,
-        "description": "Um SPOT descrito pelo usuário para o Copiloto revisar (pós-jogo, offline).",
+        "description": "Um SPOT atual, hipotético ou histórico descrito para análise local/offline.",
         "properties": {
           "big_blind": {
             "default": 20,
@@ -3164,7 +3164,7 @@
   "paths": {
     "/copilot": {
       "post": {
-        "description": "Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)\ne devolve a leitura completa: equity modelada, pot odds, EV simplificado de checkdown,\nMDF, outs, a nut,\ntextura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o\nconselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos\nlocais e não acessa sites de poker. É destinado a estudo e revisão pós-jogo.",
+        "description": "Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)\ne devolve a leitura completa: equity modelada, pot odds, EV simplificado de checkdown,\nMDF, outs, a nut,\ntextura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o\nconselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos\nlocais e não acessa sites de poker. É destinado a estudo/simulação local; a\nrevisão PHH é pós-mão e o uso como RTA em terceiros não é autorizado.",
         "operationId": "copilot_copilot_post",
         "parameters": [
           {
@@ -3357,7 +3357,7 @@
             "PokerBearer": []
           }
         ],
-        "summary": "Copiloto: revisar um spot (pós-jogo, offline)",
+        "summary": "Copiloto: analisar um spot informado (local, offline)",
         "tags": [
           "Copiloto"
         ]
@@ -7090,7 +7090,7 @@
       "name": "Jogadores"
     },
     {
-      "description": "Revisar um spot pós-jogo (equity, MDF, veredito das jogadas, conselho das IAs) — offline.",
+      "description": "Analisar um spot informado (ação sugerida, equity, MDF, opções e conselho das IAs) ou revisar PHH — local e offline.",
       "name": "Copiloto"
     },
     {

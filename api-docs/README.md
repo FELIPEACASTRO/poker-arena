@@ -127,6 +127,31 @@ configurado), `4403` (`Origin` fora de localhost/127.0.0.1) ou `4404` (mesa ause
 Quando a autenticação estiver ativa, envie somente `X-Poker-Token` no handshake. Token
 em query string é deliberadamente recusado para impedir exposição em URLs e access logs.
 
+### Copiloto e perfil competitivo no contrato
+
+`POST /copilot` analisa o spot informado e devolve uma recomendação heurística com ação,
+alvo de raise quando aplicável, equity, pot odds, alternativas e justificativas. O mesmo
+contrato pode representar um spot atual, hipotético ou já jogado; “pós-jogo” é o uso seguro
+declarado para plataformas de terceiros. `POST /copilot/review-hand` é retrospectivo por
+definição, pois percorre um histórico PHH. `POST /copilot/from-image` só inclui `decision`
+quando o caminho visual e o gate têm autoridade suficiente; F1/VLM não calibrados retornam
+diagnóstico com recomendação suprimida.
+
+Não existe rota de “conselho competitivo”. O perfil por oponente é parte somente de
+respostas de estado do modo `watch`, no caminho:
+
+```text
+TableStateResponse.watch_stats.bots[*].competitive_profile
+```
+
+`CompetitiveProfileSchema` fixa `scope=local_session_only` e
+`authority=descriptive_only_no_action_advice`. Cada `signal` preserva `successes`,
+`opportunities`, `observed_rate`, `posterior_mean`, intervalo Wilson 95%, fração
+operacional de evidência, classificação e `ready`. `recency` expõe uma EWMA descritiva.
+Ausência/baixa amostra é representada explicitamente; nenhum desses campos escolhe ação,
+estima cartas privadas ou prova causalidade. O esquema completo e suas descrições estão em
+`openapi.json`.
+
 ## Operações cobertas
 
 | Grupo | Método | Rota |

@@ -1,6 +1,7 @@
 # Roteiro de demonstração — Poker Arena
 
-Este roteiro descreve o snapshot revisado em 2026-07-17. Antes de cada demonstração,
+Este roteiro incorpora a superfície vigente em 2026-08-08. Resultados experimentais
+datados continuam pertencendo ao snapshot que os gerou. Antes de cada demonstração,
 confirme o estado no checkout atual. Números de experimentos antigos não devem ser
 apresentados como resultado vigente sem reexecução ligada a hashes de código, dados e modelo.
 O diferencial demonstrável é a combinação de motor auditável, bots comparáveis, explicações
@@ -37,20 +38,24 @@ Monte uma mesa com os níveis retornados por `/levels` e avance algumas jogadas.
 - MDF e fold equity são referências didáticas com hipóteses restritas, especialmente úteis
   em spots heads-up/river, não uma solução GTO geral para potes multiway.
 
-### 3. Estatísticas com tamanho de amostra
+### 3. Inteligência contextual com tamanho de amostra
 
-Mostre VPIP, PFR, WTSD e agressão, sempre junto do número de mãos. Valores iniciais são
-instáveis e não autorizam frases como “o Expert vence a maioria dos showdowns”. O alerta de
-possível tilt é uma heurística de mudança de agressão após uma perda; não é diagnóstico
-psicológico.
+Mostre VPIP, PFR, WTSD e agressão e expanda **Inteligência contextual**. Explique que RFI,
+limp, isolamento, call/3-bet/squeeze/4-bet, steal/defesa, blind-versus-blind, resposta a
+aposta e agressão IP/OOP só contam quando existiu oportunidade. Leia sucessos/denominador,
+média Beta(1,1), Wilson 95%, evidência e recência. Antes de 12 oportunidades o painel se
+abstém; 12–29 é emergente e 30+ é estável. Esses cortes são operacionais, não universais.
+O perfil descreve esta sessão e não altera a política do bot. O sinal de recência é uma
+heurística EWMA; não é diagnóstico psicológico.
 
-### 4. Copiloto e visão com abstenção
+### 4. Copiloto que recomenda e visão com abstenção
 
-No Copiloto, revise um spot descrito ou um histórico PHH. Se usar uma screenshot, destaque o
-comportamento correto: o pipeline propõe um estado, valida estrutura/confiança e **abstém**
-quando a evidência é insuficiente. O detector instalado não tem benchmark real abrangente e
-não lê “qualquer interface”. O fallback VLM remoto permanece desligado salvo opt-in do
-operador.
+No Copiloto, descreva um spot e mostre que ele efetivamente sugere ação, alvo de raise quando
+aplicável, equity, pot odds, opções e justificativa. O PHH é a modalidade de revisão após a
+mão. Se usar screenshot, destaque a terceira regra: o pipeline propõe o estado e só inclui
+recomendação quando visão, contexto e gate têm autoridade; com o F1 atual, **abstém**. O
+detector instalado não tem benchmark real abrangente e não lê “qualquer interface”. O
+fallback VLM remoto permanece desligado salvo opt-in do operador.
 
 ### 5. Auditoria e referência externa
 

@@ -48,7 +48,7 @@
     {
       "_id": "fld_f71742ee75856fe3",
       "_type": "request_group",
-      "description": "Revisar um spot pós-jogo (equity, MDF, veredito das jogadas, conselho das IAs) — offline.",
+      "description": "Analisar um spot informado (ação sugerida, equity, MDF, opções e conselho das IAs) ou revisar PHH — local e offline.",
       "metaSortKey": 3000,
       "name": "Copiloto",
       "parentId": "wrk_poker_arena"
@@ -92,7 +92,7 @@
         "mimeType": "application/json",
         "text": "{\n  \"big_blind\": 20,\n  \"board\": [\n    \"Kd\",\n    \"7c\",\n    \"2s\"\n  ],\n  \"current_bet\": 20,\n  \"effective_stack\": 1000,\n  \"hero_current_bet\": 0,\n  \"hole\": [\n    \"As\",\n    \"Ah\"\n  ],\n  \"in_position\": true,\n  \"min_raise_increment\": 20,\n  \"my_stack\": 1000,\n  \"num_opponents\": 1,\n  \"position\": \"SB\",\n  \"pot\": 100,\n  \"raise_reopened\": true,\n  \"table_size\": 2,\n  \"to_call\": 20\n}"
       },
-      "description": "Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)\ne devolve a leitura completa: equity modelada, pot odds, EV simplificado de checkdown,\nMDF, outs, a nut,\ntextura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o\nconselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos\nlocais e não acessa sites de poker. É destinado a estudo e revisão pós-jogo.",
+      "description": "Analisa um SPOT que você descreve (suas cartas, board, pote, preço, posição)\ne devolve a leitura completa: equity modelada, pot odds, EV simplificado de checkdown,\nMDF, outs, a nut,\ntextura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o\nconselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos\nlocais e não acessa sites de poker. É destinado a estudo/simulação local; a\nrevisão PHH é pós-mão e o uso como RTA em terceiros não é autorizado.",
       "headers": [
         {
           "name": "Content-Type",
@@ -119,7 +119,7 @@
       ],
       "metaSortKey": 1000,
       "method": "POST",
-      "name": "Copiloto: revisar um spot (pós-jogo, offline)",
+      "name": "Copiloto: analisar um spot informado (local, offline)",
       "parentId": "fld_f71742ee75856fe3",
       "url": "{{ _.base_url }}/copilot"
     },

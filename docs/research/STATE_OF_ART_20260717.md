@@ -1,5 +1,10 @@
 # Estado da arte, fontes de dados e plano experimental — 2026-07-17
 
+> **Snapshot de pesquisa datado.** A implementação posterior de inteligência contextual por
+> posição/papel, com incerteza e abstenção, está documentada em
+> [`COMPETITIVE_INTELLIGENCE_20260808.md`](COMPETITIVE_INTELLIGENCE_20260808.md). As propostas
+> abaixo não devem ser confundidas com essa superfície já implementada.
+
 > **Snapshot de pesquisa, não certificado de release.** Catálogos, preços, licenças e
 > disponibilidade de hardware podem mudar. Para o contrato executável atual, consulte a
 > [governança de datasets](../DATASET_GOVERNANCE.md), o

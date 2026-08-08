@@ -9,6 +9,7 @@ import pytest
 from scripts.copilot_performance_benchmark import (
     RECEIPT_MAX_AGE_DAYS,
     RECEIPT_PATH,
+    RECEIPT_SCOPE,
     SCENARIOS,
     benchmark,
     implementation_binding,
@@ -40,6 +41,7 @@ def test_performance_receipt_is_bound_to_implementation_and_scenarios():
     receipt = benchmark(3)
 
     assert receipt["schema_version"] == 5
+    assert receipt["scope"] == RECEIPT_SCOPE
     assert receipt["implementation_binding"] == implementation_binding()
     assert receipt["environment"]["installed_distributions"] == installed_distribution_versions()
     assert receipt["environment"]["processor"] != "not-reported"

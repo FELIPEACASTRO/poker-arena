@@ -84,7 +84,8 @@ comprovadas, nunca como aprovadas.
   Readiness contabiliza arquivos de auditoria ilegíveis; nenhum pode desaparecer do diagnóstico.
 - Metas de latência da visão valem somente para o ambiente descrito no recibo; extrapolações
   para outra máquina ou provider são hipóteses, não evidência.
-- A revisão local pós-mão do copiloto tem meta P95 <= 2.500 ms nos cinco cenários
+- A análise local de spot do Copiloto — destinada a estudo/simulação, com PHH pós-mão —
+  tem meta P95 <= 2.500 ms nos cinco cenários
   congelados (equity exata/amostrada, HU/6-max/9-max). O receipt v5 preserva sete amostras
   brutas por cenário; o validador recompõe min/mediana/P95/máximo e o aceite, liga a medição
   aos hashes de implementação/cenários/lock e é reexecutado pelo preflight. Passar tempo
@@ -100,3 +101,6 @@ comprovadas, nunca como aprovadas.
   evidência obrigatória mantém a decisão `BLOCKED`; somente o preflight integral emite `GO`.
 - Para `LOCAL_MASTER_DEFENSE`, o sucesso exige `release_decision=GO`; capacidades declaradas
   fora do escopo são `N/A` e não alteram a decisão da release.
+- Toda mudança de superfície deve manter `docs/README.md`, README do componente, OpenAPI e
+  guias HTML/PDF coerentes. Artefato gerado com drift, link local ausente ou snapshot sem
+  rótulo temporal bloqueia a documentação de release.

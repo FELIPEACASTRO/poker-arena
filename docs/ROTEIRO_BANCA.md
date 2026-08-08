@@ -10,7 +10,7 @@
    `docs/GUIA_DE_NAVEGACAO_POKER_ARENA.pdf` aberto como fallback visual.
 4. Não dependa de internet. Backend, frontend, Swagger e baseline F1 são locais.
 
-## Sequência sugerida (7–10 minutos)
+## Sequência sugerida (9–12 minutos)
 
 1. **Problema e arquitetura:** monólito modular local; captura → visão → sanity → decisão.
 2. **Motor verificável:** crie uma mesa, mostre posições, side pots e caixa de vidro dos bots.
@@ -19,11 +19,17 @@
    somente **Janela**, selecione a fixture, confirme a prévia e mostre
    cartas, pote, jogadores, posição, confiança interna e latência. O JSON ao lado da imagem
    contém o SHA-256 e o gabarito auditável.
-4. **Rigor científico:** destaque que F1 é um baseline sintético e, por isso, a recomendação
+4. **Copiloto que recomenda:** abra `/?view=copilot`, descreva um spot atual ou hipotético
+   e mostre ação sugerida, alvo de raise quando aplicável, equity, pot odds, opções e
+   justificativa. Explique que a recomendação é heurística e educacional, não prova GTO.
+5. **Inteligência competitiva:** no Modo Laboratório, expanda **Inteligência contextual**.
+   Mostre RFI/3-bet/steal/defesa por posição e papel, sempre com sucessos/oportunidades,
+   Wilson 95%, suavização e estado de evidência. Reforce que o perfil descreve e não joga.
+6. **Rigor científico:** destaque que F1 é um baseline sintético e, por isso, a recomendação
    estratégica é suprimida por segurança mesmo quando a fixture é lida corretamente. Esse é
    o resultado esperado e aprovado da demo. Mostre o receipt obrigatório do F2.
-5. **Falha segura:** tente uma fonte não comprovada/guia ou imagem inválida e mostre a abstenção.
-6. **Reprodutibilidade:** mostre o commit, o preflight e o gate completo, sem alegar que testes
+7. **Falha segura:** tente uma fonte não comprovada/guia ou imagem inválida e mostre a abstenção.
+8. **Reprodutibilidade:** mostre o commit, o preflight e o gate completo, sem alegar que testes
    sintéticos provam generalização para clientes reais.
 
 Se houver apenas uma tela, use **Mesmo monitor** e organize painel e fixture lado a lado.
@@ -36,6 +42,9 @@ automática da aplicação.
 - “Esta execução demonstra o pipeline local e seus mecanismos de abstenção.”
 - “O F1 foi medido no renderizador sintético canônico; transferência real ainda não foi provada.”
 - “Somente o F2 com holdout externo, diversidade, poder estatístico e receipt imutável pode
-  habilitar uma recomendação.”
+  habilitar uma recomendação derivada automaticamente da imagem.”
+- “O Copiloto manual sugere a próxima ação no spot informado; o PHH revisa uma mão concluída
+  e a captura por imagem só recomenda quando o gate visual autoriza.”
+- “O perfil competitivo resume oportunidades desta sessão; não estima cartas nem altera o bot.”
 
 Evite “100% preciso”, “GTO”, “produção” ou “funciona em qualquer sala”.

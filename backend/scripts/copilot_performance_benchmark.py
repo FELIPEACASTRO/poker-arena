@@ -1,4 +1,4 @@
-"""Reproducible local latency receipt for the complete post-hand copilot review.
+"""Reproducible local latency receipt for the Copilot spot-analysis pipeline.
 
 The benchmark covers exact and sampled equity, heads-up through nine players. It is
 not a strategy-quality benchmark and its latency applies only to the recorded host.
@@ -24,6 +24,7 @@ from poker_arena.application.copilot import review_spot
 P95_BUDGET_MS: Final = 2_500.0
 RECEIPT_MAX_AGE_DAYS: Final = 30
 CANONICAL_RECEIPT_ITERATIONS: Final = 7
+RECEIPT_SCOPE: Final = "local_copilot_spot_latency_only_not_strategy_quality"
 SCENARIOS: Final = (
     {
         "name": "river-heads-up-exact",
@@ -189,7 +190,7 @@ def validate_versioned_receipt(
         days=RECEIPT_MAX_AGE_DAYS
     ):
         raise ValueError("receipt de desempenho está no futuro ou expirado")
-    if receipt.get("scope") != "local_post_hand_latency_only_not_strategy_quality":
+    if receipt.get("scope") != RECEIPT_SCOPE:
         raise ValueError("escopo do receipt de desempenho é inválido")
     if receipt.get("p95_budget_ms") != P95_BUDGET_MS:
         raise ValueError("budget do receipt de desempenho é inválido")
@@ -296,7 +297,7 @@ def benchmark(iterations: int) -> dict[str, Any]:
     return {
         "schema_version": 5,
         "created_at_utc": datetime.now(UTC).isoformat(),
-        "scope": "local_post_hand_latency_only_not_strategy_quality",
+        "scope": RECEIPT_SCOPE,
         "environment": environment,
         "implementation_binding": implementation_binding(),
         "scenarios_sha256": _scenarios_sha256(),

@@ -149,7 +149,7 @@ export default function App() {
                 <button
                   className="btn btn-ghost guide-open"
                   onClick={() => setCopilotOpen(true)}
-                  title="Copiloto: revisar um spot pós-jogo no backend configurado"
+                  title="Copiloto: analisar um spot e revisar PHH no backend configurado"
                   aria-label="Abrir copiloto de estudo"
                 >
                   <Sparkles size={16} />

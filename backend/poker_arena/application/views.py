@@ -172,10 +172,11 @@ class ReasoningView:
 
 @dataclass(frozen=True)
 class CopilotView:
-    """A leitura do COPILOTO para um spot descrito pelo usuário (revisão pós-jogo).
+    """A leitura do COPILOTO para um spot atual, hipotético ou histórico informado.
 
     É o painel 'Sua jogada' aplicado a qualquer situação que você digitar — sem
-    tocar em site nenhum. A análise deste fluxo é executada localmente."""
+    tocar em site nenhum. A análise deste fluxo é executada localmente e inclui
+    recomendação heurística; o replay PHH é a modalidade pós-mão."""
 
     hand_label: str | None  # melhor mão atual / cartas (ex.: "Par de Reis", "A-K")
     equity_pct: int  # exata no river HU; senão Monte Carlo contra ranges uniformes

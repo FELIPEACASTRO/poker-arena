@@ -1,11 +1,15 @@
-"""Copiloto de revisão de mãos — análise pós-jogo de um SPOT que você descreve.
+"""Copiloto de análise e revisão — recomenda para um SPOT que você descreve.
 
 O "copiloto" que se pediu: você diz suas cartas, o board, o pote, quanto custa
 pagar, seu stack e a posição — e ele devolve a leitura explícita (equity modelada, pot
 odds, EV, MDF, outs/projetos, a nut, textura, blockers, realização da equity), o
 veredito de CADA jogada possível (boa/arriscada/ruim + por quê) e o conselho das 5
 IAs. Tudo calculado de verdade, offline, sem tocar em site nenhum — é o mesmo motor
-do painel "Sua jogada", aplicado a qualquer situação.
+do painel "Sua jogada", aplicado a qualquer situação atual, hipotética ou histórica.
+
+O componente não lê nem controla sites de poker. Seu uso autorizado é estudo e simulação
+local; o histórico PHH é pós-mão e assistência em tempo real proibida por terceiros não é
+um uso suportado.
 
 Como você não vê as cartas dos oponentes, a equity usa ranges uniformes desconhecidos:
 é exata somente no river heads-up e estimada por Monte Carlo nos demais estados. O

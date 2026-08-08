@@ -958,7 +958,7 @@ TAGS_METADATA = [
     },
     {
         "name": "Copiloto",
-        "description": "Revisar um spot pós-jogo (equity, MDF, veredito das jogadas, conselho das IAs) — offline.",
+        "description": "Analisar um spot informado (ação sugerida, equity, MDF, opções e conselho das IAs) ou revisar PHH — local e offline.",
     },
     {"name": "Catálogo", "description": "Dados de apoio (níveis de IA disponíveis)."},
     {"name": "Auditoria", "description": "Histórico das partidas gravadas e replay mão a mão."},
@@ -1327,7 +1327,7 @@ def create_app() -> FastAPI:
         "/copilot",
         response_model=CopilotResponse,
         tags=["Copiloto"],
-        summary="Copiloto: revisar um spot (pós-jogo, offline)",
+        summary="Copiloto: analisar um spot informado (local, offline)",
         responses={
             400: {
                 "description": "Spot inválido (cartas repetidas, quantidade errada, valores inválidos)."
@@ -1340,7 +1340,8 @@ def create_app() -> FastAPI:
         MDF, outs, a nut,
         textura, blockers, o veredito de CADA jogada (boa/arriscada/ruim + por quê) e o
         conselho dos níveis de IA disponíveis. Este endpoint usa somente algoritmos
-        locais e não acessa sites de poker. É destinado a estudo e revisão pós-jogo."""
+        locais e não acessa sites de poker. É destinado a estudo/simulação local; a
+        revisão PHH é pós-mão e o uso como RTA em terceiros não é autorizado."""
         from ..application.copilot import InvalidSpotError, review_spot
 
         try:

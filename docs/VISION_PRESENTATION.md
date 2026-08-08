@@ -4,13 +4,19 @@ O fluxo operacional iniciado pelo `.bat` é `/?view=capture`: um workspace de p�
 não um modal. O operador confirma a autorização do parceiro, escolhe **Janela** no seletor nativo,
 confere a prévia e só então inicia a análise. Tela inteira e guia são bloqueadas; nenhum quadro é
 enviado antes da confirmação. A escolha não pode ser automatizada silenciosamente por restrição
-de segurança da Web. O modal `/?view=copilot` permanece para revisão manual pós-jogo.
+de segurança da Web. `/?view=copilot` permanece para análise manual de spot e revisão PHH.
 
 ## Objetivo
 
 A interface apresenta cada tentativa de reconhecimento como evidência operacional, não
-como prova de desempenho científico. A mesma visão é usada no upload pós-jogo e na
+como prova de desempenho científico. A mesma visão é usada no upload manual e na
 captura supervisionada.
+
+O Copiloto manual e o perfil competitivo são fronteiras separadas da percepção. Um spot
+descrito diretamente pode produzir recomendação heurística. O perfil competitivo deriva
+de eventos estruturados do motor e permanece apenas descritivo. Uma proposta visual
+abstida não alimenta perfil nem autoriza recomendação; e o perfil, mesmo quando estável,
+não autoriza a decisão visual nem altera bots.
 
 ## Fonte de cada campo
 
@@ -22,7 +28,7 @@ captura supervisionada.
 | Proteção/abstenção | `sanity.ok === false` | O gate suprimiu a recomendação estratégica como esperado |
 | Motivos/avisos | `sanity.problems` / `sanity.warnings` | Diagnóstico estruturado devolvido pelo backend |
 | Latência da chamada | relógio monotônico do navegador ao redor de `api.fromImage` | Tempo navegador → backend → resposta daquela chamada |
-| Decisão | `decision` | Não exibida durante a captura ao vivo; revisão estratégica é pós-jogo |
+| Decisão | `decision` | No workspace standalone não é exibida; em integração só aparece quando visão, sanidade e contexto autorizam |
 
 ## Linguagem proibida sem nova evidência
 
@@ -56,3 +62,5 @@ absteve. Consulte também o
 - `CopilotScreen.test.tsx`: integração do upload e limite de 5 MB coerente com o backend.
 - `LiveCopilotScreen.test.tsx`: consentimento, confirmação sem upload antecipado, bloqueio de
   tela/guia, recusa de permissão, término da track, sessão remota e leitura periódica.
+- `navigation.spec.ts`: fluxo integrado, escolha mesmo/outro monitor, zero upload antes da
+  confirmação e linguagem de proteção aprovada.

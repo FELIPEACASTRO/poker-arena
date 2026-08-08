@@ -29,8 +29,9 @@ dinheiro não integram esta release; são `N/A` para o aceite local e não são 
   O arquivo não integra a distribuição `CODEX`; o hash preserva a identidade do input auditado.
 - Fixture PHH canônico `pluribus.jsonl`: SHA-256
   `A2DDF222081561896DE2535F6CB96CE4098C423F9F9199F0A4C4025709269662`.
-- Inventário final esperado: 346 arquivos visíveis a `rg --files`, incluindo este relatório;
-  156 Python, 48 documentos Markdown, 32 TSX, 22 TS, 28 JSON, 12 notebooks e ativos.
+- Inventário reconciliado em 2026-08-08: 359 arquivos visíveis a `rg --files`;
+  158 Python, 53 documentos Markdown, 4 HTML, 32 TSX, 22 TS, 30 JSON, 12 notebooks e ativos.
+  A classificação vigente/histórico/gerado está em `docs/README.md`.
 - Backend FastAPI, motor NLHE, bots, análise/copiloto, PHH, persistência de logs, contratos
   de modelos, reconhecimento F1/F2/F3 e scripts científicos/operacionais.
 - Frontend React/TypeScript, captura supervisionada, UX de abstenção, revisão de mãos,
@@ -214,8 +215,8 @@ RAM/disco/hardware da banca.
 | ONNX inválido | 15 fixtures passavam por bytes não parseáveis | `artifact_uninspectable`; 15 fixtures ONNX válidos/parseáveis | não assina autoria |
 | Raise incontestável | motor oferecia raise 332; PokerKit rejeitava | repro versionado passa; fuzz ad hoc histórico seed 20260810, 20k casos, `bad=[]`, mantido apenas como apoio | harness ad hoc não foi preservado; não conta como gate reproduzível |
 | Review sizing | raise 40 e raise 60 davam match | mismatch explícito 40≠60 | subconjunto PHH NT |
-| Frontend | 2 warnings ESLint | 79/79 testes; lint sem aviso; build aprovado | browser/hardware local |
-| Copiloto | receipt anterior invalidado por mudança de source/runtime | receipt v5 final SHA-256 `B6F8889B90BB3443856D531ED7754D23A7CD9C95B017DCC0C052EF566A22A081`: P95 máximo 1774,475 ms em 5 cenários, budget 2500 ms | 7 amostras brutas/cenário; binding `6ba67e2e…71e9f596`; versões instaladas e CPU vinculadas; não é comparação entre hosts |
+| Frontend | 2 warnings ESLint | 80/80 testes; lint sem aviso; build aprovado | browser/hardware local |
+| Copiloto | receipt anterior invalidado pela reconciliação semântica do spot | receipt v5 SHA-256 `38520478FB4F722F7F91A4AFC5CE84D6CADE02B8DEE84BF8E528BB42E40273C5`: P95 máximo 1103,183 ms em 5 cenários, budget 2500 ms | 7 amostras brutas/cenário; scope `local_copilot_spot_latency_only_not_strategy_quality`; binding `b0ee592c…58403111`; versões instaladas e CPU vinculadas; não é comparação entre hosts |
 | Contenção do host | execução incidental sob forte carga chegou a 2607,209 ms e falhou | receipt falho descartado; medição Ω48 aprovou mesmo com um processo externo CPU-bound observável | fechar workloads concorrentes no preflight da banca; o run Ω48 não é benchmark isolado |
 | Equity exata | Monte Carlo 400 variava | 990 enumerações; erro numérico 0 no domínio | HU river/range uniforme |
 | Avaliação real F1 | alegação não medida | 0/1 exato, abstenção, 10,08 s; F2 ausente | amostra de conveniência |
@@ -296,7 +297,7 @@ execução sobre árvore limpa.
 | T53 Supply chain | Sim | Parcial | hash, lock, lineage, audits | Ω09,Ω11–Ω13,Ω35 | manifests/locks | SBOM/assinatura não emitidos; lock não prova instalação sozinho |
 | T54 Privacidade | Sim | Sim | janela-only, redaction, consent/revoke | Ω19 | browser/API tests | displaySurface depende do browser |
 | T55 Compliance/governança | Sim | Parcial | licença, citation, policies, receipts | Ω13 | arquivos raiz/ADRs | avaliação jurídica não realizada |
-| T56 Safety | Sim | Parcial | pós-jogo/local/abstenção/fail-closed | Ω14,Ω17 | UI/preflight | não é sistema safety-certified |
+| T56 Safety | Sim | Parcial | spot educacional local, PHH pós-mão, abstenção/fail-closed | Ω14,Ω17 | UI/preflight | não é sistema safety-certified |
 | T57 UX/HCI | Sim | Sim | fluxo, mensagens, stale, aborto e erro | Ω06,Ω07,Ω17,Ω31,Ω33,Ω34,Ω38,Ω40 | Vitest/E2E | estudo com usuários ausente |
 | T58 Acessibilidade | Sim | Parcial | roles, teclado, lint/E2E | 0 | testes UI | auditoria manual WCAG/AT ausente |
 | T59 Erro humano | Sim | Sim | preflight, consentimento, flags e mensagens | Ω07,Ω14,Ω23,Ω51,Ω54,Ω55 | roteiro/UI/preflight | pressão real de apresentação |
@@ -534,7 +535,8 @@ execução sobre árvore limpa.
 35. **Restore foi executado?** Rollback transacional sim; disaster restore organizacional não.
 36. **Controle de segurança assumido?** TLS/OIDC público é apenas contrato estático, não implantação testada.
 37. **Privacidade depende só de política?** Não; bloqueios técnicos existem, mas browser é dependência externa.
-38. **Requisito safety omitido?** Uso pós-jogo/local e abstenção estão explícitos; certificação safety não existe.
+38. **Requisito safety omitido?** Spot educacional/local, PHH pós-mão e abstenção visual
+    estão explícitos; certificação safety não existe.
 39. **Erro humano causado pelo design?** Ω07/Ω14/Ω23 foram exemplos e foram corrigidos.
 40. **Dashboard mede proxy?** Sim: equity/VPIP/confiança interna são proxies e estão rotulados.
 41. **Log incompleto/clock errado?** Ausência de meta, duplicatas e não-finitos são corrupção
@@ -546,8 +548,8 @@ execução sobre árvore limpa.
 46. **Correção enfraqueceu testes?** Não; ONNX ficou mais real e o oracle de raise mais estrito.
 47. **Correção criou regressão?** O primeiro gate revelou Ω46; o gate do candidato Ω47 revelou
     Ω48 e foi reprovado em 1/16. A nova rodada adversarial revelou Ω49–Ω64 antes do commit.
-    O candidato coleta 1135 backend; a rodada atual possui 174 focais, além das execuções
-    dirigidas de 79 frontend e 13 E2E. A decisão final ainda exige o gate clean-tree
+    O candidato consolidado coleta 1141 backend; a rodada atual possui 174 focais, além das execuções
+    dirigidas de 80 frontend e 13 E2E. A decisão final ainda exige o gate clean-tree
     do próprio commit e não exclui regressão desconhecida.
 48. **Há causa alternativa?** Sim em alguns casos; contradições e house rules preservam alternativas.
 49. **Segundo revisor reproduziria?** Os gates, receipts, hashes e casos dirigidos, sim. Os três fuzzes ad hoc históricos não integralmente: seeds/resultados existem, mas os harnesses não foram preservados e não são usados como gate.
@@ -623,6 +625,23 @@ esse requisito.
   validação externa apropriados;
 - a coleta atual encontrou 1141 testes backend; 80 testes frontend e 13 E2E passaram em
   rodadas dirigidas. Os 16 gates integrais continuam obrigatórios no commit limpo candidato.
+
+### Rodada Ω66 — reconciliação integral da documentação
+
+- `docs/README.md` passou a classificar toda a superfície Markdown/HTML como vigente,
+  normativa, gerada, evidência datada ou histórica;
+- README raiz, frontend, API, segurança, contribuição, NFR, roteiros e guias HTML foram
+  reconciliados com launcher completo, um/dois monitores, inteligência contextual e API;
+- a descrição genérica “Copiloto depois da mão” foi corrigida: o spot informado recebe
+  recomendação/valor/opções; PHH é retrospectivo; imagem só recomenda quando o gate visual
+  tem autoridade, o que o F1 atual deliberadamente não possui;
+- regressão observada na árvore reconciliada: 1141/1141 backend, 80/80 frontend, build/lint,
+  13/13 E2E, 96 testes dirigidos Copiloto/API, 11/11 do receipt, OpenAPI sem drift, 57
+  Markdown/HTML sem link local quebrado e guia pedagógico sem erro/overflow;
+- o receipt v5 novo tem SHA-256 `38520478FB4F722F7F91A4AFC5CE84D6CADE02B8DEE84BF8E528BB42E40273C5`,
+  P95 máximo 1103,183 ms e todas as 35 amostras dentro do orçamento;
+- esses resultados validam a revisão, mas o gate agregado 16/16 e o preflight clean-tree
+  continuam obrigatórios depois de criar o commit candidato.
 
 ### Rubrica no escopo local supervisionado
 

@@ -2,6 +2,8 @@
 
 > **Evidência histórica:** descreve exclusivamente o checkout de 2026-07-18 e o perfil v2.
 > Não deve ser usada como evidência do HEAD ou do gate científico v3 de 2026-08-07.
+> Para o estado vigente, use [`README.md`](README.md) e o
+> [`Relatório Omega`](RELATORIO_OMEGA_AUDITORIA_20260807.md).
 
 Este documento registra a validação final do checkout `Poker Arena 0.2.0`. Ele separa
 resultado observado de inferência: um gate aprovado demonstra que os contratos testados

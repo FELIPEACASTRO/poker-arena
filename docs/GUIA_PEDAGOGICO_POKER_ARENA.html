@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Guia pedagógico, visual e interativo do Poker Arena: captura supervisionada, reconhecimento de imagem, motor de poker, bots, Copiloto, auditoria, API, segurança e pesquisa." />
+  <meta name="description" content="Guia pedagógico, visual e interativo do Poker Arena: captura supervisionada, reconhecimento de imagem, motor, bots, Copiloto com recomendação de spot, inteligência competitiva contextual, auditoria, API, segurança e pesquisa." />
   <title>Como o Poker Arena funciona — guia pedagógico visual</title>
   <style>
     :root {
@@ -794,7 +794,7 @@
           <article class="concept-card good"><span class="icon">▣</span><h4>1. Captura supervisionada</h4><p>Observa uma janela própria ou autorizada. O foco é percepção, confiança, latência e abstenção.</p></article>
           <article class="concept-card info"><span class="icon">♤</span><h4>2. Jogar contra bots</h4><p>O humano toma decisões; a interface mostra ações legais, equity, outs, pot odds, EV e painéis auxiliares.</p></article>
           <article class="concept-card warn"><span class="icon">⚗</span><h4>3. Modo Laboratório</h4><p>Só bots disputam. Cartas e sinais ficam visíveis para comparar paradigmas e estilos.</p></article>
-          <article class="concept-card info"><span class="icon">✦</span><h4>4. Copiloto pós-jogo</h4><p>Revisa um spot descrito, um histórico PHH ou uma imagem. É estudo; não é assistência clandestina.</p></article>
+          <article class="concept-card info"><span class="icon">✦</span><h4>4. Copiloto de análise</h4><p>Analisa um spot descrito e sugere a ação; também revisa PHH e aceita imagem quando o gate permite. É apoio educacional local.</p></article>
           <article class="concept-card good"><span class="icon">◫</span><h4>5. Auditoria</h4><p>Lista jogos e reconstrói mãos paginadas. É a “caixa-preta” do experimento.</p></article>
         </div>
         <div class="scenario">
@@ -808,7 +808,7 @@
             <tr><td>“A visão entende esta tela?”</td><td><span class="mono">/?view=capture</span></td><td>Diagnóstico verificável e gate.</td></tr>
             <tr><td>“Como é jogar contra as estratégias?”</td><td>Arena → Eu jogo</td><td>Mesa interativa e ações humanas.</td></tr>
             <tr><td>“Como dois cérebros se comportam?”</td><td>Arena → Assistir</td><td>Instrumentação e estatísticas ao vivo.</td></tr>
-            <tr><td>“O que eu deveria ter feito naquela mão?”</td><td><span class="mono">/?view=copilot</span></td><td>Revisão pós-jogo.</td></tr>
+            <tr><td>“Qual ação é sugerida para este spot?”</td><td><span class="mono">/?view=copilot</span></td><td>Recomendação heurística, opções e justificativa.</td></tr>
             <tr><td>“Consigo provar o que aconteceu?”</td><td>Auditoria</td><td>Histórico persistido e paginado.</td></tr>
           </tbody>
         </table>
@@ -1098,19 +1098,24 @@
       <section class="chapter" id="copiloto" data-paths="all operator jury five">
         <div class="chapter-head">
           <div class="chapter-number">08</div>
-          <div><h2>Copiloto do jogador: professor depois da mão</h2><p class="chapter-intro">Três entradas, um princípio: revisar sem inventar.</p></div>
+          <div><h2>Copiloto do jogador: analisar, recomendar e revisar</h2><p class="chapter-intro">Três entradas, um princípio: ajudar sem esconder hipótese nem incerteza.</p></div>
         </div>
         <div class="grid-3">
-          <article class="concept-card info"><h4>Spot único</h4><p>Você descreve cartas, board, pote, stack, posição e adversários. O backend calcula opções e justificativas.</p></article>
-          <article class="concept-card good"><h4>Histórico PHH</h4><p>Um formato aberto representa a mão inteira. O Copiloto revisa decisões street por street.</p></article>
-          <article class="concept-card warn"><h4>Imagem</h4><p>A visão propõe o estado; o gate decide se existe base segura para continuar.</p></article>
+          <article class="concept-card info"><h4>Spot único</h4><p>Você descreve cartas, board, pote, stack, posição e adversários. O backend sugere fold/check/call/raise/all-in, alvo de raise quando aplicável, opções e justificativas.</p></article>
+          <article class="concept-card good"><h4>Histórico PHH</h4><p>Um formato aberto representa a mão inteira. Aqui o uso é necessariamente retrospectivo: o Copiloto compara decisões street por street.</p></article>
+          <article class="concept-card warn"><h4>Imagem</h4><p>A visão propõe o estado; o gate só libera recomendação com evidência e contexto suficientes. No F1 atual da banca, a ação fica suprimida.</p></article>
         </div>
         <div class="scenario">
-          <strong>Professor corrigindo uma prova.</strong> Durante a prova, ele não sopra a resposta.
-          Depois, mostra onde o raciocínio saiu do caminho, quais alternativas existiam e quais dados
-          sustentavam cada uma.
+          <strong>Instrutor em um simulador.</strong> Você informa o estado atual ou hipotético e ele
+          aponta a próxima ação sugerida, alternativas e razões. Se entregar uma mão completa, ele
+          muda de papel e revisa o que ocorreu. Em ambos os casos, deixa hipóteses e incerteza visíveis.
         </div>
-        <h3>O que pode aparecer numa revisão?</h3>
+        <div class="remember">
+          <strong>Correção importante:</strong> “pós-jogo” descreve a política segura para sites e
+          mesas de terceiros; não significa que o componente seja incapaz de recomendar. No laboratório
+          local, o formulário de spot efetivamente responde “o que fazer” para o estado fornecido.
+        </div>
+        <h3>O que pode aparecer na análise?</h3>
         <ul>
           <li><strong>Equity estimada:</strong> fração de cenários simulados em que a mão vence ou empata.</li>
           <li><strong>Pot odds:</strong> preço do call comparado ao pote após pagar.</li>
@@ -1281,8 +1286,8 @@
         </div>
         <h3>O que a evidência local realmente sustenta</h3>
         <div class="evidence-strip">
-          <article class="evidence-metric"><b>16/16</b><strong>gates do pacote</strong><p>Testes, tipos, contratos, segurança, dependências, frontend e E2E no snapshot auditado.</p></article>
-          <article class="evidence-metric"><b>5 × 7</b><strong>amostras de latência</strong><p>Receipt v5 recalculável, P95 máximo 1.774,475 ms para orçamento local de 2.500 ms.</p></article>
+          <article class="evidence-metric"><b>16/16</b><strong>gates do pacote</strong><p>Snapshot `b055b23`: 1.141 backend, 80 frontend e 13 E2E, além de tipos, contratos, segurança e dependências.</p></article>
+          <article class="evidence-metric"><b>5 × 7</b><strong>amostras de latência</strong><p>Receipt v5 de análise de spot, P95 máximo 1.103,183 ms para orçamento local de 2.500 ms.</p></article>
           <article class="evidence-metric"><b>GO local</b><strong>preflight da banca</strong><p>Árvore limpa, rede desnecessária, VLM remoto desligado e fixture canônica exata.</p></article>
           <article class="evidence-metric"><b>N/A externo</b><strong>limite científico</strong><p>Generalização visual real, GTO, produção multi-tenant e dinheiro real não são alegados.</p></article>
         </div>
@@ -1362,7 +1367,7 @@
         </div>
         <div class="remember">
           Use <span class="mono">POKER.bat</span>: [1] Iniciar, [2] Parar, [3] Mostrar URLs e abrir no navegador,
-          [4] Validar. O stop encerra os processos registrados da solução.
+          [4] Validar e [5] Preflight banca. O stop encerra os processos registrados da solução.
         </div>
       </section>
 
@@ -1381,6 +1386,7 @@
           <article class="concept-card info"><h4>30–60 s</h4><p>Selecione a fonte e destaque a confirmação sem upload antecipado.</p></article>
           <article class="concept-card warn"><h4>1–2 min</h4><p>Inicie análise; leia motor, estado, confiança, latência e gate.</p></article>
           <article class="concept-card bad"><h4>2–3 min</h4><p>Mostre uma abstenção e explique por que recusar é mais rigoroso.</p></article>
+          <article class="concept-card good"><h4>3–4 min</h4><p>Mostre o Copiloto recomendando para um spot e, separadamente, o perfil contextual apenas descrevendo a sessão.</p></article>
         </div>
         <h3>Frases fortes e corretas</h3>
         <ul>
@@ -1388,6 +1394,7 @@
           <li>“Confiança interna não é sinônimo de acurácia.”</li>
           <li>“Abstenção é uma decisão de segurança, não ausência de resultado.”</li>
           <li>“O motor de poker é independente da interface e valida ações no backend.”</li>
+          <li>“O Copiloto analisa o spot informado e sugere uma ação; a revisão PHH é pós-mão e a imagem depende do gate visual.”</li>
           <li>“Modelos só entram após licença, linhagem, contrato, hash e validação.”</li>
         </ul>
         <h3>Frases que a banca pode atacar</h3>
@@ -1405,14 +1412,16 @@
           ciclo de vida parte visível do experimento, não uma promessa escondida.
         </div>
         <div class="exercise">
-          <strong>Ensine de volta em 90 segundos.</strong> Sem olhar para cima, explique para uma pessoa:
+          <strong>Ensine de volta em 120 segundos.</strong> Sem olhar para cima, explique para uma pessoa:
           <ol>
             <li>por que a captura exige confirmação;</li>
             <li>por que a visão produz hipótese, não verdade;</li>
             <li>por que abstenção pode coexistir com GO;</li>
+            <li>quando o Copiloto recomenda e quando a imagem se abstém;</li>
+            <li>por que o perfil competitivo não escolhe uma ação;</li>
             <li>qual evidência ainda falta para falar de generalização.</li>
           </ol>
-          Se uma das quatro respostas depender da frase “porque a IA decidiu”, volte ao capítulo correspondente.
+          Se uma das seis respostas depender da frase “porque a IA decidiu”, volte ao capítulo correspondente.
         </div>
       </section>
 
@@ -1433,6 +1442,8 @@
           <article class="flashcard"><h4>WebSocket</h4><button class="reveal-button" type="button">Revelar</button><p class="answer">Canal persistente usado para empurrar estado da mesa em tempo real.</p></article>
           <article class="flashcard"><h4>GO da release</h4><button class="reveal-button" type="button">Revelar</button><p class="answer">Aprovação do pacote para o escopo local supervisionado; não concede autoridade estratégica à visão.</p></article>
           <article class="flashcard"><h4>Receipt</h4><button class="reveal-button" type="button">Revelar</button><p class="answer">Evidência versionada ligada a código, cenário, ambiente, amostras e prazo; prova somente o claim declarado.</p></article>
+          <article class="flashcard"><h4>Copiloto de spot</h4><button class="reveal-button" type="button">Revelar</button><p class="answer">Calcula ação sugerida, valor, opções e justificativas para o estado informado; não é prova de GTO.</p></article>
+          <article class="flashcard"><h4>Perfil competitivo</h4><button class="reveal-button" type="button">Revelar</button><p class="answer">Resumo local por oportunidade, posição e papel; descreve com incerteza e não altera a política.</p></article>
         </div>
         <div class="final-map">
           <section><h4>Se lembrar de quatro verbos…</h4><ul><li>Autorizar</li><li>Propor</li><li>Verificar</li><li>Registrar</li></ul></section>
@@ -1449,7 +1460,8 @@
         </div>
         <div class="remember">
           <strong>Modelo mental final:</strong> o Poker Arena é um laboratório verificável. A visão propõe,
-          o gate protege, o motor arbitra, os bots experimentam, o frontend explica e a auditoria preserva.
+          o gate protege, o motor arbitra, o Copiloto recomenda para o spot informado, o perfil contextual
+          descreve sem comandar, os bots experimentam, o frontend explica e a auditoria preserva.
         </div>
         <p class="copyright-note">
           Página educacional original do projeto Poker Arena. Metodologia baseada em aprendizagem ativa,

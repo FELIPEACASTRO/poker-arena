@@ -54,6 +54,9 @@ prova de optimalidade; consulte os model cards e os benchmarks antes de comparar
   textura do board e o conselho dos níveis de IA efetivamente disponíveis.
 - **Placar, Estilo de cada IA (VPIP/agressão) e Corrida das fichas** — estatísticas
   ao vivo, cada competidor com **cor própria** consistente em toda a tela.
+- **Inteligência contextual por posição e papel** — RFI, limp, isolamento, 3-bet,
+  squeeze, 4-bet, steal/defesa, blind-versus-blind e agressão IP/OOP com denominadores,
+  intervalo Wilson, suavização Beta e abstenção por baixa amostra.
 - **Posições de poker** (SB, BB, UTG, UTG+1, MP, LJ, HJ, CO, BTN) nos assentos +
   **guia de regras por posição** (clique na sigla).
 - **Gerenciar mesa** — sente/retire jogadores ao vivo, no nível que quiser.
@@ -149,6 +152,8 @@ com numerador/denominador, suavização Beta(1,1), intervalo Wilson, recência e
 Ela usa apenas a sessão local, não recomenda ações e não altera a política dos bots. O
 protocolo, as 23 fontes primárias/oficiais e os limites de transferibilidade estão no
 [`mapa sistemático de inteligência competitiva`](docs/research/COMPETITIVE_INTELLIGENCE_20260808.md).
+O mapa canônico de toda a documentação, incluindo o que é vigente, histórico ou gerado,
+está em [`docs/README.md`](docs/README.md).
 
 **Manual:** em dois terminais abertos na raiz do projeto:
 
@@ -198,7 +203,7 @@ autoriza uso multi-tenant entre partes mutuamente desconfiadas.
 ### Endpoints
 | Método | Rota | O que faz |
 |---|---|---|
-| `POST` | `/copilot` | revisa um spot descrito, localmente e após o jogo |
+| `POST` | `/copilot` | analisa o spot informado e sugere ação/valor com justificativa; uso educacional local |
 | `POST` | `/copilot/from-image` | propõe estado a partir de screenshot e abstém quando o gate reprova |
 | `POST` | `/copilot/review-hand` | revisa o subconjunto PHH-NLHE com valores inteiros; não cobre todas as variantes PHH |
 | `POST` | `/tables` | cria a mesa (cérebros, blinds, formato, modo) → devolve o `table_id` |
@@ -212,6 +217,19 @@ autoriza uso multi-tenant entre partes mutuamente desconfiadas.
 | `GET` | `/health` · `/ready` | liveness e prontidão/dependências opcionais |
 | `POST` / `DELETE` | `/copilot/remote-vlm/consent-sessions` | cria/revoga consentimento remoto efêmero |
 | `WS` | `/tables/{id}/ws` | estado em tempo real (push a cada ação) |
+
+No Modo Laboratório, `TableStateResponse.watch_stats.bots[*].competitive_profile` contém
+o perfil contextual local. O contrato expõe sucessos/oportunidades, taxa observada, média
+posterior Beta(1,1), Wilson 95%, fração de evidência, estado
+`insufficient|emerging|stable` e recência EWMA. Ele é um subobjeto de leitura do estado,
+não um endpoint de recomendação, e não modifica a política do bot.
+
+O Copiloto de spot realmente devolve uma recomendação para a situação descrita — ação,
+alvo de raise quando aplicável, equity, pot odds, alternativas e limites. O histórico PHH
+faz revisão retrospectiva. Pela entrada de imagem, a recomendação só aparece se o gate
+visual tiver autoridade; na release F1 da banca, o resultado esperado é diagnóstico com
+ação suprimida. “Uso pós-jogo” é a política segura para plataformas de terceiros, não uma
+negação da capacidade analítica dentro do laboratório local.
 
 Erros do domínio viram HTTP: inexistente → **404**; ação ilegal/inválida → **400**;
 conflito de versão/idempotência → **409**. Upload acima do teto retorna **413**; MIME não
@@ -254,7 +272,7 @@ backend/          API + motor + bots (Python, Clean Architecture)
   poker_arena/
     engine/       domínio: regras do poker (Hand, Table, cartas, avaliador, posições)
     bots/         domínio: cérebros (Strategy) + observação filtrada por assento
-    application/  use cases: GameSession (Facade), BotFactory, análise, raciocínio, stats
+    application/  use cases: GameSession, BotFactory, análise, raciocínio, stats e perfis contextuais
     api/          interface: FastAPI (REST + WebSocket), schemas, ACL/mappers, DI
   tests/          unidade + integração (pytest)
 frontend/         mesa + dashboard em React + TypeScript (Vite)
@@ -349,6 +367,9 @@ verificadas e os limites que ainda impedem alegações científicas mais fortes 
 O parecer vigente da distribuição preparada para apresentação, com cobertura T01–T80,
 silent-bug hunt S01–S36 e refutação independente, está no
 [`relatório Omega de 2026-08-07`](docs/RELATORIO_OMEGA_AUDITORIA_20260807.md).
+O snapshot funcional `b055b23`, validado em 2026-08-08 antes desta reconciliação
+documental, passou 16/16 gates e continha 1.141 testes backend, 80 frontend e 13 E2E.
+Reexecute o gate: a contagem registrada não substitui evidência do checkout atual.
 
 ---
 

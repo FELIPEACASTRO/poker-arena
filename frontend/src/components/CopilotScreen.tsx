@@ -207,7 +207,7 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
         <header className="guide-head">
           <h1 id="copilot-title">
             <Sparkles size={20} /> Copiloto de mãos
-            <span className="guide-sub">revisão pós-jogo · backend configurado</span>
+            <span className="guide-sub">análise de spot · recomendação local · revisão PHH</span>
           </h1>
           <button className="ico-btn" onClick={onClose} aria-label="Fechar">
             <X size={18} />
@@ -215,8 +215,9 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
         </header>
 
         <p className="guide-intro">
-          Três formas de estudo: descreva <b>um spot</b>, <b>cole o histórico</b> de uma mão ou
-          envie uma <b>imagem</b>. Os resultados são estimativas do motor configurado. 🧭
+          Três entradas: descreva <b>um spot</b> para receber a ação sugerida, <b>cole o histórico</b>
+          de uma mão para revisão ou envie uma <b>imagem</b> sujeita ao gate visual. Os resultados
+          são estimativas do motor configurado. 🧭
         </p>
 
         <div
@@ -284,7 +285,8 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
           >
             <p className="cp-hint">
               Envie um <b>screenshot 2D</b> da mesa — a visão lê suas cartas, o board e o pote,
-              valida regras básicas e consulta o Copiloto. Use somente para estudo pós-jogo.
+              valida regras básicas e consulta o Copiloto. A recomendação só aparece se visão,
+              contexto e gate autorizarem; use apenas em estudo/simulação própria ou autorizada.
             </p>
             <div className="copilot-form">
               <label className="cp-field cp-wide cp-upload">
@@ -590,9 +592,9 @@ export default function CopilotScreen({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="cp-ethic">
-          <Compass size={15} /> Isto é um <b>treinador de estudo</b> — analisa spots que você
-          descreve, usando o backend configurado. Usar assistência assim <b>durante</b> uma partida valendo em qualquer
-          site é proibido (RTA); aqui é como revisar uma partida de xadrez com o motor <i>depois</i>.
+          <Compass size={15} /> Este <b>Copiloto de estudo</b> sugere a ação para o spot informado
+          e revisa PHH usando o backend configurado. Use em laboratório, simulação própria ou revisão.
+          Assistência <b>durante</b> partida de terceiros ou onde a plataforma proíba RTA não é autorizada.
         </div>
 
         <button className="btn btn-ghost guide-back" onClick={onClose}>

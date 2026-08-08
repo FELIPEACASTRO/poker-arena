@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Guia operacional do Poker Arena: launcher, captura em um ou dois monitores, diagnóstico visual, Copiloto e inteligência contextual." />
   <title>Guia de Navegação — Poker Arena</title>
   <style>
     :root { --ink:#16201d; --muted:#56645f; --green:#0f766e; --mint:#dff7ef; --gold:#b7862e; --paper:#fff; --line:#d8e4df; --night:#102622; }
@@ -51,6 +52,7 @@
     .quick .card { min-height:28mm; }
     .footer-note { position:absolute; bottom:0; left:0; right:0; color:var(--muted); font-size:9px; }
     .status { display:inline-block; padding:1.5mm 3mm; border-radius:10mm; background:var(--mint); color:#0b5b51; font-weight:800; font-size:10px; }
+    .pipeline-image { display:block; width:100%; max-height:105mm; object-fit:contain; border:1px solid var(--line); border-radius:3mm; background:#f7faf9; }
   </style>
 </head>
 <body>
@@ -62,6 +64,7 @@
       <p><b>Fluxo principal:</b> configurar monitores → autorizar → selecionar janela → confirmar prévia → analisar.</p>
       <p><b>Princípio:</b> nenhum quadro é enviado antes da confirmação explícita.</p>
       <p><b>Modo acadêmico:</b> percepção, confiança interna, latência e abstenção; estratégia não é exibida ao vivo.</p>
+      <p><b>Além da visão:</b> Copiloto de spot com recomendação e perfil competitivo local com incerteza explícita.</p>
     </div>
     <div class="cover-footer"><span>Versão operacional · 8 de agosto de 2026</span><span>Poker Arena</span></div>
   </section>
@@ -136,18 +139,32 @@
     <h2>Navegação além da captura</h2>
     <div class="quick">
       <div class="card"><h3>Arena</h3><p>Remova <code>?view=capture</code> da URL ou clique em <strong>Voltar para a Arena</strong>. Configure nível, quantidade de bots e modo jogador/laboratório.</p></div>
-      <div class="card"><h3>Copiloto pós-jogo</h3><p>Acesse <code>/?view=copilot</code> para revisar spot, histórico PHH ou imagem. Essa área é separada da demonstração ao vivo.</p></div>
+      <div class="card"><h3>Copiloto de análise</h3><p>Acesse <code>/?view=copilot</code>. O spot descrito recebe ação sugerida, opções e justificativas; PHH revisa a mão concluída; imagem depende do gate visual.</p></div>
       <div class="card"><h3>Mesa</h3><p>Gerencie participantes, acompanhe ações e abra os painéis laterais. A captura também pode ser aberta pelo botão <strong>Captura</strong>.</p></div>
       <div class="card"><h3>Auditoria</h3><p>Consulte partidas, mãos, paginação e evidências registradas. Use esta área para rastreabilidade pós-sessão.</p></div>
       <div class="card"><h3>Posições</h3><p>O guia explica BTN, blinds e demais posições. Serve como apoio pedagógico, não como resultado do reconhecimento.</p></div>
-      <div class="card"><h3>Cérebros</h3><p>Apresenta os componentes do motor e os limites de interpretação. Evite converter uma sessão isolada em prova científica.</p></div>
+      <div class="card"><h3>Cérebros</h3><p>Apresenta os componentes do motor e os limites de interpretação. No Laboratório, abra também o perfil de inteligência contextual.</p></div>
     </div>
     <h3>Opções avançadas da captura</h3>
     <p>Expanda <strong>Opções avançadas e contexto manual</strong> para configurar intervalo, valor a pagar, stack, número de oponentes e posição. Durante a análise esses campos são bloqueados, impedindo alterações silenciosas entre quadros.</p>
   </section>
 
   <section class="page">
-    <div class="topline"><span class="brand">Poker Arena · Solução de problemas</span><span class="page-no">07</span></div>
+    <div class="topline"><span class="brand">Poker Arena · Copiloto e perfis</span><span class="page-no">07</span></div>
+    <h2>Recomendação de spot e inteligência contextual são coisas diferentes</h2>
+    <div class="two">
+      <div class="card"><h3>Copiloto: “o que fazer?”</h3><p>No formulário de spot, informe cartas, board, pote, valor a pagar, stack, oponentes e posição. O backend sugere fold/check/call/raise/all-in, alvo de raise quando aplicável, equity, pot odds, opções e limites.</p></div>
+      <div class="card"><h3>PHH: “o que aconteceu?”</h3><p>O histórico representa a mão completa e permite comparar cada decisão com a recomendação calculada. Esta modalidade é pós-mão.</p></div>
+    </div>
+    <div class="callout warning"><b>Imagem: autoridade condicionada.</b> A captura pode alimentar o Copiloto, mas a ação só aparece quando o motor visual, a sanidade e o contexto de apostas passam. O F1 atual da banca diagnostica e suprime a recomendação.</div>
+    <h3>Perfil dos competidores no Modo Laboratório</h3>
+    <img class="pipeline-image" src="research/competitive_intelligence_pipeline.png" alt="Eventos da sessão local são contextualizados por posição e papel, contados com oportunidades e convertidos em perfil descritivo com incerteza e abstenção." />
+    <p class="caption">RFI, limp, isolamento, 3-bet, squeeze, 4-bet, steal/defesa, blind-versus-blind e agressão IP/OOP mantêm numerador e denominador. Antes de 12 oportunidades, o painel se abstém; 12–29 é emergente e 30+ é estável.</p>
+    <div class="callout"><b>Fronteira:</b> o Copiloto recomenda para o spot informado. O perfil competitivo apenas descreve padrões desta sessão; não estima cartas privadas, não escolhe a próxima ação e não altera a política do bot.</div>
+  </section>
+
+  <section class="page">
+    <div class="topline"><span class="brand">Poker Arena · Solução de problemas</span><span class="page-no">08</span></div>
     <h2>Diagnóstico rápido</h2>
     <table>
       <thead><tr><th>Sintoma</th><th>Ação recomendada</th></tr></thead>
@@ -167,7 +184,7 @@
   </section>
 
   <section class="page">
-    <div class="topline"><span class="brand">Poker Arena · Apresentação</span><span class="page-no">08</span></div>
+    <div class="topline"><span class="brand">Poker Arena · Apresentação</span><span class="page-no">09</span></div>
     <h2>Checklist para a banca ou duelo</h2>
     <ul class="checklist">
       <li>Inicie pelo <code>POKER.bat</code> e confirme backend e frontend.</li>
@@ -176,6 +193,7 @@
       <li>Selecione somente a janela autorizada e mostre à audiência a etapa de confirmação.</li>
       <li>Explique que nenhum quadro sai antes do clique <strong>Confirmar e iniciar análise</strong>.</li>
       <li>Apresente primeiro abstenção/gate, depois motor, estado proposto, confiança interna e latência.</li>
+      <li>Mostre separadamente o Copiloto de spot, que recomenda, e o perfil contextual, que apenas descreve.</li>
       <li>Não chame confiança de acurácia nem uma chamada isolada de benchmark.</li>
       <li>Encerre o compartilhamento diante da audiência ao finalizar.</li>
     </ul>
@@ -185,7 +203,7 @@
     <p><b>15–30 s:</b> destaque a prévia e a garantia de zero envio antes da confirmação.</p>
     <p><b>30–50 s:</b> inicie a análise e interprete o diagnóstico com linguagem científica adequada.</p>
     <p><b>50–60 s:</b> encerre o compartilhamento e mostre que a sessão foi finalizada.</p>
-    <div class="footer-note">Documento gerado a partir da interface operacional validada. Consulte também VISION_PRESENTATION.md e QA_EVIDENCE_20260718.md.</div>
+    <div class="footer-note">Documento reconciliado em 8 de agosto de 2026. Consulte também README.md, VISION_PRESENTATION.md e RELATORIO_OMEGA_AUDITORIA_20260807.md.</div>
   </section>
 </body>
 </html>

@@ -7,6 +7,10 @@ por si só, prova científica: a promoção exige manifesto de dados/código/che
 hashes, splits sem leakage, múltiplas seeds e benchmark independente. O backend serve
 somente artefatos ONNX que passam pelo contrato; veja `backend/models/`.
 
+O perfil competitivo `ci-local-v1` não é um modelo promovido nem um artefato desta pasta:
+é um resumo determinístico de eventos da sessão, com Beta/Wilson/EWMA e abstenção, exposto
+somente para leitura. Ele não altera bots nem substitui os gates de ML abaixo.
+
 ## Gate externo de visão
 
 O gate executável está em `backend/poker_arena/ml/external_validation.py`. Ele

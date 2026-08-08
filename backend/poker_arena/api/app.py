@@ -24,6 +24,7 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from functools import partial
+from html import escape
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 from urllib.parse import urlsplit
@@ -43,11 +44,13 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import ValidationError
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 if TYPE_CHECKING:
@@ -122,6 +125,13 @@ MAX_REMOTE_VLM_CONSENT_TTL_SECONDS = 3600
 MAX_REMOTE_VLM_CONSENT_SESSIONS = 256
 MIN_API_TOKEN_LENGTH = 32
 MAX_API_TOKEN_LENGTH = 512
+DOCS_VENDOR_DIR = Path(__file__).resolve().parents[3] / "api-docs" / "vendor"
+DOCS_FAVICON = (
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E"
+    "%3Crect width='64' height='64' rx='12' fill='%230b3b2a'/%3E"
+    "%3Ctext x='32' y='43' text-anchor='middle' font-size='36' fill='white'%3E%E2%99%A0"
+    "%3C/text%3E%3C/svg%3E"
+)
 
 
 class _RequestBodyTooLarge(Exception):
@@ -1018,6 +1028,13 @@ def create_app() -> FastAPI:
         ),
         root_path=root_path,
         lifespan=_lifespan,
+        docs_url=None,
+        redoc_url=None,
+    )
+    app.mount(
+        "/docs-assets",
+        StaticFiles(directory=DOCS_VENDOR_DIR, check_dir=True),
+        name="docs-assets",
     )
     allowed_hosts = [
         item.strip()
@@ -1056,6 +1073,9 @@ def create_app() -> FastAPI:
     @app.middleware("http")
     async def security_boundary(request: Request, call_next: RequestResponseEndpoint) -> Response:
         public_paths = {"/", "/health", "/ready", "/docs", "/redoc", "/openapi.json"}
+        public_path = request.url.path in public_paths or request.url.path.startswith(
+            "/docs-assets/"
+        )
         authorization = request.headers.get("authorization", "")
         bearer = authorization[7:] if authorization.lower().startswith("bearer ") else None
         candidate = request.headers.get("x-poker-token") or bearer
@@ -1092,7 +1112,7 @@ def create_app() -> FastAPI:
             )
         elif (
             not cors_preflight
-            and request.url.path not in public_paths
+            and not public_path
             and (
                 not _token_valid(candidate)
                 or (
@@ -1145,7 +1165,8 @@ def create_app() -> FastAPI:
         response.headers.setdefault(
             "content-security-policy",
             "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
-            "script-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:",
+            "script-src 'self' 'unsafe-inline'; worker-src 'self' blob:; "
+            "connect-src 'self' ws: wss:",
         )
         response.headers.setdefault("cache-control", "no-store")
         return response
@@ -1155,6 +1176,66 @@ def create_app() -> FastAPI:
         """Raiz amiga: manda pra documentação interativa (evita o 404 feio de quem
         abre a URL base do backend por engano). Não é um endpoint da API."""
         return RedirectResponse(url="/docs")
+
+    @app.get("/docs", include_in_schema=False)
+    def swagger_docs(request: Request) -> Response:
+        """Swagger UI totalmente local; a CSP e o perfil offline não dependem de CDN."""
+
+        prefix = str(request.scope.get("root_path", "")).rstrip("/")
+        return get_swagger_ui_html(
+            openapi_url=f"{prefix}/openapi.json",
+            title="Poker Arena API - Swagger UI",
+            swagger_js_url=f"{prefix}/docs-assets/swagger-ui-bundle.js",
+            swagger_css_url=f"{prefix}/docs-assets/swagger-ui.css",
+            swagger_favicon_url=DOCS_FAVICON,
+        )
+
+    @app.get("/redoc", include_in_schema=False)
+    def redoc_docs(request: Request) -> Response:
+        """ReDoc totalmente local, sem Google Fonts, CDN ou telemetria externa."""
+
+        prefix = str(request.scope.get("root_path", "")).rstrip("/")
+        openapi_url = escape(f"{prefix}/openapi.json", quote=True)
+        redoc_js_url = escape(f"{prefix}/docs-assets/redoc.standalone.js", quote=True)
+        return HTMLResponse(
+            f"""<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Poker Arena API - ReDoc</title>
+<link rel="shortcut icon" href="{DOCS_FAVICON}">
+<style>body{{margin:0;padding:0}}</style></head><body>
+<noscript>ReDoc requer JavaScript para exibir a documentação.</noscript>
+<script id="redoc-local-image-guard">
+(() => {{
+  const fallback = "{DOCS_FAVICON}";
+  const localImage = value => {{
+    try {{
+      const url = new URL(String(value), location.href);
+      return url.protocol === "data:" || url.origin === location.origin ? value : fallback;
+    }} catch (_) {{ return fallback; }}
+  }};
+  const originalSetAttribute = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function(name, value) {{
+    if (this instanceof HTMLImageElement && String(name).toLowerCase() === "src") {{
+      value = localImage(value);
+    }}
+    return originalSetAttribute.call(this, name, value);
+  }};
+  const descriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
+  if (descriptor && descriptor.get && descriptor.set) {{
+    Object.defineProperty(HTMLImageElement.prototype, "src", {{
+      configurable: descriptor.configurable,
+      enumerable: descriptor.enumerable,
+      get: descriptor.get,
+      set(value) {{ descriptor.set.call(this, localImage(value)); }},
+    }});
+  }}
+}})();
+</script>
+<redoc spec-url="{openapi_url}"></redoc>
+<script src="{redoc_js_url}"></script>
+</body></html>"""
+        )
 
     @app.get("/health", tags=["Sistema"], summary="Saúde do serviço")
     def health() -> dict[str, str]:

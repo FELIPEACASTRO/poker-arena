@@ -1,0 +1,39 @@
+{
+  "schema": "poker-arena-vendored-redoc-receipt-v1",
+  "component": {
+    "license": "MIT",
+    "name": "ReDoc",
+    "package": "redoc",
+    "source_repository": "https://github.com/Redocly/redoc",
+    "version": "2.5.3"
+  },
+  "origin": {
+    "npm_integrity_sha512": "sha512-bBbat+Sx6xKWdyoCGTtA0BWeTEW9Vs4VnEja7q7ZLOk4IM7cHQLrf+kDxWF6dKeKxT8kOBnoy/OsNXCeLttpyQ==",
+    "npm_shasum_sha1": "f44692cbdf81bb2077fb38358885d976e6e27f88",
+    "registry": "https://registry.npmjs.org/",
+    "release_tag": "v2.5.3",
+    "retrieved_on": "2026-08-08",
+    "tarball": "https://registry.npmjs.org/redoc/-/redoc-2.5.3.tgz",
+    "tarball_sha256": "e09cc6eb1af62e493e92ebff1ff98b5917ff4018f24ef9be91a3d97998987a73"
+  },
+  "files": [
+    {
+      "bytes": 1091,
+      "path": "REDOC_LICENSE",
+      "sha256": "d3026d549cf68ab7355bcfa85877bf8f845b3334a7efbfdc63936432fb34ff0e",
+      "upstream_path": "package/LICENSE"
+    },
+    {
+      "bytes": 1097271,
+      "path": "redoc.standalone.js",
+      "sha256": "1320f442151c57c447d3b70c7ffc6c4f86d08464020fe34c8cc5d3164e9944f0",
+      "upstream_path": "package/bundles/redoc.standalone.js"
+    },
+    {
+      "bytes": 2727,
+      "path": "redoc.standalone.js.LICENSE.txt",
+      "sha256": "469cc94b600aac09643f70e167cd1f66f24301ebb546532fad5db7c60f7b30d0",
+      "upstream_path": "package/bundles/redoc.standalone.js.LICENSE.txt"
+    }
+  ]
+}

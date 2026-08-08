@@ -13,6 +13,7 @@ não devem ser editados manualmente.
 | `insomnia.json` | Export Insomnia v4 com todas as operações REST e o WebSocket. |
 | `generate.py` | Gerador determinístico dos três artefatos. |
 | `vendor/receipt.json` | Proveniência, versão, origem, tamanhos e SHA-256 dos assets Swagger. |
+| `vendor/redoc-receipt.json` | Proveniência, licença, origem, tamanhos e SHA-256 do ReDoc local. |
 
 O gerador parte de `app.openapi()` e acrescenta apenas comportamentos que vivem no
 middleware e, por isso, não são inferidos automaticamente pelo FastAPI: autenticação
@@ -22,8 +23,9 @@ condicional, bloqueio cross-site (`Origin`/`Sec-Fetch-Site`), rejeição de `Hos
 ## Swagger
 
 - Com o backend ativo: `http://127.0.0.1:8000/docs` ou
-  `http://127.0.0.1:8000/redoc`. Essas duas telas são derivadas diretamente do FastAPI;
-  o contrato exportado nesta pasta é mais completo porque também projeta o middleware.
+  `http://127.0.0.1:8000/redoc`. As duas telas usam apenas assets locais compatíveis
+  com a CSP offline e são derivadas diretamente do FastAPI; o contrato exportado nesta
+  pasta é mais completo porque também projeta o middleware.
 - Offline: abra `swagger.html`. Em `file://`, o botão **Try it out** permanece
   desabilitado.
 - Servido por HTTP, o Swagger offline só habilita chamadas quando a própria página está
@@ -41,6 +43,9 @@ oficial, o tarball de origem e cada SHA-256 estão fixados em
 `vendor/receipt.json`; `vendor/LICENSE` e `vendor/NOTICE` são cópias verbatim
 dos arquivos publicados no npm. Tanto a geração quanto `--check` falham se um
 asset, licença, notice ou receipt divergir do inventário fixado.
+O runtime também serve `redoc@2.5.3` localmente. Sua origem npm, licença MIT,
+tarball e hashes dos arquivos estão fixados em `vendor/redoc-receipt.json`; o mesmo
+gate fail-closed rejeita qualquer divergência antes de regenerar os artefatos.
 
 ## Insomnia
 
@@ -200,6 +205,6 @@ uv run pytest -q tests/api/test_api_docs.py
 ```
 
 O teste compara os três arquivos versionados byte a byte com uma geração nova, valida
-também proveniência, tamanho e SHA-256 dos assets Swagger, resolve
+também proveniência, tamanho e SHA-256 dos assets Swagger e ReDoc, resolve
 todas as referências locais, valida os exemplos JSON contra os modelos do FastAPI,
 confere a cobertura das operações no Insomnia e procura padrões conhecidos de segredo.

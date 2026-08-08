@@ -90,6 +90,24 @@ async function openDialog(page: Page, buttonName: string | RegExp, dialogName: s
   return { trigger, dialog }
 }
 
+async function startHumanTable(page: Page, seed: number) {
+  await page.goto('/')
+  await page.getByLabel('Quantos bots na mesa?').selectOption('1')
+  const created = page.waitForResponse(
+    (response) => response.url().endsWith('/tables') && response.request().method() === 'POST',
+  )
+  await page.getByRole('button', { name: 'Sentar à mesa' }).click()
+  const response = await expectHttpSuccess(created)
+  expect(response.status()).toBe(201)
+  expect(response.request().postDataJSON()).toMatchObject({ seed, mode: 'play' })
+  await expect(page.getByRole('navigation', { name: 'Ferramentas da mesa' })).toBeVisible()
+}
+
+async function leaveTable(page: Page) {
+  await page.getByRole('button', { name: 'Sair da mesa' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Poker Arena' })).toBeVisible()
+}
+
 test('launcher abre workspace de captura da solução parceira sem depender de uma mesa', async ({ page }) => {
   const assertNoRuntimeFailures = captureRuntimeFailures(page)
 
@@ -298,6 +316,154 @@ test('configuração inicial é navegável, responsiva e consulta níveis reais'
       .filter(({ left, right }) => left < -1 || right > document.documentElement.clientWidth + 1),
   )
   expect(overflowingElements, 'nenhum elemento deve ultrapassar a largura móvel').toEqual([])
+  assertNoRuntimeFailures()
+})
+
+test('URL direta abre o copiloto sem criar mesa e retorna ao setup', async ({ page }) => {
+  const assertNoRuntimeFailures = captureRuntimeFailures(page)
+  let tablesCreated = 0
+  page.on('request', (request) => {
+    if (request.url().endsWith('/tables') && request.method() === 'POST') tablesCreated += 1
+  })
+
+  await page.goto('/?view=copilot')
+  const dialog = page.getByRole('dialog', { name: /Copiloto de mãos/ })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('tab', { name: 'Spot único' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  await dialog.getByLabel('Fechar').click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Sentar à mesa' })).toBeVisible()
+  expect(tablesCreated).toBe(0)
+  assertNoRuntimeFailures()
+})
+
+test('modo laboratório cobre configuração, painéis, pausa, velocidade e passo real', async ({ page }) => {
+  const assertNoRuntimeFailures = captureRuntimeFailures(page)
+  await page.goto('/')
+  await page.getByRole('button', { name: /Assistir \(só bots\)/ }).click()
+  await page.getByLabel('Quantos bots disputam?').selectOption('3')
+  await page.getByLabel('Luna').selectOption('adaptive')
+  await page.getByLabel('Caio').selectOption('heuristic')
+  await page.getByLabel('Sofia').selectOption('montecarlo')
+  await page.getByLabel('Fichas iniciais').fill('1200')
+  await page.getByLabel('Formato').selectOption('tourney')
+  await page.getByLabel('Limite de mãos').selectOption('30')
+
+  const created = page.waitForResponse(
+    (response) => response.url().endsWith('/tables') && response.request().method() === 'POST',
+  )
+  await page.getByRole('button', { name: 'Assistir à partida' }).click()
+  const response = await expectHttpSuccess(created)
+  expect(response.status()).toBe(201)
+  expect(response.request().postDataJSON()).toMatchObject({
+    mode: 'watch',
+    starting_stack: 1200,
+    rebuy: false,
+    hand_limit: 30,
+    bots: [
+      { name: 'Luna', level: 'adaptive' },
+      { name: 'Caio', level: 'heuristic' },
+      { name: 'Sofia', level: 'montecarlo' },
+    ],
+  })
+  await expect(page.getByText('Placar do laboratório')).toBeVisible()
+  await expect(page.getByText('Estilo de cada IA')).toBeVisible()
+  await expect(page.getByText('Estatísticas da sessão')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Pausar' }).click()
+  await expect(page.getByRole('button', { name: 'Continuar' })).toBeVisible()
+  const speed = page.getByLabel('Tempo por jogada')
+  await speed.fill('300')
+  await expect(speed).toHaveValue('300')
+  await expect(page.getByText('0.3s/jogada')).toBeVisible()
+  const hintClose = page.getByRole('button', { name: 'Fechar dica' })
+  if (await hintClose.count()) {
+    await hintClose.click()
+    await expect(hintClose).toHaveCount(0)
+    expect(await page.evaluate(() => localStorage.getItem('pa_lab_hint_dismissed'))).toBe('1')
+  }
+
+  const stepped = page.waitForResponse((candidate) =>
+    /\/tables\/[^/]+\/step$/.test(new URL(candidate.url()).pathname),
+  )
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expectHttpSuccess(stepped)
+  await page.getByRole('button', { name: 'Pausar' }).click()
+  await page.getByRole('button', { name: 'Sair', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Sentar à mesa' })).toBeVisible()
+  assertNoRuntimeFailures()
+})
+
+test('ações humanas e atalhos cobrem pagar, passar, aumentar, all-in, fold e próxima mão', async ({ page }) => {
+  const assertNoRuntimeFailures = captureRuntimeFailures(page)
+  let activeSeed = 2
+  await page.route('**/tables', async (route) => {
+    const request = route.request()
+    if (request.method() === 'POST' && new URL(request.url()).pathname === '/tables') {
+      await route.continue({
+        postData: JSON.stringify({ ...request.postDataJSON(), seed: activeSeed }),
+      })
+      return
+    }
+    await route.continue()
+  })
+
+  await startHumanTable(page, activeSeed)
+  let pending = page.waitForResponse((response) => response.url().endsWith('/actions'))
+  await page.getByRole('button', { name: /Pagar\s+10/ }).click()
+  let action = await expectHttpSuccess(pending)
+  expect(action.request().postDataJSON()).toMatchObject({ type: 'call', amount: 0 })
+  await expect(page.getByRole('button', { name: 'Passar' })).toBeVisible()
+  pending = page.waitForResponse((response) => response.url().endsWith('/actions'))
+  await page.keyboard.press('c')
+  action = await expectHttpSuccess(pending)
+  expect(action.request().postDataJSON()).toMatchObject({ type: 'check', amount: 0 })
+  await leaveTable(page)
+
+  activeSeed = 3
+  await startHumanTable(page, activeSeed)
+  const raiseValue = page.getByLabel('Valor total do aumento')
+  await page.getByRole('button', { name: 'Pote', exact: true }).click()
+  await expect(raiseValue).toHaveValue('60')
+  await page.getByRole('button', { name: 'Diminuir aposta' }).click()
+  await expect(raiseValue).toHaveValue('40')
+  await page.getByRole('button', { name: 'Aumentar aposta' }).click()
+  await expect(raiseValue).toHaveValue('60')
+  await page.getByRole('button', { name: '2,5× Pote' }).click()
+  await expect(raiseValue).toHaveValue('120')
+  await page.getByRole('button', { name: 'Máx' }).click()
+  await expect(raiseValue).toHaveValue('1000')
+  await page.getByRole('button', { name: 'Min', exact: true }).click()
+  await expect(raiseValue).toHaveValue('40')
+  await raiseValue.fill('80')
+  pending = page.waitForResponse((response) => response.url().endsWith('/actions'))
+  await page.getByRole('button', { name: /Aumentar p\/\s*80/ }).click()
+  action = await expectHttpSuccess(pending)
+  expect(action.request().postDataJSON()).toMatchObject({ type: 'raise', amount: 80 })
+  await leaveTable(page)
+
+  activeSeed = 4
+  await startHumanTable(page, activeSeed)
+  pending = page.waitForResponse((response) => response.url().endsWith('/actions'))
+  await page.keyboard.press('a')
+  action = await expectHttpSuccess(pending)
+  expect(action.request().postDataJSON()).toMatchObject({ type: 'all_in', amount: 0 })
+  await leaveTable(page)
+
+  activeSeed = 5
+  await startHumanTable(page, activeSeed)
+  pending = page.waitForResponse((response) => response.url().endsWith('/actions'))
+  await page.keyboard.press('f')
+  action = await expectHttpSuccess(pending)
+  expect(action.request().postDataJSON()).toMatchObject({ type: 'fold', amount: 0 })
+  await expect(page.getByRole('button', { name: /Próxima mão/ })).toBeVisible()
+  const nextHand = page.waitForResponse((response) => response.url().endsWith('/next-hand'))
+  await page.keyboard.press('Enter')
+  await expectHttpSuccess(nextHand)
+  await leaveTable(page)
   assertNoRuntimeFailures()
 })
 
@@ -685,5 +851,19 @@ test('falha HTTP é explicada sem abandonar a tela de configuração', async ({ 
   await expect(page.getByRole('alert')).toContainText('HTTP 503: manutenção programada')
   await expect(page.getByRole('heading', { level: 1, name: 'Poker Arena' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Sentar à mesa' })).toBeEnabled()
+  assertNoRuntimeFailures()
+})
+
+test('Swagger e ReDoc renderizam o contrato completo sem dependências externas', async ({ page }) => {
+  const assertNoRuntimeFailures = captureRuntimeFailures(page)
+
+  await page.goto(`${API_ORIGIN}/docs`)
+  await expect(page.locator('.swagger-ui')).toBeVisible()
+  await expect(page.locator('.opblock')).toHaveCount(17)
+
+  await page.goto(`${API_ORIGIN}/redoc`)
+  await expect(page.locator('.redoc-wrap')).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /Poker Arena API/ })).toBeVisible()
+
   assertNoRuntimeFailures()
 })

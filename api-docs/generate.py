@@ -17,6 +17,8 @@ ROOT = HERE.parent
 VENDOR_DIR = HERE / "vendor"
 SWAGGER_UI_VERSION = "5.17.14"
 VENDOR_RECEIPT_SCHEMA = "poker-arena-vendored-asset-receipt-v1"
+REDOC_VERSION = "2.5.3"
+REDOC_RECEIPT_SCHEMA = "poker-arena-vendored-redoc-receipt-v1"
 VENDORED_SWAGGER_FILES: dict[str, tuple[int, str, str | None]] = {
     "LICENSE": (
         11358,
@@ -42,6 +44,23 @@ VENDORED_SWAGGER_FILES: dict[str, tuple[int, str, str | None]] = {
         152071,
         "40170f0ee859d17f92131ba707329a88a070e4f66874d11365e9a77d232f6117",
         "package/swagger-ui.css",
+    ),
+}
+VENDORED_REDOC_FILES: dict[str, tuple[int, str, str]] = {
+    "REDOC_LICENSE": (
+        1091,
+        "d3026d549cf68ab7355bcfa85877bf8f845b3334a7efbfdc63936432fb34ff0e",
+        "package/LICENSE",
+    ),
+    "redoc.standalone.js": (
+        1097271,
+        "1320f442151c57c447d3b70c7ffc6c4f86d08464020fe34c8cc5d3164e9944f0",
+        "package/bundles/redoc.standalone.js",
+    ),
+    "redoc.standalone.js.LICENSE.txt": (
+        2727,
+        "469cc94b600aac09643f70e167cd1f66f24301ebb546532fad5db7c60f7b30d0",
+        "package/bundles/redoc.standalone.js.LICENSE.txt",
     ),
 }
 sys.path.insert(0, str(ROOT / "backend"))
@@ -70,6 +89,7 @@ __all__ = [
     "REMOTE_VLM_CONSENT_PATH",
     "_enrich_contract",
     "_normalize_schema_examples",
+    "_validate_redoc_assets",
     "_validate_vendor_assets",
 ]
 
@@ -88,7 +108,7 @@ def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
         if key in result:
-            raise ValueError(f"chave JSON duplicada no receipt Swagger: {key}")
+            raise ValueError(f"chave JSON duplicada no receipt de asset: {key}")
         result[key] = value
     return result
 
@@ -188,6 +208,97 @@ def _validate_vendor_assets(vendor_dir: Path = VENDOR_DIR) -> None:
             raise ValueError(f"tamanho do asset Swagger diverge: {name}")
         if hashlib.sha256(payload).hexdigest() != expected_hash:
             raise ValueError(f"SHA-256 do asset Swagger diverge: {name}")
+
+
+def _validate_redoc_assets(vendor_dir: Path = VENDOR_DIR) -> None:
+    """Fail closed if vendored ReDoc assets diverge from the pinned receipt."""
+
+    try:
+        if _is_reparse_or_link(vendor_dir) or not vendor_dir.is_dir():
+            raise ValueError("diretorio vendor ReDoc nao e um diretorio regular")
+        receipt_path = vendor_dir / "redoc-receipt.json"
+        if _is_reparse_or_link(receipt_path) or not receipt_path.is_file():
+            raise ValueError("receipt ReDoc ausente, reparse ou nao regular")
+        if receipt_path.stat().st_size > 32 * 1024:
+            raise ValueError("receipt ReDoc excede o limite de 32 KiB")
+        receipt = json.loads(
+            receipt_path.read_text(encoding="utf-8"),
+            object_pairs_hook=_reject_duplicate_json_keys,
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("receipt ReDoc ilegivel ou invalido") from exc
+
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != {"schema", "component", "origin", "files"}
+        or receipt.get("schema") != REDOC_RECEIPT_SCHEMA
+    ):
+        raise ValueError("schema do receipt ReDoc nao reconhecido")
+    if receipt.get("component") != {
+        "license": "MIT",
+        "name": "ReDoc",
+        "package": "redoc",
+        "source_repository": "https://github.com/Redocly/redoc",
+        "version": REDOC_VERSION,
+    }:
+        raise ValueError("metadados do componente ReDoc divergentes")
+    if receipt.get("origin") != {
+        "npm_integrity_sha512": (
+            "sha512-bBbat+Sx6xKWdyoCGTtA0BWeTEW9Vs4VnEja7q7ZLOk4IM7cHQLrf+kDxWF6dKeKxT8k"
+            "OBnoy/OsNXCeLttpyQ=="
+        ),
+        "npm_shasum_sha1": "f44692cbdf81bb2077fb38358885d976e6e27f88",
+        "registry": "https://registry.npmjs.org/",
+        "release_tag": "v2.5.3",
+        "retrieved_on": "2026-08-08",
+        "tarball": "https://registry.npmjs.org/redoc/-/redoc-2.5.3.tgz",
+        "tarball_sha256": "e09cc6eb1af62e493e92ebff1ff98b5917ff4018f24ef9be91a3d97998987a73",
+    }:
+        raise ValueError("origem ou integridade do tarball ReDoc divergente")
+
+    entries = receipt.get("files")
+    if not isinstance(entries, list):
+        raise ValueError("lista de arquivos ReDoc ausente no receipt")
+    by_path: dict[str, dict[str, Any]] = {}
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) != {
+            "bytes",
+            "path",
+            "sha256",
+            "upstream_path",
+        }:
+            raise ValueError("entrada de arquivo ReDoc possui schema invalido")
+        path_name = entry.get("path")
+        if not isinstance(path_name, str) or path_name in by_path:
+            raise ValueError("path ReDoc duplicado ou invalido no receipt")
+        by_path[path_name] = entry
+    if set(by_path) != set(VENDORED_REDOC_FILES):
+        raise ValueError("inventario ReDoc diverge do conjunto fixado")
+
+    resolved_vendor = vendor_dir.resolve(strict=True)
+    for name, (expected_bytes, expected_hash, upstream_path) in VENDORED_REDOC_FILES.items():
+        entry = by_path[name]
+        if (
+            entry["bytes"] != expected_bytes
+            or entry["sha256"] != expected_hash
+            or entry["upstream_path"] != upstream_path
+        ):
+            raise ValueError(f"receipt ReDoc diverge para {name}")
+        path = vendor_dir / name
+        try:
+            if (
+                _is_reparse_or_link(path)
+                or not path.is_file()
+                or path.resolve(strict=True).parent != resolved_vendor
+            ):
+                raise ValueError(f"asset ReDoc nao regular: {name}")
+            payload = path.read_bytes()
+        except OSError as exc:
+            raise ValueError(f"asset ReDoc ilegivel: {name}") from exc
+        if len(payload) != expected_bytes:
+            raise ValueError(f"tamanho do asset ReDoc diverge: {name}")
+        if hashlib.sha256(payload).hexdigest() != expected_hash:
+            raise ValueError(f"SHA-256 do asset ReDoc diverge: {name}")
 
 
 JSON_EXAMPLES: dict[tuple[str, str], dict[str, Any]] = {
@@ -514,6 +625,7 @@ persistAuthorization:false,tryItOutEnabled:canCallApi,supportedSubmitMethods:can
 def build_artifacts() -> tuple[dict[str, Any], dict[str, Any], str]:
     """Build artifacts without writing or mutating FastAPI's cached schema."""
     _validate_vendor_assets()
+    _validate_redoc_assets()
     spec = json.loads(json.dumps(app.openapi(), ensure_ascii=False))
     return spec, _build_insomnia(spec), _build_swagger(spec)
 

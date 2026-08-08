@@ -134,8 +134,12 @@ def test_public_swagger_uses_gateway_root_path(
 ) -> None:
     client, headers = _configure_public_profile(monkeypatch, tmp_path)
     docs = client.get("/docs", headers=headers)
+    redoc = client.get("/redoc", headers=headers)
     assert docs.status_code == 200
+    assert redoc.status_code == 200
     assert "url: '/api/openapi.json'" in docs.text
+    assert '<redoc spec-url="/api/openapi.json"' in redoc.text
+    assert 'src="/api/docs-assets/redoc.standalone.js"' in redoc.text
     contract = client.get("/openapi.json", headers=headers).json()
     assert contract["servers"] == [{"url": "/api", "description": "Gateway público autenticado"}]
     assert contract["components"]["securitySchemes"]["EdgeSession"] == {

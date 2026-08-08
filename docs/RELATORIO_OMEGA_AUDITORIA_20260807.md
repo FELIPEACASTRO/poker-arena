@@ -182,11 +182,12 @@ outro defeito da mesma classe.
 | Ω62 | P1 | Preflight podia emitir GO com receipt de performance expirado ou stale | idade/binding eram verificados só dentro da suíte pytest, não no oracle executado pela opção de banca | preflight chama o validador probatório antes da visão e inclui hash, 5×7, P95 e budget no payload GO |
 | Ω63 | P1 | Receipt confiava em booleans/resumos armazenados e não preservava amostras para recomputar P95 | schema v4 guardava apenas agregados mutáveis | schema v5 preserva 7 amostras por cenário; validador recompõe min/mediana/P95/máximo, acceptance, ordem, ambiente, binding e expiração |
 | Ω64 | P1 | `MatchLogger` ainda podia persistir ação/street/board, coerção `seat=True↔1` e valores de ação/pote/stack semanticamente inválidos | o writer garantia JSON finito e identidade, mas não o domínio completo dos eventos/tipos | seat inteiro estrito, ações/streets/cartas e tamanho do board são validados; amount/pot/end/delta exigem inteiros e faixas compatíveis; regressões provam rejeição antes da escrita |
+| Ω65 | P1 | As URLs publicadas `/docs` e `/redoc` respondiam HTTP 200, mas abriam em branco no navegador local | as páginas padrão do FastAPI dependiam de CDN, enquanto a CSP do próprio backend permitia apenas `'self'`; o ReDoc ainda tentava worker `blob:` e imagem externa | Swagger/ReDoc usam bundles locais fixados por versão/licença/SHA-256; CSP permite somente o worker local `blob:` necessário; imagens externas são substituídas por data URI; navegador real prova 17 operações, título ReDoc e zero erro de runtime |
 
 ## 7. Bugs silenciosos e corrupção silenciosa
 
 Os principais silent bugs reais foram Ω02, Ω04, Ω06, Ω07, Ω10, Ω12, Ω13, Ω17, Ω21, Ω22,
-Ω23, Ω25, Ω31, Ω33–Ω36, Ω38, Ω40, Ω41, Ω50–Ω56 e Ω59–Ω64: poderiam retornar um resultado plausível,
+Ω23, Ω25, Ω31, Ω33–Ω36, Ω38, Ω40, Ω41, Ω50–Ω56 e Ω59–Ω65: poderiam retornar um resultado plausível,
 omitir evento/corrupção ou emitir um GO falso sem erro explícito. O endurecimento inclui
 invariantes de lifecycle/identidade, schemas e JSON estritos, hashes semânticos, ausência de
 fallback de decisão, quotas, stale state, startup real e oracles independentes. Nenhuma
@@ -213,8 +214,8 @@ RAM/disco/hardware da banca.
 | ONNX inválido | 15 fixtures passavam por bytes não parseáveis | `artifact_uninspectable`; 15 fixtures ONNX válidos/parseáveis | não assina autoria |
 | Raise incontestável | motor oferecia raise 332; PokerKit rejeitava | repro versionado passa; fuzz ad hoc histórico seed 20260810, 20k casos, `bad=[]`, mantido apenas como apoio | harness ad hoc não foi preservado; não conta como gate reproduzível |
 | Review sizing | raise 40 e raise 60 davam match | mismatch explícito 40≠60 | subconjunto PHH NT |
-| Frontend | 2 warnings ESLint | 78/78 testes; lint sem aviso; build aprovado | browser/hardware local |
-| Copiloto | receipt anterior invalidado por mudança de source/runtime | receipt v5 final SHA-256 `FADC2605E2ECAE20C75C2B2ABA5BA1591CB90DB5954769D84AC5BA7AC1C31DD1`: P95 máximo 902,198 ms em 5 cenários, budget 2500 ms | 7 amostras brutas/cenário; binding `3aa22f92…4c70d6a`; versões instaladas e CPU vinculadas; não é comparação entre hosts |
+| Frontend | 2 warnings ESLint | 79/79 testes; lint sem aviso; build aprovado | browser/hardware local |
+| Copiloto | receipt anterior invalidado por mudança de source/runtime | receipt v5 final SHA-256 `FE7B92627E0AA91DD0E48E9C5CF1C6BB13BEC960AB54705337A3699FDB81FCE3`: P95 máximo 1507,023 ms em 5 cenários, budget 2500 ms | 7 amostras brutas/cenário; binding `ceaf5c8a…30bb35f2`; versões instaladas e CPU vinculadas; não é comparação entre hosts |
 | Contenção do host | execução incidental sob forte carga chegou a 2607,209 ms e falhou | receipt falho descartado; medição Ω48 aprovou mesmo com um processo externo CPU-bound observável | fechar workloads concorrentes no preflight da banca; o run Ω48 não é benchmark isolado |
 | Equity exata | Monte Carlo 400 variava | 990 enumerações; erro numérico 0 no domínio | HU river/range uniforme |
 | Avaliação real F1 | alegação não medida | 0/1 exato, abstenção, 10,08 s; F2 ausente | amostra de conveniência |
@@ -313,7 +314,7 @@ execução sobre árvore limpa.
 | T71 ML inferência/serving | Sim | Sim | ONNX contract/provider/input image/fail-closed | Ω11–Ω14,Ω38,Ω41,Ω50,Ω51 | model/API tests | sem F2 promovido |
 | T72 ML avaliação/fairness | Sim | Parcial | contrato exact-state, Wilson, ECE/Brier, groups | Ω15,Ω16 | external_validation | sem dados/corpus para medir fairness populacional |
 | T73 GenAI/LLM/agentes | Sim | Sim | F3 consentido, grounded as proposal | Ω14,Ω19 | VLM tests | fornecedor/modelo remoto não validado |
-| T74 Web/frontend/browser | Sim | Sim | Vitest/build/lint/E2E/capture | Ω17,Ω23,Ω26,Ω33,Ω34,Ω38,Ω40,Ω46,Ω47 | 78 unitários + 9 E2E | matriz ampla de browsers ausente |
+| T74 Web/frontend/browser | Sim | Sim | Vitest/build/lint/E2E/capture/docs locais | Ω17,Ω23,Ω26,Ω33,Ω34,Ω38,Ω40,Ω46,Ω47,Ω65 | 79 unitários + 13 E2E | matriz ampla de browsers ausente |
 | T75 Mobile | Não | N/A | nenhum cliente mobile | 0 | inventário | fora do escopo |
 | T76 IoT/embedded/OT | Não | N/A | nenhum componente | 0 | inventário | fora do escopo |
 | T77 Robótica/sensores | Não | N/A | captura é browser, sem controle físico | 0 | arquitetura | fora do escopo |
@@ -545,8 +546,8 @@ execução sobre árvore limpa.
 46. **Correção enfraqueceu testes?** Não; ONNX ficou mais real e o oracle de raise mais estrito.
 47. **Correção criou regressão?** O primeiro gate revelou Ω46; o gate do candidato Ω47 revelou
     Ω48 e foi reprovado em 1/16. A nova rodada adversarial revelou Ω49–Ω64 antes do commit.
-    O candidato coleta 1131 backend; a rodada atual possui 174 focais, além das execuções
-    dirigidas anteriores de 78 frontend e 9 E2E. A decisão final ainda exige o gate clean-tree
+    O candidato coleta 1135 backend; a rodada atual possui 174 focais, além das execuções
+    dirigidas de 79 frontend e 13 E2E. A decisão final ainda exige o gate clean-tree
     do próprio commit e não exclui regressão desconhecida.
 48. **Há causa alternativa?** Sim em alguns casos; contradições e house rules preservam alternativas.
 49. **Segundo revisor reproduziria?** Os gates, receipts, hashes e casos dirigidos, sim. Os três fuzzes ad hoc históricos não integralmente: seeds/resultados existem, mas os harnesses não foram preservados e não são usados como gate.
@@ -588,7 +589,7 @@ O contrato Ω47 torna o veredito da release executável: sucesso retorna
 `release_decision=GO`, `release_scope=LOCAL_MASTER_DEFENSE` e lista capacidades externas em
 `out_of_scope`; falha retorna `release_decision=BLOCKED`. O wrapper PowerShell só imprime
 `RELEASE_DECISION=GO; SCOPE=LOCAL_MASTER_DEFENSE` depois de receber exit code 0. A suíte final
-contém **1131 testes backend**, **78 frontend** e **9 E2E**. O commit que contém esta seção só
+contém **1135 testes backend**, **79 frontend** e **13 E2E**. O commit que contém esta seção só
 é liberado depois de repetir os 16 gates e o preflight em árvore limpa; qualquer falha revoga
 o GO.
 

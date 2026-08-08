@@ -14,6 +14,8 @@ from fastapi.openapi.models import OpenAPI
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
+from poker_arena.api.app import create_app
+
 ROOT = Path(__file__).resolve().parents[3]
 DOCS = ROOT / "api-docs"
 GENERATOR = DOCS / "generate.py"
@@ -47,6 +49,21 @@ EXPECTED_VENDOR_FILES = {
     "swagger-ui.css": (
         152071,
         "40170f0ee859d17f92131ba707329a88a070e4f66874d11365e9a77d232f6117",
+    ),
+}
+
+EXPECTED_REDOC_VENDOR_FILES = {
+    "REDOC_LICENSE": (
+        1091,
+        "d3026d549cf68ab7355bcfa85877bf8f845b3334a7efbfdc63936432fb34ff0e",
+    ),
+    "redoc.standalone.js": (
+        1097271,
+        "1320f442151c57c447d3b70c7ffc6c4f86d08464020fe34c8cc5d3164e9944f0",
+    ),
+    "redoc.standalone.js.LICENSE.txt": (
+        2727,
+        "469cc94b600aac09643f70e167cd1f66f24301ebb546532fad5db7c60f7b30d0",
     ),
 }
 
@@ -447,6 +464,62 @@ def test_vendored_swagger_has_pinned_provenance_license_and_hashes():
     assert "SmartBear Software Inc." in (vendor / "NOTICE").read_text(encoding="utf-8")
 
 
+def test_vendored_redoc_has_pinned_provenance_license_and_hashes():
+    vendor = DOCS / "vendor"
+    receipt = json.loads((vendor / "redoc-receipt.json").read_text(encoding="utf-8"))
+
+    assert receipt["schema"] == "poker-arena-vendored-redoc-receipt-v1"
+    assert receipt["component"] == {
+        "license": "MIT",
+        "name": "ReDoc",
+        "package": "redoc",
+        "source_repository": "https://github.com/Redocly/redoc",
+        "version": "2.5.3",
+    }
+    assert receipt["origin"]["tarball_sha256"] == (
+        "e09cc6eb1af62e493e92ebff1ff98b5917ff4018f24ef9be91a3d97998987a73"
+    )
+    entries = {entry["path"]: entry for entry in receipt["files"]}
+    assert set(entries) == set(EXPECTED_REDOC_VENDOR_FILES)
+    for name, (expected_size, expected_hash) in EXPECTED_REDOC_VENDOR_FILES.items():
+        payload = (vendor / name).read_bytes()
+        assert len(payload) == expected_size
+        assert hashlib.sha256(payload).hexdigest() == expected_hash
+        assert entries[name]["bytes"] == expected_size
+        assert entries[name]["sha256"] == expected_hash
+    assert "MIT License" in (vendor / "REDOC_LICENSE").read_text(encoding="utf-8")
+
+
+def test_runtime_docs_are_local_csp_compatible_and_assets_are_public(monkeypatch):
+    monkeypatch.setenv("POKER_WARMUP", "0")
+    monkeypatch.setenv("POKER_API_TOKEN", "d" * 32)
+    with TestClient(create_app()) as client:
+        swagger = client.get("/docs")
+        redoc = client.get("/redoc")
+
+        assert swagger.status_code == 200
+        assert redoc.status_code == 200
+        assert "https://" not in swagger.text
+        assert "https://" not in redoc.text
+        assert 'href="/docs-assets/swagger-ui.css"' in swagger.text
+        assert 'src="/docs-assets/swagger-ui-bundle.js"' in swagger.text
+        assert 'src="/docs-assets/redoc.standalone.js"' in redoc.text
+        assert '<redoc spec-url="/openapi.json"' in redoc.text
+        assert 'id="redoc-local-image-guard"' in redoc.text
+        assert "worker-src 'self' blob:" in redoc.headers["content-security-policy"]
+        assert "url: '/openapi.json'" in swagger.text
+        assert 'spec-url="/openapi.json"' in redoc.text
+
+        for path in (
+            "/docs-assets/swagger-ui.css",
+            "/docs-assets/swagger-ui-bundle.js",
+            "/docs-assets/redoc.standalone.js",
+        ):
+            asset = client.get(path)
+            assert asset.status_code == 200
+            assert len(asset.content) > 100_000
+
+
 def test_vendored_swagger_hash_gate_rejects_asset_tampering(tmp_path):
     generator = _load_generator()
     copied_vendor = tmp_path / "vendor"
@@ -456,6 +529,17 @@ def test_vendored_swagger_hash_gate_rejects_asset_tampering(tmp_path):
 
     with pytest.raises(ValueError, match="Swagger"):
         generator._validate_vendor_assets(copied_vendor)
+
+
+def test_vendored_redoc_hash_gate_rejects_asset_tampering(tmp_path):
+    generator = _load_generator()
+    copied_vendor = tmp_path / "vendor"
+    shutil.copytree(DOCS / "vendor", copied_vendor)
+    asset = copied_vendor / "redoc.standalone.js"
+    asset.write_bytes(asset.read_bytes() + b" ")
+
+    with pytest.raises(ValueError, match="ReDoc"):
+        generator._validate_redoc_assets(copied_vendor)
 
 
 def test_check_mode_detects_drift_without_mutating_files(tmp_path):

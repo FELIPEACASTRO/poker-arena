@@ -14,7 +14,9 @@
 
 1. **Problema e arquitetura:** monólito modular local; captura → visão → sanity → decisão.
 2. **Motor verificável:** crie uma mesa, mostre posições, side pots e caixa de vidro dos bots.
-3. **Processamento de imagem:** selecione a janela da fixture, confirme a prévia e mostre
+3. **Processamento de imagem:** escolha **Outro monitor**, mantenha o workspace de captura
+   no monitor 1 e a janela da fixture visível no monitor 2. No seletor protegido, escolha
+   somente **Janela**, selecione a fixture, confirme a prévia e mostre
    cartas, pote, jogadores, posição, confiança interna e latência. O JSON ao lado da imagem
    contém o SHA-256 e o gabarito auditável.
 4. **Rigor científico:** destaque que F1 é um baseline sintético e, por isso, a recomendação
@@ -23,6 +25,11 @@
 5. **Falha segura:** tente uma fonte não comprovada/guia ou imagem inválida e mostre a abstenção.
 6. **Reprodutibilidade:** mostre o commit, o preflight e o gate completo, sem alegar que testes
    sintéticos provam generalização para clientes reais.
+
+Se houver apenas uma tela, use **Mesmo monitor** e organize painel e fixture lado a lado.
+Não minimize nem sobreponha a janela capturada. O navegador não expõe o número físico do
+monitor; a verificação é feita pela seleção humana e pela prévia, nunca por uma alegação
+automática da aplicação.
 
 ## Frases cientificamente seguras
 

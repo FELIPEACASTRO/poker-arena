@@ -59,11 +59,11 @@
     <h1>Guia de Navegação<br/>Poker Arena</h1>
     <p class="lead">Operação segura do workspace de captura supervisionada, interpretação dos resultados e roteiro de apresentação.</p>
     <div class="cover-card">
-      <p><b>Fluxo principal:</b> autorizar → selecionar janela → confirmar prévia → analisar.</p>
+      <p><b>Fluxo principal:</b> configurar monitores → autorizar → selecionar janela → confirmar prévia → analisar.</p>
       <p><b>Princípio:</b> nenhum quadro é enviado antes da confirmação explícita.</p>
       <p><b>Modo acadêmico:</b> percepção, confiança interna, latência e abstenção; estratégia não é exibida ao vivo.</p>
     </div>
-    <div class="cover-footer"><span>Versão operacional · 20 de julho de 2026</span><span>Poker Arena</span></div>
+    <div class="cover-footer"><span>Versão operacional · 8 de agosto de 2026</span><span>Poker Arena</span></div>
   </section>
 
   <section class="page">
@@ -71,31 +71,34 @@
     <h2>O caminho mais curto até a análise</h2>
     <p class="lead-dark">O launcher abre diretamente um workspace de página inteira. A tela inicial da Arena não fica escondida acima ou atrás da captura.</p>
     <div class="flow">
-      <div class="step"><span class="n">1</span><b>Autorizar</b><span>Confirme a permissão do responsável pelo projeto parceiro.</span></div>
-      <div class="step"><span class="n">2</span><b>Selecionar</b><span>Escolha somente <strong>Janela</strong> no seletor do navegador.</span></div>
+      <div class="step"><span class="n">1</span><b>Configurar</b><span>Escolha mesmo monitor ou outro monitor.</span></div>
+      <div class="step"><span class="n">2</span><b>Autorizar e selecionar</b><span>Confirme a permissão e escolha somente <strong>Janela</strong>.</span></div>
       <div class="step"><span class="n">3</span><b>Confirmar</b><span>Confira visualmente a prévia antes de qualquer envio.</span></div>
       <div class="step"><span class="n">4</span><b>Analisar</b><span>Acompanhe evidência, motor, confiança, latência e abstenção.</span></div>
     </div>
     <div class="two">
       <div class="card"><h3>Iniciar tudo</h3><p>Dê duplo clique em <code>POKER.bat</code> e escolha <strong>[1] Iniciar</strong>. Backend, frontend e navegador são iniciados juntos.</p></div>
-      <div class="card"><h3>Abrir novamente</h3><p>No menu do <code>POKER.bat</code>, use <strong>[3] Abrir no navegador</strong> ou acesse <code>http://127.0.0.1:5173/?view=capture</code>.</p></div>
+      <div class="card"><h3>Abrir novamente</h3><p>No menu do <code>POKER.bat</code>, use <strong>[3] Mostrar URLs e abrir no navegador</strong> ou acesse <code>http://127.0.0.1:5173/?view=capture</code>.</p></div>
       <div class="card"><h3>Validar a API</h3><p><code>http://127.0.0.1:8000/ready</code> deve responder. A documentação interativa está em <code>/docs</code>.</p></div>
       <div class="card"><h3>Encerrar</h3><p>Use <strong>[2] Parar</strong> no launcher. Isso encerra somente os processos registrados do Poker Arena.</p></div>
     </div>
-    <div class="callout warning"><b>Restrição correta do navegador.</b> A janela não pode ser escolhida silenciosamente pelo sistema. O seletor nativo sempre exige uma ação humana.</div>
+    <div class="callout warning"><b>Restrição correta do navegador.</b> A janela e seu monitor físico não podem ser escolhidos ou comprovados silenciosamente pelo sistema. O seletor nativo e a prévia sempre exigem uma ação humana.</div>
     <div class="footer-note">Antes da demonstração, deixe a solução parceira aberta, visível e com autorização expressa do responsável.</div>
   </section>
 
   <section class="page">
     <div class="topline"><span class="brand">Poker Arena · Etapas 1 e 2</span><span class="page-no">03</span></div>
-    <h2>Autorize e escolha a fonte correta</h2>
+    <h2>Configure os monitores, autorize e escolha a fonte</h2>
     <img class="screen" src="assets/navigation-guide/01-workspace-inicial.png" alt="Workspace inicial de captura supervisionada" />
     <p class="caption">Tela inicial real do workspace. O botão de seleção permanece desabilitado até o consentimento.</p>
     <div class="two">
+      <div class="card"><h3>Outro monitor (recomendado)</h3><p>Deixe o painel no monitor 1 e a janela da imagem visível e restaurada no monitor 2.</p></div>
+      <div class="card"><h3>Mesmo monitor</h3><p>Organize painel e janela autorizada lado a lado, sem minimizar nem sobrepor a fonte.</p></div>
       <div><h3>1. Marque a autorização</h3><p>Leia o texto e marque a caixa somente se o responsável pelo projeto parceiro autorizou a captura e o envio ao backend informado.</p></div>
-      <div><h3>2. Selecione uma janela</h3><p>Clique em <strong>Selecionar janela do projeto parceiro</strong>. No seletor, abra a categoria <strong>Janela</strong> e escolha a aplicação correta.</p></div>
+      <div><h3>2. Selecione uma janela</h3><p>Clique no botão correspondente ao modo escolhido. No seletor, abra a categoria <strong>Janela</strong> e escolha a aplicação correta.</p></div>
     </div>
     <div class="callout warning"><b>Tela inteira e guia são bloqueadas.</b> Essa defesa reduz exposição acidental de notificações, credenciais, outras aplicações e conteúdo sem autorização.</div>
+    <div class="callout"><b>Limite da plataforma.</b> O navegador informa que a fonte é uma janela, mas não revela “monitor 1” ou “monitor 2”. A opção selecionada orienta o operador; a prévia confirma a fonte real.</div>
   </section>
 
   <section class="page">
@@ -152,7 +155,8 @@
         <tr><td>Botão desabilitado</td><td>Marque a autorização local. Sem ela, o navegador não é acionado.</td></tr>
         <tr><td>Fonte bloqueada por privacidade</td><td>Encerre e selecione a categoria <strong>Janela</strong>, não tela inteira nem guia.</td></tr>
         <tr><td>Permissão negada</td><td>Verifique as permissões de compartilhamento do navegador e tente novamente.</td></tr>
-        <tr><td>Prévia preta ou congelada</td><td>Mantenha a janela parceira visível e confirme que ela continua produzindo frames.</td></tr>
+        <tr><td>Prévia preta ou congelada</td><td>Restaure a janela parceira, mantenha-a visível no monitor escolhido e confirme que ela continua produzindo frames. Conteúdo protegido pode permanecer preto.</td></tr>
+        <tr><td>Janela no monitor incorreto</td><td>Encerre a seleção, mova a janela com <code>Win + Shift + ←/→</code>, mantenha-a restaurada e selecione-a novamente.</td></tr>
         <tr><td>Proteção aprovada</td><td>Leia por que nenhuma recomendação foi emitida. Melhore visibilidade, escala e ausência de oclusões; não force uma conclusão.</td></tr>
         <tr><td>Última leitura desatualizada</td><td>O backend falhou temporariamente. A interface preserva a última evidência e usa backoff antes de tentar novamente.</td></tr>
         <tr><td>Backend indisponível</td><td>Abra <code>http://127.0.0.1:8000/ready</code>. Se necessário, use Parar e Iniciar no <code>POKER.bat</code>.</td></tr>
@@ -168,6 +172,7 @@
     <ul class="checklist">
       <li>Inicie pelo <code>POKER.bat</code> e confirme backend e frontend.</li>
       <li>Abra previamente a solução parceira e obtenha autorização explícita.</li>
+      <li>Escolha <strong>Outro monitor</strong> ou <strong>Mesmo monitor</strong> e organize as janelas conforme o desenho exibido.</li>
       <li>Selecione somente a janela autorizada e mostre à audiência a etapa de confirmação.</li>
       <li>Explique que nenhum quadro sai antes do clique <strong>Confirmar e iniciar análise</strong>.</li>
       <li>Apresente primeiro abstenção/gate, depois motor, estado proposto, confiança interna e latência.</li>

@@ -19,7 +19,30 @@ function fakeStream(surface?: 'window' | 'monitor' | 'browser' | 'unknown') {
 describe('LiveCopilotScreen', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    window.localStorage.clear()
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+  })
+
+  it('configura mesmo monitor ou outro monitor sem persistir dados da sessão', async () => {
+    const view = render(<LiveCopilotScreen standalone onClose={() => undefined} />)
+    const secondMonitor = screen.getByRole('radio', { name: /Outro monitor/ })
+    const sameMonitor = screen.getByRole('radio', { name: /Mesmo monitor/ })
+
+    expect(secondMonitor).toBeChecked()
+    expect(screen.getByRole('button', { name: /Selecionar janela no outro monitor/ })).toBeDisabled()
+    expect(screen.getByRole('note', { name: /configuração de monitores/ })).toHaveTextContent(/Monitor 1/)
+    expect(screen.getByRole('note', { name: /configuração de monitores/ })).toHaveTextContent(/Monitor 2/)
+
+    await userEvent.click(sameMonitor)
+
+    expect(sameMonitor).toBeChecked()
+    expect(screen.getByRole('button', { name: /Selecionar janela neste mesmo monitor/ })).toBeDisabled()
+    expect(screen.getByRole('note', { name: /configuração de monitores/ })).toHaveTextContent(/lado a lado/)
+    expect(window.localStorage).toHaveLength(0)
+
+    view.unmount()
+    render(<LiveCopilotScreen standalone onClose={() => undefined} />)
+    expect(screen.getByRole('radio', { name: /Outro monitor/ })).toBeChecked()
   })
 
   it('suprime conselho acionável quando a última leitura ficou obsoleta', () => {
@@ -48,12 +71,20 @@ describe('LiveCopilotScreen', () => {
 
     const capture = screen.getByRole('button', { name: /Selecionar janela do jogo/ })
     expect(capture).toBeDisabled()
-    await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /captura da janela/i }))
     await userEvent.dblClick(capture)
     await waitFor(() => expect(getDisplayMedia).toHaveBeenCalledTimes(1))
+    expect(getDisplayMedia).toHaveBeenCalledWith({
+      video: { displaySurface: 'window', frameRate: { ideal: 2, max: 2 } },
+      audio: false,
+      monitorTypeSurfaces: 'exclude',
+      preferCurrentTab: false,
+      selfBrowserSurface: 'exclude',
+      surfaceSwitching: 'exclude',
+    })
     resolvePermission(stream)
     await userEvent.click(await screen.findByRole('button', { name: /Escolher outra janela/ }))
-    const consent = screen.getByRole('checkbox', { name: /captura desta tela/i })
+    const consent = screen.getByRole('checkbox', { name: /captura da janela/i })
     expect(consent).toBeChecked()
     await userEvent.click(consent)
     expect(screen.getByRole('button', { name: /Selecionar janela do jogo/ })).toBeDisabled()
@@ -72,7 +103,7 @@ describe('LiveCopilotScreen', () => {
         <LiveCopilotScreen onClose={() => undefined} />
       </StrictMode>,
     )
-    await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /captura da janela/i }))
     await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
 
     expect(await screen.findByRole('button', { name: /Escolher outra janela/ })).toBeEnabled()
@@ -87,7 +118,7 @@ describe('LiveCopilotScreen', () => {
     })
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(new Error('preview falhou'))
     render(<LiveCopilotScreen onClose={() => undefined} />)
-    await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /captura da janela/i }))
     await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
     await screen.findByText(/preview falhou/)
     expect(track.stop).toHaveBeenCalled()
@@ -106,7 +137,7 @@ describe('LiveCopilotScreen', () => {
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
     render(<LiveCopilotScreen onClose={() => undefined} />)
 
-    const consent = screen.getByRole('checkbox', { name: /captura desta tela/i })
+    const consent = screen.getByRole('checkbox', { name: /captura da janela/i })
     await userEvent.click(consent)
     await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
     await userEvent.click(consent)
@@ -119,7 +150,7 @@ describe('LiveCopilotScreen', () => {
 
   it('mantém opt-in remoto separado, opcional e desligado por padrão', async () => {
     render(<LiveCopilotScreen onClose={() => undefined} />)
-    const localConsent = screen.getByRole('checkbox', { name: /captura desta tela/i })
+    const localConsent = screen.getByRole('checkbox', { name: /captura da janela/i })
     const remoteConsent = screen.getByRole('checkbox', { name: /VLM remoto de terceiro/i })
 
     expect(remoteConsent).not.toBeChecked()
@@ -168,7 +199,7 @@ describe('LiveCopilotScreen', () => {
       videoHeight: { configurable: true, value: 600 },
     })
 
-    await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /captura da janela/i }))
     await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
     expect(fromImage).not.toHaveBeenCalled()
     await userEvent.click(await screen.findByRole('button', { name: /Confirmar e iniciar análise/ }))
@@ -200,7 +231,7 @@ describe('LiveCopilotScreen', () => {
     })
     render(<LiveCopilotScreen onClose={() => undefined} />)
 
-    await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /captura da janela/i }))
     await userEvent.click(screen.getByRole('checkbox', { name: /VLM remoto de terceiro/i }))
     await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
     expect(createConsent).not.toHaveBeenCalled()
@@ -225,7 +256,7 @@ describe('LiveCopilotScreen', () => {
     const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockReturnValue(playPending)
     const view = render(<LiveCopilotScreen onClose={() => undefined} />)
 
-    await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /captura da janela/i }))
     await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
     await waitFor(() => expect(play).toHaveBeenCalledTimes(1))
     view.unmount()
@@ -256,7 +287,7 @@ describe('LiveCopilotScreen', () => {
     })
     const view = render(<LiveCopilotScreen onClose={() => undefined} />)
 
-    await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /captura da janela/i }))
     await userEvent.click(screen.getByRole('checkbox', { name: /VLM remoto de terceiro/i }))
     await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
     await userEvent.click(await screen.findByRole('button', { name: /Confirmar e iniciar análise/ }))
@@ -280,7 +311,7 @@ describe('LiveCopilotScreen', () => {
       const fromImage = vi.spyOn(api, 'fromImage')
       render(<LiveCopilotScreen onClose={() => undefined} />)
 
-      await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+      await userEvent.click(screen.getByRole('checkbox', { name: /captura da janela/i }))
       await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
 
       const confirm = await screen.findByRole('button', { name: /Confirmar e iniciar análise/ })
@@ -311,7 +342,7 @@ describe('LiveCopilotScreen', () => {
     const fromImage = vi.spyOn(api, 'fromImage')
     render(<LiveCopilotScreen onClose={() => undefined} />)
 
-    await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /captura da janela/i }))
     await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Permissão de compartilhamento negada/)
@@ -325,7 +356,7 @@ describe('LiveCopilotScreen', () => {
       value: { getDisplayMedia: vi.fn().mockResolvedValue(stream) },
     })
     render(<LiveCopilotScreen onClose={() => undefined} />)
-    await userEvent.click(screen.getByRole('checkbox', { name: /captura desta tela/i }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /captura da janela/i }))
     await userEvent.click(screen.getByRole('button', { name: /Selecionar janela do jogo/ }))
     await screen.findByRole('button', { name: /Confirmar e iniciar análise/ })
 

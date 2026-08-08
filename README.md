@@ -121,6 +121,22 @@ As opções **Iniciar** e **Abrir no navegador** usam
   apresentação aparecem percepção, confiança interna, latência e abstenção — não recomendação
   estratégica. O seletor sempre exige ação humana por segurança do navegador.
 
+### Mesmo monitor ou outro monitor
+
+O workspace oferece uma configuração temporária, reiniciada ao reabrir a tela e sem gravar
+dados no navegador:
+
+- **Outro monitor (recomendado):** mantenha o painel de captura no monitor 1 e a janela
+  autorizada, visível e não minimizada no monitor 2.
+- **Mesmo monitor:** organize o painel e a janela autorizada lado a lado, sem sobreposição.
+
+Nos dois modos, escolha somente **Janela** no seletor do Edge/Chrome. A aplicação solicita
+preferência por janela e exclusão de monitor inteiro, guia atual e troca posterior de fonte;
+depois, também rejeita qualquer track que o navegador não reporte como `window`. Por
+privacidade, a API do navegador não revela o número físico do monitor da janela escolhida:
+o modo selecionado orienta a operação, e a confirmação efetiva continua sendo humana no
+seletor e na prévia. Use apenas mesa própria ou ambiente expressamente autorizado.
+
 Guia visual para operação e apresentação: [`GUIA_DE_NAVEGACAO_POKER_ARENA.pdf`](docs/GUIA_DE_NAVEGACAO_POKER_ARENA.pdf).
 
 Guia pedagógico, visual e interativo sobre toda a solução, com trilhas por público,

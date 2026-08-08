@@ -19,6 +19,24 @@ const errorMessage = (caught: unknown, fallback: string) => {
 const safeNumber = (value: number, current: number, min: number) =>
   Number.isFinite(value) ? Math.max(min, value) : current
 type DisplaySurface = 'window' | 'monitor' | 'browser' | 'unknown'
+type CaptureLayout = 'same-monitor' | 'second-monitor'
+type WindowOnlyDisplayMediaOptions = DisplayMediaStreamOptions & {
+  monitorTypeSurfaces: 'exclude'
+  preferCurrentTab: false
+  selfBrowserSurface: 'exclude'
+  surfaceSwitching: 'exclude'
+}
+const WINDOW_ONLY_CAPTURE_OPTIONS: WindowOnlyDisplayMediaOptions = {
+  video: { displaySurface: 'window', frameRate: { ideal: 2, max: 2 } },
+  audio: false,
+  monitorTypeSurfaces: 'exclude',
+  preferCurrentTab: false,
+  selfBrowserSurface: 'exclude',
+  surfaceSwitching: 'exclude',
+}
+const layoutTarget = (layout: CaptureLayout) => layout === 'second-monitor'
+  ? 'no outro monitor'
+  : 'neste mesmo monitor'
 const sourceLabel = (surface: DisplaySurface) => ({
   window: 'Janela selecionada', monitor: 'Tela inteira selecionada',
   browser: 'Guia do navegador selecionada', unknown: 'Fonte não verificável (tipo não informado)',
@@ -67,7 +85,8 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
   const [frames, setFrames] = useState(0)
   const [captureSource, setCaptureSource] = useState<string | null>(null)
   const [displaySurface, setDisplaySurface] = useState<DisplaySurface | null>(null)
-  const [stageStatus, setStageStatus] = useState('Etapa 1 de 4: autorize a captura local.')
+  const [captureLayout, setCaptureLayout] = useState<CaptureLayout>('second-monitor')
+  const [stageStatus, setStageStatus] = useState('Etapa 1 de 4: escolha a configuração de monitores e autorize a captura local.')
 
   const invalidateLiveContext = useCallback(() => {
     contextGenerationRef.current += 1
@@ -139,11 +158,11 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
     setVisionStale(false)
     setVisionLatencyMs(null)
     setFrames(0)
-    setStageStatus('Etapa 2 de 4: o navegador aguarda a escolha da janela.')
+    setStageStatus(`Etapa 2 de 4: no seletor, escolha a categoria Janela e a fonte ${layoutTarget(captureLayout)}.`)
     let acquiredStream: MediaStream | null = null
     try {
       if (!navigator.mediaDevices?.getDisplayMedia) throw new Error('Este navegador não oferece captura de tela.')
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 2 }, audio: false })
+      const stream = await navigator.mediaDevices.getDisplayMedia(WINDOW_ONLY_CAPTURE_OPTIONS)
       acquiredStream = stream
       if (!mountedRef.current || !consentRef.current) {
         stream.getTracks().forEach((item) => item.stop())
@@ -177,7 +196,7 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
         setError('Fonte bloqueada por privacidade. Somente uma fonte confirmada pelo navegador como Janela pode ser analisada.')
         setStageStatus('Etapa 3 de 4: fonte não autorizada ou não verificável; escolha outra janela.')
       } else {
-        setStageStatus('Etapa 3 de 4: confirme na prévia se esta é a janela correta.')
+        setStageStatus(`Etapa 3 de 4: confirme na prévia se esta é a janela correta ${layoutTarget(captureLayout)}.`)
       }
     } catch (caught) {
       if (acquiredStream && streamRef.current !== acquiredStream) acquiredStream.getTracks().forEach((item) => item.stop())
@@ -347,16 +366,43 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
           <button className={standalone ? 'btn btn-ghost' : 'ico-btn'} onClick={close} aria-label={standalone ? 'Voltar para a Arena' : 'Fechar'}><X size={18} /> {standalone && 'Voltar para a Arena'}</button>
         </header>
         <p className="guide-intro">O navegador envia quadros somente após sua confirmação para o backend <code>{API_BASE}</code>. O VLM remoto exige autorização separada. Não use assistência em partidas de terceiros ou onde RTA seja proibido.</p>
-        {standalone && <ol className="capture-steps" aria-label="Como capturar a solução parceira"><li>Confirme a autorização do responsável pela janela.</li><li>Escolha <b>Janela</b> no seletor seguro do navegador.</li><li>Confira a prévia e confirme que é a solução correta.</li><li>Acompanhe percepção, confiança, latência e abstenções.</li></ol>}
+        <fieldset className="capture-layout" disabled={capturing || starting}>
+          <legend>Onde está a janela que será capturada?</legend>
+          <label className={captureLayout === 'second-monitor' ? 'is-selected' : ''}>
+            <input type="radio" name="capture-layout" value="second-monitor" checked={captureLayout === 'second-monitor'} onChange={() => {
+              setCaptureLayout('second-monitor')
+              setStageStatus('Etapa 1 de 4: deixe o painel neste monitor, a janela autorizada visível no outro e confirme a autorização.')
+            }} />
+            <span><b>Outro monitor (recomendado)</b><small>Painel de captura em uma tela; janela da imagem na outra.</small></span>
+          </label>
+          <label className={captureLayout === 'same-monitor' ? 'is-selected' : ''}>
+            <input type="radio" name="capture-layout" value="same-monitor" checked={captureLayout === 'same-monitor'} onChange={() => {
+              setCaptureLayout('same-monitor')
+              setStageStatus('Etapa 1 de 4: organize painel e janela autorizada lado a lado, sem minimizar a fonte, e confirme a autorização.')
+            }} />
+            <span><b>Mesmo monitor</b><small>Organize as duas janelas lado a lado e mantenha a fonte visível.</small></span>
+          </label>
+        </fieldset>
+        <div className={`capture-monitor-map is-${captureLayout}`} role="note" aria-label="Orientação para a configuração de monitores selecionada">
+          {captureLayout === 'second-monitor' ? <>
+            <div><span>Monitor 1</span><b>Painel de captura</b><small>Este navegador permanece visível.</small></div>
+            <strong aria-hidden="true">← janela ←</strong>
+            <div><span>Monitor 2</span><b>Janela da imagem</b><small>Visível, restaurada e autorizada.</small></div>
+          </> : <div className="capture-same-monitor"><span>Mesmo monitor</span><b>Painel lado a lado com a janela da imagem</b><small>Não sobreponha nem minimize a janela capturada.</small></div>}
+          <p>Por privacidade, o navegador não revela o número físico do monitor. Esta opção orienta o fluxo; você confirma a janela efetiva no seletor e na prévia.</p>
+        </div>
+        {standalone && <ol className="capture-steps" aria-label="Como capturar a solução parceira"><li>Escolha <b>Mesmo monitor</b> ou <b>Outro monitor</b>.</li><li>Confirme a autorização e escolha somente <b>Janela</b>.</li><li>Confira a prévia e confirme a fonte correta.</li><li>Acompanhe percepção, confiança, latência e abstenções.</li></ol>}
         <div className="capture-stage-status" role="status" aria-atomic="true">{stageStatus}</div>
 
         <label className="cp-consent"><input type="checkbox" checked={consented} disabled={capturing} onChange={(event) => {
           const checked = event.currentTarget.checked
           consentRef.current = checked
           setConsented(checked)
-          setStageStatus(checked ? 'Etapa 2 de 4: selecione somente a janela autorizada.' : 'Etapa 1 de 4: autorize a captura local.')
+          setStageStatus(checked
+            ? `Etapa 2 de 4: selecione somente a janela autorizada ${layoutTarget(captureLayout)}.`
+            : 'Etapa 1 de 4: escolha a configuração de monitores e autorize a captura local.')
           if (!checked) stop()
-        }} /><span>Autorizo a captura desta tela do projeto parceiro e confirmo que seu responsável permitiu o envio dos quadros ao backend informado.</span></label>
+        }} /><span>Autorizo a captura da janela do projeto parceiro, no mesmo monitor ou em outro, e confirmo que seu responsável permitiu o envio dos quadros ao backend informado.</span></label>
 
         <details className="capture-advanced"><summary>Opções avançadas e contexto manual</summary>
           <label className="cp-consent"><input type="checkbox" checked={remoteConsented} disabled={!consented || capturing || starting} onChange={(event) => {
@@ -380,14 +426,14 @@ export default function LiveCopilotScreen({ onClose, standalone = false }: {
         </details>
 
         <div className="cp-live-controls capture-actions">
-          {!capturing && <button className="btn btn-accent" onClick={() => void selectSource()} disabled={!consented || starting}><MonitorPlay size={16} /> {starting ? 'Aguardando escolha da janela…' : standalone ? 'Selecionar janela do projeto parceiro' : 'Selecionar janela do jogo'}</button>}
+          {!capturing && <button className="btn btn-accent" onClick={() => void selectSource()} disabled={!consented || starting}><MonitorPlay size={16} /> {starting ? 'Aguardando escolha da janela…' : standalone ? `Selecionar janela ${layoutTarget(captureLayout)}` : 'Selecionar janela do jogo'}</button>}
           {capturing && !analyzing && <><button className="btn btn-accent" onClick={() => void confirmAndAnalyze()} disabled={starting || blockedSource}><Play size={16} /> {starting ? 'Iniciando análise…' : 'Confirmar e iniciar análise'}</button><button className="btn btn-ghost" onClick={() => stop(true, true)}><Square size={16} /> Escolher outra janela</button></>}
           {capturing && analyzing && <button className="btn btn-ghost" onClick={() => stop(true, true)}><Square size={16} /> Encerrar compartilhamento</button>}
           {captureSource && <span className="capture-source">{captureSource}</span>}
           {analyzing && <span className="cp-live-dot" aria-label={`Análise ativa, ${frames} quadros concluídos`}>● análise ativa · {frames} quadros</span>}
         </div>
 
-        {capturing && !analyzing && !blockedSource && <div className="capture-confirm" role="note"><b>Esta é a janela correta?</b> Nenhum quadro será enviado antes de confirmar.</div>}
+        {capturing && !analyzing && !blockedSource && <div className="capture-confirm" role="note"><b>Esta é a janela correta {layoutTarget(captureLayout)}?</b> Nenhum quadro será enviado antes de confirmar.</div>}
         {error && <div className="cp-error" role="alert">⚠️ {error}{visionLatencyMs !== null && <> · última tentativa: {Math.round(visionLatencyMs)} ms</>}</div>}
         <div className="cp-live-grid">
           <div className="cp-live-preview"><video ref={videoRef} muted playsInline className="cp-live-video" aria-label="Prévia da janela compartilhada" />{!capturing && <div className="cp-live-hint">A prévia da janela autorizada aparecerá aqui.</div>}</div>

@@ -817,10 +817,10 @@
       <section class="chapter" id="captura" data-paths="all operator jury five">
         <div class="chapter-head">
           <div class="chapter-number">03</div>
-          <div><h2>Captura supervisionada: quatro portas, nenhuma surpresa</h2><p class="chapter-intro">Autorização, seleção, confirmação e análise.</p></div>
+          <div><h2>Captura supervisionada: duas disposições, quatro portas</h2><p class="chapter-intro">Mesmo monitor ou outro monitor; depois autorização, seleção, confirmação e análise.</p></div>
         </div>
         <div class="visual-frame">
-          <img src="assets/navigation-guide/01-workspace-inicial.png" alt="Workspace inicial de captura supervisionada com quatro etapas, autorização, opções avançadas, botão de seleção e área de prévia." />
+          <img src="assets/navigation-guide/01-workspace-inicial.png" alt="Workspace inicial de captura supervisionada com seletor para mesmo monitor ou outro monitor, quatro etapas, autorização e área de prévia." />
           <div class="visual-caption"><b>Tela real — etapa 1.</b> O botão fica bloqueado até existir autorização local explícita.</div>
         </div>
         <div class="pipeline">
@@ -830,11 +830,24 @@
           <div class="pipe-step"><span class="badge">Porta 4</span><b>Analisar</b><small>Quadros reduzidos são enviados sequencialmente ao backend.</small></div>
           <div class="pipe-step"><span class="badge">Saída</span><b>Diagnosticar</b><small>Estado proposto, motor, confiança, latência, avisos e abstenção.</small></div>
         </div>
+        <h3>Mesmo monitor ou outro monitor?</h3>
+        <div class="concept-grid">
+          <article class="concept-card good"><span class="icon">②</span><h4>Outro monitor (recomendado)</h4><p>O painel permanece no monitor 1. A janela autorizada, visível e restaurada permanece no monitor 2.</p></article>
+          <article class="concept-card"><span class="icon">◫</span><h4>Mesmo monitor</h4><p>Painel e janela autorizada ficam lado a lado. A fonte não deve ser minimizada nem coberta pelo painel.</p></article>
+        </div>
+        <div class="scenario">
+          <strong>Limite honesto da plataforma.</strong> O navegador informa se a fonte é
+          <span class="mono">window</span>, <span class="mono">monitor</span> ou <span class="mono">browser</span>,
+          mas não entrega à página o número físico do monitor da janela. A escolha temporária de disposição
+          orienta o operador sem gravar dados da sessão; a fonte efetiva continua sendo confirmada no seletor e na prévia.
+        </div>
         <h3>Por que somente “Janela”?</h3>
         <p>
           Uma tela inteira pode conter mensagens, senhas, prontuários, e-mail ou o código de outra pessoa.
-          Uma guia do navegador pode mudar de conteúdo. Por isso a interface bloqueia fontes reportadas como
-          <span class="mono">monitor</span> ou <span class="mono">browser</span> e pede uma janela específica.
+          Uma guia do navegador pode mudar de conteúdo. Por isso a interface pede ao navegador uma fonte
+          <span class="mono">window</span>, solicita a exclusão de tela inteira, guia atual e troca posterior,
+          e ainda bloqueia fontes reportadas como <span class="mono">monitor</span>,
+          <span class="mono">browser</span> ou tipo desconhecido.
         </p>
         <div class="scenario">
           <strong>Pense numa videochamada.</strong> Compartilhar “a tela inteira” é como levar todos os papéis
@@ -1312,7 +1325,7 @@
           <article class="concept-card"><h4>Swagger</h4><p class="mono">http://127.0.0.1:8000/docs</p></article>
         </div>
         <div class="remember">
-          Use <span class="mono">POKER.bat</span>: [1] Iniciar, [2] Parar, [3] Abrir no navegador,
+          Use <span class="mono">POKER.bat</span>: [1] Iniciar, [2] Parar, [3] Mostrar URLs e abrir no navegador,
           [4] Validar. O stop encerra os processos registrados da solução.
         </div>
       </section>

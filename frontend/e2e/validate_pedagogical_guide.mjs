@@ -29,6 +29,12 @@ try {
   assert(await page.locator('.quiz').count() === 6, 'O guia deve conter seis checkpoints de recuperação.')
   assert(await page.locator('.exercise').count() >= 2, 'O guia deve exigir produção ativa, não apenas reconhecimento.')
   assert(
+    (await page.locator('#captura').textContent())?.includes('Outro monitor (recomendado)')
+      && (await page.locator('#captura').textContent())?.includes('Mesmo monitor')
+      && (await page.locator('#captura').textContent())?.includes('número físico do monitor'),
+    'O capítulo de captura deve ensinar os dois modos e o limite de verificação do navegador.',
+  )
+  assert(
     (await page.locator('#checkpointStatus').textContent())?.includes('0 de 6'),
     'O progresso inicial dos checkpoints está incorreto.',
   )

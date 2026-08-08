@@ -68,7 +68,7 @@ test('consentimento remoto autenticado é criado e revogado pela captura supervi
   await page.getByRole('button', { name: 'Abrir captura supervisionada' }).click()
   const dialog = page.getByRole('dialog', { name: /Captura supervisionada/ })
   await expect(dialog).toBeVisible()
-  await dialog.getByLabel(/Autorizo a captura desta tela/).check()
+  await dialog.getByLabel(/Autorizo a captura da janela/).check()
   await dialog.getByText('Opções avançadas e contexto manual').click()
   await dialog.getByLabel(/Também autorizo/).check()
   await dialog.getByLabel('Ler a cada').selectOption('1500')

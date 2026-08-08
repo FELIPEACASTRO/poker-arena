@@ -102,9 +102,17 @@ test('launcher abre workspace de captura da solução parceira sem depender de u
   const workspaceBox = await workspace.boundingBox()
   expect(workspaceBox?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(40)
   await expect(workspace.getByText(/somente depois da confirmação/i)).toBeVisible()
-  const capture = workspace.getByRole('button', { name: /Selecionar janela do projeto parceiro/ })
+  const otherMonitor = workspace.getByRole('radio', { name: /Outro monitor/ })
+  const sameMonitor = workspace.getByRole('radio', { name: /Mesmo monitor/ })
+  await expect(otherMonitor).toBeChecked()
+  await expect(workspace.getByRole('note', { name: /configuração de monitores/ })).toContainText('Monitor 1')
+  await expect(workspace.getByRole('note', { name: /configuração de monitores/ })).toContainText('Monitor 2')
+  await sameMonitor.check()
+  await expect(workspace.getByRole('button', { name: /Selecionar janela neste mesmo monitor/ })).toBeDisabled()
+  await otherMonitor.check()
+  const capture = workspace.getByRole('button', { name: /Selecionar janela no outro monitor/ })
   await expect(capture).toBeDisabled()
-  await workspace.getByText(/Autorizo a captura desta tela/).click()
+  await workspace.getByText(/Autorizo a captura da janela/).click()
   await expect(capture).toBeEnabled()
   await expectBasicAccessibility(workspace)
 
@@ -117,7 +125,9 @@ test('workspace executa seleção, confirmação, leitura real e encerramento', 
     const canvases: HTMLCanvasElement[] = []
     Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', {
       configurable: true,
-      value: async () => {
+      value: async (options: DisplayMediaStreamOptions) => {
+        ;(window as unknown as { __pokerCaptureOptions?: DisplayMediaStreamOptions })
+          .__pokerCaptureOptions = options
         const canvas = document.createElement('canvas')
         canvas.width = 640
         canvas.height = 480
@@ -153,8 +163,19 @@ test('workspace executa seleção, confirmação, leitura real e encerramento', 
   const workspace = page.getByRole('main', { name: /Captura supervisionada/ })
   await page.waitForTimeout(300)
   await page.screenshot({ path: guideScreenshot('01-workspace-inicial.png'), fullPage: true })
-  await workspace.getByLabel(/Autorizo a captura desta tela/).check()
-  await workspace.getByRole('button', { name: /Selecionar janela do projeto parceiro/ }).click()
+  await workspace.getByLabel(/Autorizo a captura da janela/).check()
+  await workspace.getByRole('button', { name: /Selecionar janela no outro monitor/ }).click()
+
+  const captureOptions = await page.evaluate(() =>
+    (window as unknown as { __pokerCaptureOptions?: Record<string, unknown> }).__pokerCaptureOptions)
+  expect(captureOptions).toMatchObject({
+    audio: false,
+    monitorTypeSurfaces: 'exclude',
+    preferCurrentTab: false,
+    selfBrowserSurface: 'exclude',
+    surfaceSwitching: 'exclude',
+    video: { displaySurface: 'window' },
+  })
 
   await expect(workspace.getByText(/Esta é a janela correta/)).toBeVisible()
   await expect(workspace.getByLabel('Prévia da janela compartilhada')).toBeVisible()
@@ -176,7 +197,7 @@ test('workspace executa seleção, confirmação, leitura real e encerramento', 
   await page.screenshot({ path: guideScreenshot('03-diagnostico-ativo.png'), fullPage: true })
 
   await workspace.getByRole('button', { name: 'Encerrar compartilhamento' }).click()
-  await expect(workspace.getByRole('button', { name: /Selecionar janela do projeto parceiro/ })).toBeEnabled()
+  await expect(workspace.getByRole('button', { name: /Selecionar janela no outro monitor/ })).toBeEnabled()
   await expect(workspace.getByText(/Etapa 2 de 4/)).toBeVisible()
   assertNoRuntimeFailures()
 })
@@ -218,8 +239,8 @@ test('workspace recusa fonte cujo navegador não comprova como janela', async ({
 
   await page.goto('/?view=capture')
   const workspace = page.getByRole('main', { name: /Captura supervisionada/ })
-  await workspace.getByLabel(/Autorizo a captura desta tela/).check()
-  await workspace.getByRole('button', { name: /Selecionar janela do projeto parceiro/ }).click()
+  await workspace.getByLabel(/Autorizo a captura da janela/).check()
+  await workspace.getByRole('button', { name: /Selecionar janela no outro monitor/ }).click()
 
   await expect(workspace.getByRole('button', { name: 'Confirmar e iniciar análise' })).toBeDisabled()
   await expect(workspace.getByRole('alert')).toContainText(

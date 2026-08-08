@@ -1001,6 +1001,31 @@ body {
 }
 .capture-workspace .cp-live-preview { min-height: 360px; }
 .capture-workspace .cp-live-video { max-height: 68vh; }
+.capture-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+}
+.capture-layout legend { grid-column: 1 / -1; margin: 0 0 6px; color: var(--text); font-size: 13px; font-weight: 700; }
+.capture-layout label { display: flex; gap: 10px; padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); color: var(--text-dim); cursor: pointer; }
+.capture-layout label.is-selected { border-color: var(--accent); background: var(--accent-soft); }
+.capture-layout input { margin-top: 3px; accent-color: var(--accent); }
+.capture-layout span { display: grid; gap: 3px; }
+.capture-layout b { color: var(--text); font-size: 12.5px; }
+.capture-layout small { font-size: 11px; line-height: 1.4; }
+.capture-monitor-map { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; margin: 0 0 14px; padding: 11px; border: 1px solid var(--border-2); border-radius: var(--r-md); background: var(--surface-2); }
+.capture-monitor-map > div { display: grid; gap: 3px; min-height: 56px; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface-3); }
+.capture-monitor-map > div > span { color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.capture-monitor-map > div > b { color: var(--text); font-size: 12px; }
+.capture-monitor-map > div > small { color: var(--text-dim); font-size: 10.5px; line-height: 1.35; }
+.capture-monitor-map > strong { color: var(--accent); font-size: 11px; white-space: nowrap; }
+.capture-monitor-map > p { grid-column: 1 / -1; margin: 0; color: var(--text-dim); font-size: 10.5px; line-height: 1.4; }
+.capture-monitor-map.is-same-monitor { grid-template-columns: 1fr; }
+.capture-monitor-map .capture-same-monitor { grid-template-columns: auto 1fr; align-items: center; }
+.capture-monitor-map .capture-same-monitor small { grid-column: 2; }
 .capture-steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1057,6 +1082,9 @@ body {
   .capture-page { padding: 0; }
   .capture-workspace { min-height: 100vh; border-radius: 0; padding: 16px; }
   .capture-steps { grid-template-columns: 1fr; }
+  .capture-layout { grid-template-columns: 1fr; }
+  .capture-monitor-map { grid-template-columns: 1fr; }
+  .capture-monitor-map > strong { text-align: center; transform: rotate(90deg); }
   .capture-workspace .cp-live-preview { min-height: 220px; }
 }
 .cp-dec { border-left: 3px solid var(--border); background: var(--surface-2); border-radius: var(--r-md); padding: 9px 12px; margin-bottom: 8px; }

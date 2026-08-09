@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from ..engine.actions import Action, ActionType
 from ..engine.cards import Card
-from ..engine.game import Hand
+from ..engine.game import Hand, PublicActionEvent
 from ..engine.player import PlayerStatus
 
 if TYPE_CHECKING:
@@ -47,6 +47,7 @@ class Observation:
     legal_actions: frozenset[ActionType]
     players: tuple[PublicPlayer, ...]  # estado público de todos (sem hole)
     num_active: int
+    history: tuple[PublicActionEvent, ...] = ()
 
 
 def eligible_pot_for(hand: Hand, seat: int) -> int:
@@ -84,6 +85,7 @@ def observation_for(hand: Hand) -> Observation:
         legal_actions=frozenset(hand.legal_actions()),
         players=players,
         num_active=sum(1 for p in hand.players if p.status != PlayerStatus.FOLDED),
+        history=tuple(hand.public_history),
     )
 
 

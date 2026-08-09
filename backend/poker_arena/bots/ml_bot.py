@@ -1,7 +1,7 @@
 """MLBot — nível 🔴 Expert por IA treinada (política neural via ONNX).
 
-Carrega uma política ONNX compatível com o contrato do encoder e implementa `Bot`:
-`encode(obs)` → logits de cinco ações → máscara legal → amostragem da distribuição.
+Carrega uma política ONNX compatível com o contrato declarado e implementa `Bot`:
+encoder v2 multientrada → dez logits → máscara sem aliases → decisão modal ou mista.
 O padrão preserva a política bruta (temperatura 1, sem corte e sem jitter); qualquer
 pós-processamento não neutro precisa ser explícito ou aprovado no manifesto.
 
@@ -11,12 +11,24 @@ não depende deles a menos que o Expert seja usado.
 
 from __future__ import annotations
 
+import math
 import random
 from pathlib import Path
 
 from ..engine.actions import Action, ActionType
 from ..engine.cards import make_rng
+from ..ml.action_space_v2 import (
+    ACTIONS_V2,
+    N_ACTIONS_V2,
+    legal_mask_v2,
+    to_action_v2,
+)
+from ..ml.action_space_v2 import (
+    REVISION as ACTION_SPACE_V2_REVISION,
+)
 from ..ml.encoder import ACTIONS, N_ACTIONS, encode, legal_mask, to_action
+from ..ml.encoder_v2 import REVISION as ENCODER_V2_REVISION
+from ..ml.encoder_v2 import encode_v2
 from ..model_artifacts import (
     ModelArtifactUnavailable,
     model_manifest_path,
@@ -28,13 +40,20 @@ from ..model_artifacts import (
 from .insight import BotInsight
 from .observation import Observation
 
-# rótulos curtos das 5 ações discretas (pro glass-box)
+# Rótulos curtos das ações discretas v1/v2 (glass-box).
 _PT = {
     "fold": "desistir",
     "check_call": "pagar",
     "raise_half": "aumentar ½",
     "raise_pot": "aumentar pote",
     "all_in": "all-in",
+    "raise_min": "aumentar mínimo",
+    "raise_033_pot": "aumentar ⅓ do pote",
+    "raise_050_pot": "aumentar ½ pote",
+    "raise_075_pot": "aumentar ¾ do pote",
+    "raise_100_pot": "aumentar o pote",
+    "raise_150_pot": "aumentar 1½ pote",
+    "raise_200_pot": "aumentar 2 potes",
 }
 
 # Defaults neutros: preservam exatamente a distribuição legal da rede e o sizing
@@ -44,30 +63,13 @@ TEMPERATURE = 1.0
 MIN_PROB_RATIO = 0.0
 SIZING_JITTER = 0.0
 
-# guarda de equity (busca-lite) — EXPERIMENTO MEDIDO E REPROVADO (fica OFF).
-#
-# A análise devastadora mediu over-fold (70-78% das apostas) e sangria de blinds
-# (~17 bb/100). Hipótese: vetar folds quando a equity simulada supera o preço.
-# Resultado do benchmark pareado (mesmos baralhos, ON vs OFF):
-#   - versão ampla:    -357 bb/100 no agregado (all-in multiway: equity vs mão
-#     aleatória superestima; a variância come o ganho);
-#   - versão restrita (defesa barata de pote pequeno): -84 no agregado — paga o
-#     pré-flop barato mas a POLÍTICA folda depois no flop ("call sem plano").
-# Conclusão: a política treinada é coerente (tight-premium + pós-flop dela);
-# remendo de inferência não a melhora. O caminho real é RETREINAR (notebook 06)
-# com pool de oponentes diverso e features de histórico. O código fica como
-# experimento documentado/testado, desligado por padrão.
-GUARD_SAMPLES = 120  # simulações de equity (só roda quando a política foldaria)
-GUARD_MARGIN = 0.10  # folga mínima de equity sobre o preço pra vetar o fold
-GUARD_MAX_PRICE = 0.30  # só defesas baratas (pot odds até 30%)
-GUARD_MAX_STACK_FRAC = 0.10  # e que custem no máx. 10% do stack (sem potes gigantes)
 
+class ExpertInferenceError(RuntimeError):
+    """Closed-code failure raised by the scientific evaluation lane."""
 
-def should_defend(equity: float, price: float, to_call: int, stack: int) -> bool:
-    """Fold dominado? Só em defesa barata de pote pequeno, com folga de equity."""
-    if price > GUARD_MAX_PRICE or to_call > GUARD_MAX_STACK_FRAC * stack:
-        return False
-    return equity >= price + GUARD_MARGIN
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(f"expert inference rejected [{code}]")
 
 
 def sample_action(
@@ -86,10 +88,14 @@ def sample_action(
     if top <= 0.0:
         return probs.index(top)
     kept = [(i, p) for i, p in enumerate(probs) if p > 0.0 and p >= min_prob_ratio * top]
-    if temperature <= 0.0 or len(kept) == 1:
+    if temperature <= 1e-6 or len(kept) == 1:
         return max(kept, key=lambda x: x[1])[0]
-    weights = [(i, p ** (1.0 / temperature)) for i, p in kept]
+    log_weights = [(i, math.log(p) / temperature) for i, p in kept]
+    max_log_weight = max(value for _, value in log_weights)
+    weights = [(i, math.exp(value - max_log_weight)) for i, value in log_weights]
     total = sum(w for _, w in weights)
+    if not math.isfinite(total) or total <= 0.0:
+        return max(kept, key=lambda x: x[1])[0]
     r = rng.random() * total
     acc = 0.0
     for i, w in weights:
@@ -120,6 +126,7 @@ class MLBot:
 
     _manifest_env = "POKER_EXPERT_MANIFEST"
     _artifact_verifier = staticmethod(verify_model_artifact)
+    _strict_inference = False
 
     def __init__(
         self,
@@ -153,7 +160,14 @@ class MLBot:
             raise ModelArtifactUnavailable("runtime_load_failed", str(exc)) from exc
         revalidate_model_artifact_identity(artifact)
         verify_runtime_contract(artifact, self._session.get_inputs(), self._session.get_outputs())
-        self._input = self._session.get_inputs()[0].name
+        entry = artifact.entry
+        self._v2 = (
+            entry.get("encoder_revision") == ENCODER_V2_REVISION
+            and entry.get("action_space_revision") == ACTION_SPACE_V2_REVISION
+        )
+        self._input_names = tuple(item.name for item in self._session.get_inputs())
+        self._actions = ACTIONS_V2 if self._v2 else ACTIONS
+        self._action_count = N_ACTIONS_V2 if self._v2 else N_ACTIONS
         self._last_insight: BotInsight | None = None
         policy = artifact.inference_policy
         requested = (
@@ -174,86 +188,161 @@ class MLBot:
         ):
             raise ValueError("runtime inference policy must match the approved manifest")
         self._temperature, self._min_prob_ratio, self._sizing_jitter = requested
+        self._decision_rule = policy.decision_rule
+        self._supported_action_indices = frozenset(
+            policy.supported_action_indices or range(self._action_count)
+        )
         if not 0.0 <= self._temperature <= 10.0:
             raise ValueError("temperature must be within [0, 10]")
         if not 0.0 <= self._min_prob_ratio <= 1.0:
             raise ValueError("min_prob_ratio must be within [0, 1]")
         if not 0.0 <= self._sizing_jitter <= 1.0:
             raise ValueError("sizing_jitter must be within [0, 1]")
+        if equity_guard:
+            raise ValueError("equity_guard is a rejected experiment and cannot alter runtime")
         self._artifact = artifact
-        self._equity_guard = equity_guard
         self._rng = make_rng(seed)  # cripto em produção; reprodutível com seed
 
     def _softmax_legal(self, logits: list[float], obs: Observation) -> list[float]:
         """Distribuição da rede SÓ sobre as ações legais (ilegais ≈ 0)."""
-        mask = legal_mask(obs)
+        if len(logits) != self._action_count:
+            raise ExpertInferenceError("output_shape_invalid")
+        if any(not math.isfinite(float(value)) for value in logits):
+            raise ExpertInferenceError("output_non_finite")
+        legal = legal_mask_v2(obs) if self._v2 else legal_mask(obs)
+        if not any(legal):
+            raise ExpertInferenceError("legal_mask_empty")
+        legal_modal = max(
+            (index for index, is_legal in enumerate(legal) if is_legal),
+            key=lambda index: logits[index],
+        )
+        if legal_modal not in self._supported_action_indices:
+            raise ExpertInferenceError("unsupported_action_modal")
+        mask = tuple(
+            is_legal and index in self._supported_action_indices
+            for index, is_legal in enumerate(legal)
+        )
+        if not any(mask):
+            raise ExpertInferenceError("supported_legal_mask_empty")
         masked = self._np.array(
-            [logits[i] if mask[i] else -self._np.inf for i in range(N_ACTIONS)],
+            [logits[i] if mask[i] else -self._np.inf for i in range(self._action_count)],
             dtype="float64",
         )
         masked -= masked.max()
         exps = self._np.exp(masked)  # exp(-inf) = 0
-        return (exps / exps.sum()).tolist()
+        total = float(exps.sum())
+        if not math.isfinite(total) or total <= 0.0:
+            raise ExpertInferenceError("distribution_invalid")
+        probs = (exps / total).tolist()
+        if any(not math.isfinite(float(value)) or value < 0.0 for value in probs):
+            raise ExpertInferenceError("distribution_invalid")
+        if not math.isclose(sum(probs), 1.0, rel_tol=1e-7, abs_tol=1e-9):
+            raise ExpertInferenceError("distribution_invalid")
+        return probs
 
-    def _guarded_fold(self, obs: Observation) -> tuple[bool, str]:
-        """Veta um fold dominado: defesa barata de pote pequeno com equity de sobra."""
-        me = next(p for p in obs.players if p.seat == obs.seat)
-        call_cost = min(obs.to_call, me.stack)
-        price = call_cost / (obs.pot + call_cost)
-        # pré-filtro barato ANTES de simular (fora do escopo, nem gasta equity)
-        if price > GUARD_MAX_PRICE or call_cost > GUARD_MAX_STACK_FRAC * max(me.stack, 1):
-            return False, ""
-        from .monte_carlo_bot import estimate_equity  # lazy: reusa o motor de equity
+    def _fallback_action(self, obs: Observation) -> Action:
+        """Fail-safe determinístico quando o runtime neural não produz política válida."""
+        legal = obs.legal_actions
+        if ActionType.CHECK in legal:
+            return Action(ActionType.CHECK)
+        if ActionType.FOLD in legal:
+            return Action(ActionType.FOLD)
+        if ActionType.CALL in legal:
+            return Action(ActionType.CALL)
+        if ActionType.ALL_IN in legal:
+            return Action(ActionType.ALL_IN)
+        if ActionType.RAISE in legal:
+            try:
+                return to_action_v2(obs, 2) if self._v2 else to_action(obs, 2)
+            except ValueError as exc:
+                raise ExpertInferenceError("fallback_legal_state_inconsistent") from exc
+        raise RuntimeError("expert_fallback_no_legal_action")
 
-        n_opp = max(
-            sum(1 for p in obs.players if p.status != "folded" and p.seat != obs.seat),
-            1,
+    def _fail_safe(self, obs: Observation, code: str) -> Action:
+        action = self._fallback_action(obs)
+        self._last_insight = BotInsight(
+            kind="expert",
+            label=f"Inferência neural recusada ({code}); fallback legal determinístico",
+            confidence=0.0,
         )
-        equity = estimate_equity(obs.hole, obs.board, n_opp, GUARD_SAMPLES, self._rng)
-        if should_defend(equity, price, call_cost, me.stack):
-            note = (
-                f" · veto matemático: equity {round(equity * 100)}% ≫ preço "
-                f"{round(price * 100)}% → paga em vez de desistir"
-            )
-            return True, note
-        return False, ""
+        return action
 
     def act(self, obs: Observation) -> Action:
-        feats = self._np.asarray([encode(obs)], dtype=self._np.float32)
-        logits = self._session.run(None, {self._input: feats})[0][0].tolist()
-        probs = self._softmax_legal(logits, obs)
-        top = max(range(N_ACTIONS), key=lambda i: probs[i])
-        chosen = sample_action(probs, self._rng, self._temperature, self._min_prob_ratio)
-        guard_note = ""
-        # guarda anti-over-fold: só quando a política quer DESISTIR diante de aposta
-        me = next(p for p in obs.players if p.seat == obs.seat)
-        short_call_all_in = me.stack <= obs.to_call and ActionType.ALL_IN in obs.legal_actions
-        if (
-            self._equity_guard
-            and chosen == 0
-            and obs.to_call > 0
-            and (legal_mask(obs)[1] or short_call_all_in)
-        ):
-            defend, guard_note = self._guarded_fold(obs)
-            if defend:
-                chosen = 4 if short_call_all_in else 1
+        try:
+            probs = self.policy_distribution(obs)
+        except ExpertInferenceError as exc:
+            if self._strict_inference:
+                raise
+            return self._fail_safe(obs, exc.code)
+        except Exception as exc:  # noqa: BLE001 - deploy isolates a failed neural decision
+            if self._strict_inference:
+                raise ExpertInferenceError("runtime_execution_failed") from exc
+            return self._fail_safe(obs, "runtime_execution_failed")
+        top = max(range(self._action_count), key=lambda i: probs[i])
+        chosen = (
+            top
+            if self._decision_rule == "modal"
+            else sample_action(probs, self._rng, self._temperature, self._min_prob_ratio)
+        )
         if chosen == top:
-            label = f"Rede neural: {_PT[ACTIONS[top]]} ({round(probs[top] * 100)}%)"
-        elif guard_note:
-            label = f"Rede neural: queria {_PT[ACTIONS[top]]}{guard_note}"
+            label = f"Rede neural: {_PT[self._actions[top]]} ({round(probs[top] * 100)}%)"
         else:  # estratégia mista em ação — o glass-box mostra o sorteio
             label = (
-                f"Rede neural (mista): sorteou {_PT[ACTIONS[chosen]]} "
-                f"({round(probs[chosen] * 100)}%); favorita {_PT[ACTIONS[top]]} "
+                f"Rede neural (mista): sorteou {_PT[self._actions[chosen]]} "
+                f"({round(probs[chosen] * 100)}%); favorita {_PT[self._actions[top]]} "
                 f"({round(probs[top] * 100)}%)"
             )
+        positive = [probability for probability in probs if probability > 0.0]
+        entropy = -sum(probability * math.log(probability) for probability in positive)
+        normalized_entropy = entropy / math.log(len(positive)) if len(positive) > 1 else 0.0
         self._last_insight = BotInsight(
             kind="expert",
             label=label,
-            confidence=probs[chosen],
+            confidence=probs[top],
             probs=tuple(probs),
+            modal_action=self._actions[top],
+            modal_probability=probs[top],
+            executed_action=self._actions[chosen],
+            executed_probability=probs[chosen],
+            decision_rule=self._decision_rule,
+            policy_entropy=min(1.0, max(0.0, normalized_entropy)),
         )
-        return jitter_raise(to_action(obs, chosen), obs, self._rng, self._sizing_jitter)
+        action = to_action_v2(obs, chosen) if self._v2 else to_action(obs, chosen)
+        return jitter_raise(action, obs, self._rng, self._sizing_jitter)
+
+    def policy_distribution(self, obs: Observation) -> list[float]:
+        """Return the exact legal distribution or raise a closed-code error."""
+
+        try:
+            if self._v2:
+                encoded = encode_v2(obs)
+                values = (
+                    encoded.cards,
+                    encoded.global_features,
+                    encoded.seats,
+                    encoded.history,
+                    encoded.history_mask,
+                    encoded.legal_mask,
+                )
+                feeds = {
+                    name: self._np.asarray([value], dtype=self._np.float32)
+                    for name, value in zip(self._input_names, values, strict=True)
+                }
+            else:
+                feeds = {
+                    self._input_names[0]: self._np.asarray([encode(obs)], dtype=self._np.float32)
+                }
+            raw_outputs = self._session.run(None, feeds)
+            if len(raw_outputs) != 1 or getattr(raw_outputs[0], "shape", None) != (
+                1,
+                self._action_count,
+            ):
+                raise ExpertInferenceError("output_shape_invalid")
+            return self._softmax_legal(raw_outputs[0][0].tolist(), obs)
+        except ExpertInferenceError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - normalize all runtime failures
+            raise ExpertInferenceError("runtime_execution_failed") from exc
 
     def insight(self) -> BotInsight | None:
         return self._last_insight
@@ -269,6 +358,7 @@ class EvaluationMLBot(MLBot):
 
     _manifest_env = "POKER_EXPERT_CANDIDATE_MANIFEST"
     _artifact_verifier = staticmethod(verify_evaluation_candidate)
+    _strict_inference = True
 
     def __init__(
         self,

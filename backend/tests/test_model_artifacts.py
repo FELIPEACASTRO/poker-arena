@@ -11,6 +11,8 @@ import pytest
 from onnx import TensorProto, helper
 
 import poker_arena.model_artifacts as model_artifacts
+from poker_arena.ml.action_space_v2 import REVISION as ACTION_SPACE_V2_REVISION
+from poker_arena.ml.encoder_v2 import REVISION as ENCODER_V2_REVISION
 from poker_arena.model_artifacts import (
     ModelArtifactUnavailable,
     clear_model_artifact_cache,
@@ -20,7 +22,10 @@ from poker_arena.model_artifacts import (
     verify_model_artifact,
     verify_runtime_contract,
 )
-from tests.helpers.model_manifest import promotion_evidence_fixture
+from tests.helpers.model_manifest import (
+    expert_promotion_evidence_fixture,
+    promotion_evidence_fixture,
+)
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
@@ -48,16 +53,88 @@ def _verified_governance() -> dict[str, object]:
 
 
 def _expert_entry(artifact_path: Path, **updates: object) -> dict[str, object]:
+    source_binding = "a" * 64
+    trace_path = artifact_path.with_name(f"{artifact_path.stem}.training_trace.jsonl")
+    metrics_path = artifact_path.with_name(f"{artifact_path.stem}.training_metrics.json")
+    trace_path.write_text(
+        json.dumps({"event": "training_configuration", "source_binding": source_binding})
+        + "\n"
+        + json.dumps(
+            {"event": "dataset_prepared", "optimization_training_class_counts": [100] * 10}
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    metrics_path.write_text(
+        json.dumps(
+            {
+                "artifact_sha256": hashlib.sha256(artifact_path.read_bytes()).hexdigest(),
+                "source_binding": source_binding,
+            }
+        ),
+        encoding="utf-8",
+    )
     entry: dict[str, object] = {
         "path": artifact_path.name,
-        "state": "approved",
+        "state": "promoted",
         "installed": True,
         "sha256": hashlib.sha256(artifact_path.read_bytes()).hexdigest(),
         "governance": _verified_governance(),
-        "inputs": [{"name": "obs", "dtype": "float32", "shape": ["batch", 121]}],
-        "outputs": [{"name": "logits", "dtype": "float32", "shape": ["batch", 5]}],
+        "encoder_revision": ENCODER_V2_REVISION,
+        "action_space_revision": ACTION_SPACE_V2_REVISION,
+        "inputs": [
+            {"name": "cards", "dtype": "float32", "shape": ["batch", 208]},
+            {"name": "global", "dtype": "float32", "shape": ["batch", 24]},
+            {"name": "seats", "dtype": "float32", "shape": ["batch", 9, 12]},
+            {"name": "history", "dtype": "float32", "shape": ["batch", 15, 26]},
+            {"name": "history_mask", "dtype": "float32", "shape": ["batch", 15]},
+            {"name": "legal_mask", "dtype": "float32", "shape": ["batch", 10]},
+        ],
+        "outputs": [{"name": "logits", "dtype": "float32", "shape": ["batch", 10]}],
+        "inference_policy": {
+            "state": "approved",
+            "decision_rule": "sampled",
+            "temperature": 1.0,
+            "min_prob_ratio": 0.0,
+            "sizing_jitter": 0.0,
+            "supported_action_indices": list(range(10)),
+        },
+        "training_evidence": {
+            "metrics_path": metrics_path.name,
+            "metrics_sha256": hashlib.sha256(metrics_path.read_bytes()).hexdigest(),
+            "trace_path": trace_path.name,
+            "trace_sha256": hashlib.sha256(trace_path.read_bytes()).hexdigest(),
+        },
     }
     entry.update(updates)
+    declared_path = str(entry["path"])
+    if "/" in declared_path:
+        prefix = declared_path.rsplit("/", 1)[0]
+        evidence = dict(entry["training_evidence"])
+        evidence["metrics_path"] = f"{prefix}/{evidence['metrics_path']}"
+        evidence["trace_path"] = f"{prefix}/{evidence['trace_path']}"
+        entry["training_evidence"] = evidence
+    policy = entry.get("inference_policy")
+    if isinstance(policy, dict) and isinstance(policy.get("supported_action_indices"), list):
+        counts = [100 if index in policy["supported_action_indices"] else 0 for index in range(10)]
+        trace_path.write_text(
+            json.dumps({"event": "training_configuration", "source_binding": source_binding})
+            + "\n"
+            + json.dumps(
+                {"event": "dataset_prepared", "optimization_training_class_counts": counts}
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        evidence = dict(entry["training_evidence"])
+        evidence["trace_sha256"] = hashlib.sha256(trace_path.read_bytes()).hexdigest()
+        entry["training_evidence"] = evidence
+    if entry["state"] == "promoted" and "promotion_receipt" not in entry:
+        pointer = expert_promotion_evidence_fixture(artifact_path, entry)
+        declared_path = str(entry["path"])
+        if "/" in declared_path:
+            pointer["path"] = f"{declared_path.rsplit('/', 1)[0]}/{pointer['path']}"
+        entry["promotion_receipt"] = pointer
     return entry
 
 
@@ -72,8 +149,15 @@ def _write_test_onnx(path: Path, *, usage: str = "expert", marker: str = "base")
         inputs = [helper.make_tensor_value_info("images", TensorProto.FLOAT, [1, 3, 640, 640])]
         outputs = [helper.make_tensor_value_info("output0", TensorProto.FLOAT, [1, 58, 8400])]
     else:
-        inputs = [helper.make_tensor_value_info("obs", TensorProto.FLOAT, [1, 121])]
-        outputs = [helper.make_tensor_value_info("logits", TensorProto.FLOAT, [1, 5])]
+        inputs = [
+            helper.make_tensor_value_info("cards", TensorProto.FLOAT, [1, 208]),
+            helper.make_tensor_value_info("global", TensorProto.FLOAT, [1, 24]),
+            helper.make_tensor_value_info("seats", TensorProto.FLOAT, [1, 9, 12]),
+            helper.make_tensor_value_info("history", TensorProto.FLOAT, [1, 15, 26]),
+            helper.make_tensor_value_info("history_mask", TensorProto.FLOAT, [1, 15]),
+            helper.make_tensor_value_info("legal_mask", TensorProto.FLOAT, [1, 10]),
+        ]
+        outputs = [helper.make_tensor_value_info("logits", TensorProto.FLOAT, [1, 10])]
     model = helper.make_model(helper.make_graph([], f"test-{usage}", inputs, outputs))
     metadata = model.metadata_props.add()
     metadata.key = "fixture_marker"
@@ -109,6 +193,25 @@ def test_file_alone_is_not_available(tmp_path):
     assert not model_artifact_available(path, "expert")
     with pytest.raises(ModelArtifactUnavailable, match="manifest"):
         verify_model_artifact(path, "expert")
+
+
+def test_legacy_121x5_expert_can_never_be_promoted(tmp_path):
+    path = _artifact(tmp_path)
+    entry = _expert_entry(
+        path,
+        state="candidate",
+        inputs=[{"name": "obs", "dtype": "float32", "shape": [1, 121]}],
+        outputs=[{"name": "logits", "dtype": "float32", "shape": [1, 5]}],
+    )
+    entry.pop("encoder_revision")
+    entry.pop("action_space_revision")
+    entry["state"] = "promoted"
+    entry["promotion_receipt"] = expert_promotion_evidence_fixture(path, entry)
+    manifest = _write_manifest(path, entry)
+
+    with pytest.raises(ModelArtifactUnavailable) as rejection:
+        verify_model_artifact(path, "expert", manifest_path=manifest)
+    assert rejection.value.code == "expert_contract_legacy"
 
 
 @pytest.mark.parametrize("schema_version", [None, True, 0, 2, "1"])
@@ -517,7 +620,8 @@ def test_approved_hash_governance_and_contract_return_receipt(tmp_path):
     assert receipt.path == path.resolve()
     assert receipt.sha256 == hashlib.sha256(path.read_bytes()).hexdigest()
     assert receipt.usage == "deployment"
-    assert receipt.inference_policy.source == "neutral"
+    assert receipt.inference_policy.source == "manifest"
+    assert receipt.inference_policy.supported_action_indices == tuple(range(10))
     assert receipt.inference_policy.temperature == 1.0
     assert receipt.inference_policy.min_prob_ratio == 0.0
     assert receipt.inference_policy.sizing_jitter == 0.0
@@ -637,16 +741,23 @@ def test_receipt_entry_is_a_defensive_deep_copy(tmp_path):
     exposed["state"] = "promoted"
     exposed["inputs"][0]["shape"][1] = 999
 
-    assert receipt.entry["state"] == "approved"
-    assert receipt.entry["inputs"][0]["shape"] == ["batch", 121]
+    assert receipt.entry["state"] == "promoted"
+    assert receipt.entry["inputs"][0]["shape"] == ["batch", 208]
     verify_runtime_contract(
         receipt,
-        [_Node("obs", [1, 121])],
-        [_Node("logits", [1, 5])],
+        [
+            _Node("cards", [1, 208]),
+            _Node("global", [1, 24]),
+            _Node("seats", [1, 9, 12]),
+            _Node("history", [1, 15, 26]),
+            _Node("history_mask", [1, 15]),
+            _Node("legal_mask", [1, 10]),
+        ],
+        [_Node("logits", [1, 10])],
     )
 
 
-def test_unapproved_manifest_tuning_is_ignored_in_favour_of_neutral_policy(tmp_path):
+def test_v2_expert_rejects_unapproved_action_support_policy(tmp_path):
     path = _artifact(tmp_path)
     entry = _expert_entry(
         path,
@@ -657,11 +768,9 @@ def test_unapproved_manifest_tuning_is_ignored_in_favour_of_neutral_policy(tmp_p
             "sizing_jitter": 0.12,
         },
     )
-    receipt = verify_model_artifact(path, "expert", manifest_path=_write_manifest(path, entry))
-    assert receipt.inference_policy.source == "neutral"
-    assert receipt.inference_policy.temperature == 1.0
-    assert receipt.inference_policy.min_prob_ratio == 0.0
-    assert receipt.inference_policy.sizing_jitter == 0.0
+    with pytest.raises(ModelArtifactUnavailable) as rejection:
+        verify_model_artifact(path, "expert", manifest_path=_write_manifest(path, entry))
+    assert rejection.value.code == "expert_action_support_missing"
 
 
 def test_approved_manifest_tuning_is_explicitly_loaded(tmp_path):
@@ -673,6 +782,7 @@ def test_approved_manifest_tuning_is_explicitly_loaded(tmp_path):
             "temperature": 0.8,
             "min_prob_ratio": 0.1,
             "sizing_jitter": 0.05,
+            "supported_action_indices": [0, 1, 2, 4, 5, 6, 7, 9],
         },
     )
     receipt = verify_model_artifact(path, "expert", manifest_path=_write_manifest(path, entry))
@@ -680,6 +790,72 @@ def test_approved_manifest_tuning_is_explicitly_loaded(tmp_path):
     assert receipt.inference_policy.temperature == 0.8
     assert receipt.inference_policy.min_prob_ratio == 0.1
     assert receipt.inference_policy.sizing_jitter == 0.05
+    assert receipt.inference_policy.supported_action_indices == (0, 1, 2, 4, 5, 6, 7, 9)
+
+
+@pytest.mark.parametrize(
+    "supported",
+    [None, [], [0, 0], [1, 0], [-1, 0], [0, 10], [False, 1], [0, 1.0]],
+)
+def test_v2_expert_rejects_invalid_action_support(tmp_path, supported):
+    path = _artifact(tmp_path)
+    entry = _expert_entry(path)
+    policy = dict(entry["inference_policy"])
+    if supported is None:
+        policy.pop("supported_action_indices")
+    else:
+        policy["supported_action_indices"] = supported
+    entry["inference_policy"] = policy
+
+    with pytest.raises(ModelArtifactUnavailable) as rejection:
+        verify_model_artifact(path, "expert", manifest_path=_write_manifest(path, entry))
+    assert rejection.value.code == "policy_invalid"
+
+
+def test_v2_expert_rejects_missing_action_support_policy(tmp_path):
+    path = _artifact(tmp_path)
+    entry = _expert_entry(path)
+    entry.pop("inference_policy")
+
+    with pytest.raises(ModelArtifactUnavailable) as rejection:
+        verify_model_artifact(path, "expert", manifest_path=_write_manifest(path, entry))
+    assert rejection.value.code == "expert_action_support_missing"
+
+
+def test_v2_expert_rejects_support_not_proven_by_training_counts(tmp_path):
+    path = _artifact(tmp_path)
+    entry = _expert_entry(path)
+    evidence = dict(entry["training_evidence"])
+    trace_path = path.with_name(f"{path.stem}.training_trace.jsonl")
+    trace_path.write_text(
+        json.dumps({"event": "training_configuration", "source_binding": "a" * 64})
+        + "\n"
+        + json.dumps(
+            {
+                "event": "dataset_prepared",
+                "optimization_training_class_counts": [
+                    100,
+                    100,
+                    100,
+                    0,
+                    100,
+                    100,
+                    100,
+                    100,
+                    0,
+                    100,
+                ],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    evidence["trace_sha256"] = hashlib.sha256(trace_path.read_bytes()).hexdigest()
+    entry["training_evidence"] = evidence
+
+    with pytest.raises(ModelArtifactUnavailable) as rejection:
+        verify_model_artifact(path, "expert", manifest_path=_write_manifest(path, entry))
+    assert rejection.value.code == "expert_action_support_mismatch"
 
 
 def test_candidate_is_evaluable_but_never_deployable(tmp_path):
@@ -721,13 +897,13 @@ def test_success_receipt_cache_skips_rehash_and_identity_change_revalidates(monk
     assert second is first
     # Cache avoids reparsing, but a cache hit still hashes both files. Metadata alone
     # is not a security boundary because size and mtime can be restored by an attacker.
-    assert calls == 3
+    assert calls == 5
 
     _write_test_onnx(path, marker="changed")
     _write_manifest(path, _expert_entry(path))
     changed = verify_model_artifact(path, "expert", manifest_path=manifest)
     assert changed.sha256 != first.sha256
-    assert calls == 4
+    assert calls == 8
 
 
 def test_success_cache_serializes_concurrent_first_hash(monkeypatch, tmp_path):
@@ -749,7 +925,7 @@ def test_success_cache_serializes_concurrent_first_hash(monkeypatch, tmp_path):
                 range(16),
             )
         )
-    assert calls == 31  # first artifact hash + artifact/manifest hash per cache hit
+    assert calls == 33  # first artifact/evidence hashes + artifact/manifest hash per cache hit
     assert all(receipt is receipts[0] for receipt in receipts)
 
 
@@ -815,13 +991,27 @@ def test_runtime_graph_must_match_hash_pinned_manifest_contract(tmp_path):
     )
     verify_runtime_contract(
         receipt,
-        [_Node("obs", [1, 121])],
-        [_Node("logits", [1, 5])],
+        [
+            _Node("cards", [1, 208]),
+            _Node("global", [1, 24]),
+            _Node("seats", [1, 9, 12]),
+            _Node("history", [1, 15, 26]),
+            _Node("history_mask", [1, 15]),
+            _Node("legal_mask", [1, 10]),
+        ],
+        [_Node("logits", [1, 10])],
     )
     with pytest.raises(ModelArtifactUnavailable) as raised:
         verify_runtime_contract(
             receipt,
-            [_Node("obs", [1, 120])],
-            [_Node("logits", [1, 5])],
+            [
+                _Node("cards", [1, 103]),
+                _Node("global", [1, 24]),
+                _Node("seats", [1, 9, 12]),
+                _Node("history", [1, 15, 26]),
+                _Node("history_mask", [1, 15]),
+                _Node("legal_mask", [1, 10]),
+            ],
+            [_Node("logits", [1, 10])],
         )
     assert raised.value.code == "runtime_contract_mismatch"

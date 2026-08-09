@@ -113,10 +113,7 @@ def build_public_request(url: str) -> Request:
         and not parsed.fragment
         and (
             (parsed.hostname == "huggingface.co" and parsed.path.startswith("/api/"))
-            or (
-                parsed.hostname == "www.kaggle.com"
-                and parsed.path.startswith("/api/v1/")
-            )
+            or (parsed.hostname == "www.kaggle.com" and parsed.path.startswith("/api/v1/"))
         )
     )
     if not allowed:

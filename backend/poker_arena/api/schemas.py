@@ -268,7 +268,7 @@ class AddPlayerRequest(StrictRequest):
 # SAÍDA (estado da mesa e análises)
 # ============================================================
 class InsightSchema(BaseModel):
-    """O raciocínio REAL da última decisão de um bot (a 'caixa de vidro' da IA)."""
+    """Sinais observáveis da última decisão de um bot (caixa de vidro)."""
 
     kind: str = Field(
         description="Paradigma que gerou a decisão (random/heuristic/montecarlo/adaptive/expert)."
@@ -277,7 +277,10 @@ class InsightSchema(BaseModel):
         description="Explicação curta e legível do porquê da jogada.",
         examples=["Equity 37% (200 simulações)"],
     )
-    confidence: float = Field(description="Confiança da decisão, em [0,1].", examples=[0.37])
+    confidence: float = Field(
+        description="Sinal principal do paradigma, em [0,1]; não implica acurácia calibrada.",
+        examples=[0.37],
+    )
     probs: list[float] | None = Field(
         default=None,
         description="Expert: 5 probabilidades [desistir, pagar, ½ pote, pote, all-in].",
@@ -287,6 +290,22 @@ class InsightSchema(BaseModel):
         description="Adaptativo: o quanto ele acha que você desiste diante de apostas, em [0,1].",
     )
     bias: float | None = Field(default=None, description="Adaptativo: viés de agressão aprendido.")
+    modal_action: str | None = Field(
+        default=None, description="Expert: ação abstrata de maior massa na política."
+    )
+    modal_probability: float | None = Field(
+        default=None, ge=0, le=1, description="Expert: massa da ação modal."
+    )
+    executed_action: str | None = Field(
+        default=None, description="Expert: ação abstrata realmente executada."
+    )
+    executed_probability: float | None = Field(
+        default=None, ge=0, le=1, description="Expert: massa da ação executada."
+    )
+    policy_entropy: float | None = Field(
+        default=None, ge=0, le=1, description="Expert: entropia normalizada das ações legais."
+    )
+    decision_rule: str | None = Field(default=None, description="Expert: `modal` ou `sampled`.")
 
 
 class SeatSchema(BaseModel):
@@ -364,14 +383,20 @@ class WinProbSchema(BaseModel):
 
 
 class CouncilEntrySchema(BaseModel):
-    """O que um paradigma de IA recomendaria para a SUA jogada atual (o 'conselho')."""
+    """Ação amostrada e ação modal de um paradigma para a jogada atual."""
 
     level: str = Field(description="Nível de IA que deu a recomendação.")
-    action: str = Field(description="Ação recomendada (em português, ex.: 'Pagar').")
-    amount: int = Field(description="Valor sugerido (para aumentos).")
+    action: str = Field(description="Ação que seria executada/amostrada (ex.: 'Pagar').")
+    amount: int = Field(description="Valor da ação amostrada (para aumentos).")
     confidence: float | None = Field(
-        default=None, description="Confiança da recomendação, em [0,1]."
+        default=None, description="Sinal principal do paradigma; não implica acurácia calibrada."
     )
+    modal_action: str | None = Field(default=None, description="Expert: ação modal da política.")
+    modal_amount: int | None = Field(default=None, description="Expert: valor da ação modal.")
+    modal_probability: float | None = Field(default=None, ge=0, le=1)
+    executed_probability: float | None = Field(default=None, ge=0, le=1)
+    decision_rule: str | None = Field(default=None)
+    policy_entropy: float | None = Field(default=None, ge=0, le=1)
 
 
 class HumanAnalysisSchema(BaseModel):
@@ -408,12 +433,23 @@ class HumanAnalysisSchema(BaseModel):
     council: list[CouncilEntrySchema] = Field(
         description="O que cada paradigma de IA faria na sua vez."
     )
-    best_action: str | None = Field(description="Melhor ação segundo o Expert.")
-    best_amount: int | None = Field(description="Valor da melhor ação.")
-    confidence: float | None = Field(description="Confiança do Expert na recomendação, em [0,1].")
+    best_action: str | None = Field(
+        description="Alias compatível para a ação modal do Expert; não afirma optimalidade."
+    )
+    best_amount: int | None = Field(description="Valor associado à ação modal do Expert.")
+    confidence: float | None = Field(
+        description="Massa da política na ação modal; não é confiança calibrada nem acurácia."
+    )
     your_profile_fold: float = Field(description="Seu fold-to-bet observado, em [0,1].")
     your_profile_aggr: float = Field(description="Sua agressão observada, em [0,1].")
     your_profile_samples: int = Field(description="Tamanho da amostra do seu perfil.")
+    expert_executed_action: str | None = Field(
+        default=None, description="Ação realmente executada pelo Expert."
+    )
+    expert_executed_amount: int | None = Field(default=None)
+    expert_executed_probability: float | None = Field(default=None, ge=0, le=1)
+    expert_decision_rule: str | None = Field(default=None)
+    expert_policy_entropy: float | None = Field(default=None, ge=0, le=1)
     mdf: float | None = Field(
         default=None,
         description="MDF (frequência mínima de defesa) diante da aposta atual, em [0,1]. `null` sem aposta a pagar. Referência teórica (heads-up/river).",

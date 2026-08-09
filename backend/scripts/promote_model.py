@@ -12,8 +12,15 @@ import json
 import os
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
+from poker_arena.ml.expert_validation import (
+    PROFILE_REVISION as EXPERT_PROFILE_REVISION,
+)
+from poker_arena.ml.expert_validation import (
+    ExpertPromotionEvidenceError,
+    verify_expert_promotion_receipt,
+)
 from poker_arena.ml.external_validation import (
     MAX_RECEIPT_BYTES,
     PROFILE_REVISION,
@@ -43,21 +50,37 @@ def build_promoted_manifest(
     artifact_path: Path,
     manifest_path: Path,
     receipt_path: Path,
+    kind: Literal["vision", "expert"] = "vision",
 ) -> dict[str, Any]:
+    if kind not in {"vision", "expert"}:
+        raise PromotionRejected("unsupported model kind")
     candidate = verify_evaluation_candidate(
         artifact_path,
-        "vision",
+        kind,
         manifest_path=manifest_path,
     )
     receipt_digest = _receipt_digest(receipt_path)
     try:
-        verify_promotion_receipt(
-            receipt_path,
-            expected_sha256=receipt_digest,
-            artifact_sha256=candidate.sha256,
-            artifact_contract_sha256=promotion_contract_sha256(candidate.entry),
-        )
-    except PromotionEvidenceError as exc:
+        contract_sha256 = promotion_contract_sha256(candidate.entry)
+        if kind == "expert":
+            verify_expert_promotion_receipt(
+                receipt_path,
+                expected_sha256=receipt_digest,
+                artifact_sha256=candidate.sha256,
+                artifact_contract_sha256=contract_sha256,
+                decision_rule=candidate.inference_policy.decision_rule,
+                candidate_manifest_sha256=candidate.manifest_sha256,
+            )
+            profile_revision = EXPERT_PROFILE_REVISION
+        else:
+            verify_promotion_receipt(
+                receipt_path,
+                expected_sha256=receipt_digest,
+                artifact_sha256=candidate.sha256,
+                artifact_contract_sha256=contract_sha256,
+            )
+            profile_revision = PROFILE_REVISION
+    except (PromotionEvidenceError, ExpertPromotionEvidenceError) as exc:
         raise PromotionRejected("scientific receipt did not pass the mandatory profile") from exc
     try:
         manifest_root = manifest_path.parent.resolve(strict=True)
@@ -94,7 +117,7 @@ def build_promoted_manifest(
     matches[0]["promotion_receipt"] = {
         "path": relative_text,
         "sha256": receipt_digest,
-        "profile_revision": PROFILE_REVISION,
+        "profile_revision": profile_revision,
         "artifact_contract_sha256": promotion_contract_sha256(candidate.entry),
     }
     raw["snapshot_date"] = datetime.now(UTC).date().isoformat()
@@ -120,12 +143,14 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--kind", choices=("vision", "expert"), default="vision")
     arguments = parser.parse_args()
     try:
         proposal = build_promoted_manifest(
             artifact_path=arguments.artifact,
             manifest_path=arguments.manifest,
             receipt_path=arguments.receipt,
+            kind=arguments.kind,
         )
         digest = write_manifest_proposal(arguments.output, proposal)
     except (PromotionRejected, ModelArtifactUnavailable) as exc:

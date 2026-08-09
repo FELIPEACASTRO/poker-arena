@@ -60,6 +60,9 @@ checkpoints/
 runs/
 wandb/
 mlruns/
+# Artefatos candidate-only permanecem locais; somente receipts/hashes auditáveis
+# em docs/research/evidence entram no repositório.
+backend/models/candidates/
 
 # ===== Node / React =====
 node_modules/

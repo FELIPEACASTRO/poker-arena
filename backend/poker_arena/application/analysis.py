@@ -26,6 +26,7 @@ from ..engine.actions import ActionType
 from ..engine.cards import Card
 from ..engine.game import Hand
 from ..engine.player import Player, PlayerStatus
+from ..ml.encoder import ACTIONS, to_action
 from .bot_factory import ExpertUnavailable, create_bot
 from .views import CouncilEntryView, HumanAnalysisView, WinProbView
 
@@ -321,12 +322,35 @@ def analyze(
             bot = _council_bot(lvl, opp_model)
             act = bot.act(obs)
             ins = bot.insight() if hasattr(bot, "insight") else None
+            modal = None
+            if ins is not None and ins.modal_action in ACTIONS:
+                modal = to_action(obs, ACTIONS.index(ins.modal_action))
             council.append(
                 CouncilEntryView(
                     level=lvl,
                     action=_ACT_PT.get(act.type, act.type.value),
                     amount=act.amount,
                     confidence=(round(ins.confidence, 3) if ins else None),
+                    modal_action=(
+                        _ACT_PT.get(modal.type, modal.type.value) if modal is not None else None
+                    ),
+                    modal_amount=(modal.amount if modal is not None else None),
+                    modal_probability=(
+                        round(ins.modal_probability, 3)
+                        if ins is not None and ins.modal_probability is not None
+                        else None
+                    ),
+                    executed_probability=(
+                        round(ins.executed_probability, 3)
+                        if ins is not None and ins.executed_probability is not None
+                        else None
+                    ),
+                    decision_rule=(ins.decision_rule if ins is not None else None),
+                    policy_entropy=(
+                        round(ins.policy_entropy, 3)
+                        if ins is not None and ins.policy_entropy is not None
+                        else None
+                    ),
                 )
             )
         except ExpertUnavailable as exc:
@@ -370,12 +394,17 @@ def analyze(
         spr=spr,
         position=_position(seat, hand.button, len(players)),
         council=council,
-        best_action=best.action if best else None,
-        best_amount=best.amount if best else None,
-        confidence=best.confidence if best else None,
+        best_action=best.modal_action if best else None,
+        best_amount=best.modal_amount if best else None,
+        confidence=best.modal_probability if best else None,
         your_profile_fold=round(profile.fold_to_bet, 2),
         your_profile_aggr=round(profile.aggression, 2),
         your_profile_samples=profile.samples,
+        expert_executed_action=best.action if best else None,
+        expert_executed_amount=best.amount if best else None,
+        expert_executed_probability=best.executed_probability if best else None,
+        expert_decision_rule=best.decision_rule if best else None,
+        expert_policy_entropy=best.policy_entropy if best else None,
         mdf=(round(mdf, 4) if mdf is not None else None),
         realization=realization,
         realization_why=realization_why,

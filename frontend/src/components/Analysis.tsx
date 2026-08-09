@@ -158,7 +158,7 @@ export function HandPanel() {
   )
 }
 
-// ---------- Expected Value (recomendação do Expert) ----------
+// ---------- Expected Value (política mista do Expert) ----------
 export function EVPanel() {
   const a = useAnalysis()
   if (!a || !a.best_action) return null
@@ -168,7 +168,7 @@ export function EVPanel() {
         <Coins size={15} /> Valor esperado
       </div>
       <div className="ev-best">
-        <span className="ev-k">Melhor jogada</span>
+        <span className="ev-k">Ação modal do Expert</span>
         <span className="ev-v" style={{ color: 'var(--accent)' }}>
           {a.best_action}
           {a.best_amount ? ` ${a.best_amount}` : ''}
@@ -187,11 +187,33 @@ export function EVPanel() {
       </div>
       {a.confidence != null && (
         <div className="ev-conf">
-          <span className="ev-k">Confiança do Expert</span>
+          <span className="ev-k" title="Maior massa da política entre as ações legais; não é acurácia nem garantia de EV.">Massa na ação modal</span>
           <span className="ev-conf-bar">
             <span style={{ width: pctOf(a.confidence), background: 'var(--accent)' }} />
           </span>
           <span className="mono">{pctOf(a.confidence)}</span>
+        </div>
+      )}
+      {a.expert_executed_action && (
+        <div className="ev-best">
+          <span className="ev-k">
+            {a.expert_decision_rule === 'sampled'
+              ? 'Ação executada por amostragem'
+              : 'Ação executada pela regra modal'}
+          </span>
+          <span className="ev-v">
+            {a.expert_executed_action}
+            {a.expert_executed_amount ? ` ${a.expert_executed_amount}` : ''}
+            {a.expert_executed_probability != null
+              ? ` (${pctOf(a.expert_executed_probability)})`
+              : ''}
+          </span>
+        </div>
+      )}
+      {a.expert_policy_entropy != null && (
+        <div className="ev-best">
+          <span className="ev-k" title="0% = política concentrada; 100% = mistura uniforme entre ações legais.">Entropia da política</span>
+          <span className="ev-v mono">{pctOf(a.expert_policy_entropy)}</span>
         </div>
       )}
     </div>
@@ -207,7 +229,7 @@ export function CouncilPanel() {
       <div className="apanel-h">
         <Users size={15} /> Conselho das IAs
       </div>
-      <p className="council-sub">o que cada cérebro faria na SUA mão:</p>
+      <p className="council-sub">ação executada por cada cérebro; o Expert também expõe sua ação modal:</p>
       <div className="council-list">
         {a.council.map((c) => (
           <div
@@ -220,6 +242,9 @@ export function CouncilPanel() {
             <span className="council-act">
               {c.action}
               {c.amount ? ` ${c.amount}` : ''}
+              {c.level === 'expert' && c.modal_action && c.modal_action !== c.action
+                ? ` · modal: ${c.modal_action}${c.modal_amount ? ` ${c.modal_amount}` : ''}`
+                : ''}
             </span>
           </div>
         ))}

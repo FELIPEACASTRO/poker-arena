@@ -1,38 +1,28 @@
-import numpy as np
-import onnx
-import pytest
-from onnx import TensorProto, helper, numpy_helper
+import math
+from dataclasses import replace
+from types import SimpleNamespace
 
-from poker_arena.bots.ml_bot import EvaluationMLBot, MLBot
+import numpy as np
+import pytest
+
+from poker_arena.bots.ml_bot import EvaluationMLBot, ExpertInferenceError, MLBot
 from poker_arena.bots.observation import Observation, PublicPlayer, observation_for
 from poker_arena.engine.actions import ActionType
 from poker_arena.engine.cards import Card, Rank, Suit
 from poker_arena.engine.game import Hand
 from poker_arena.engine.player import Player
-from poker_arena.ml.encoder import FEATURE_SIZE, N_ACTIONS
+from poker_arena.ml.action_space_v2 import N_ACTIONS_V2
 from poker_arena.model_artifacts import ModelArtifactUnavailable
+from tests.helpers.expert_onnx import write_constant_expert_v2
 from tests.helpers.model_manifest import approve_expert
 
 
-def _make_onnx(path, bias, inference_policy=None, *, state="approved"):
-    """ONNX REAL minúsculo: logits = obs @ 0 + bias (constante). Fixture de teste."""
-    w = numpy_helper.from_array(np.zeros((FEATURE_SIZE, N_ACTIONS), np.float32), "W")
-    b = numpy_helper.from_array(np.asarray(bias, np.float32), "b")
-    node = helper.make_node("Gemm", ["obs", "W", "b"], ["logits"])
-    graph = helper.make_graph(
-        [node],
-        "expert",
-        [helper.make_tensor_value_info("obs", TensorProto.FLOAT, [1, FEATURE_SIZE])],
-        [helper.make_tensor_value_info("logits", TensorProto.FLOAT, [1, N_ACTIONS])],
-        [w, b],
-    )
-    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
-    onnx.checker.check_model(model)
-    onnx.save(model, str(path))
+def _make_onnx(path, bias, inference_policy=None, *, state="promoted"):
+    """ONNX real mínimo do contrato v2 com logits constantes."""
+    padded = [*bias, *([-20.0] * (N_ACTIONS_V2 - len(bias)))]
+    write_constant_expert_v2(path, padded)
     approve_expert(
         path,
-        FEATURE_SIZE,
-        N_ACTIONS,
         state=state,
         inference_policy=inference_policy,
     )
@@ -76,6 +66,57 @@ def test_masked_probs_skip_illegal_and_pick_best_legal(tmp_path):
     assert bot.act(obs).type == ActionType.CALL  # idx1 > idx0 entre os legais
 
 
+def test_unsupported_modal_action_fails_closed_in_deploy_and_evaluation(tmp_path):
+    policy = {
+        "decision_rule": "modal",
+        "temperature": 1.0,
+        "min_prob_ratio": 0.0,
+        "sizing_jitter": 0.0,
+        "supported_action_indices": [0, 1, 2, 4, 5, 6, 7, 9],
+    }
+    logits = [0.0] * N_ACTIONS_V2
+    logits[8] = 100.0
+    logits[1] = 10.0
+    obs = _obs({ActionType.FOLD, ActionType.CALL, ActionType.RAISE})
+
+    deployed_path = tmp_path / "deployed.onnx"
+    _make_onnx(deployed_path, logits, policy)
+    deployed = MLBot(deployed_path, seed=0)
+    assert deployed.act(obs).type is ActionType.FOLD
+    assert deployed.insight() is not None
+    assert "unsupported_action_modal" in deployed.insight().label
+
+    candidate_path = tmp_path / "candidate.onnx"
+    _make_onnx(candidate_path, logits, policy, state="candidate")
+    evaluator = EvaluationMLBot(candidate_path, seed=0)
+    with pytest.raises(ExpertInferenceError) as rejection:
+        evaluator.policy_distribution(obs)
+    assert rejection.value.code == "unsupported_action_modal"
+
+
+def test_unsupported_nonmodal_actions_receive_exactly_zero_probability(tmp_path):
+    path = tmp_path / "expert.onnx"
+    logits = [0.0] * N_ACTIONS_V2
+    logits[1] = 10.0
+    logits[3] = 9.0
+    _make_onnx(
+        path,
+        logits,
+        {
+            "decision_rule": "modal",
+            "temperature": 1.0,
+            "min_prob_ratio": 0.0,
+            "sizing_jitter": 0.0,
+            "supported_action_indices": [0, 1, 2, 4, 5, 6, 7, 9],
+        },
+    )
+    probs = MLBot(path).policy_distribution(
+        _obs({ActionType.FOLD, ActionType.CALL, ActionType.RAISE})
+    )
+    assert probs[3] == probs[8] == 0.0
+    assert math.isclose(sum(probs), 1.0)
+
+
 def test_argmax_mode_respects_fold(tmp_path):
     path = tmp_path / "expert.onnx"
     _make_onnx(
@@ -88,32 +129,6 @@ def test_argmax_mode_respects_fold(tmp_path):
     bot = MLBot(path, temperature=0.0, sizing_jitter=0.0, equity_guard=False)
     obs = _obs({ActionType.FOLD, ActionType.CALL, ActionType.RAISE})
     assert bot.act(obs).type == ActionType.FOLD
-
-
-def test_equity_guard_counts_all_in_opponents_as_contesting(tmp_path, monkeypatch):
-    path = tmp_path / "expert.onnx"
-    _make_onnx(path, [9.0, 0.0, 0.0, 0.0, 0.0])
-    bot = MLBot(path, seed=1, equity_guard=True)
-    base = _obs({ActionType.FOLD, ActionType.CALL})
-    all_in = PublicPlayer(2, "all-in", 0, 100, 100, "all_in", False)
-    observation = Observation(
-        **{
-            **base.__dict__,
-            "pot": 100,
-            "players": (*base.players, all_in),
-            "num_active": 3,
-        }
-    )
-    seen: dict[str, int] = {}
-
-    def fake_equity(_hole, _board, n_opp, _samples, _rng):
-        seen["n_opp"] = n_opp
-        return 0.0
-
-    monkeypatch.setattr("poker_arena.bots.monte_carlo_bot.estimate_equity", fake_equity)
-
-    bot._guarded_fold(observation)
-    assert seen["n_opp"] == 2
 
 
 def test_explicit_floor_can_make_confident_model_deterministic(tmp_path):
@@ -139,10 +154,102 @@ def test_balanced_model_mixes_actions(tmp_path):
     assert kinds == {ActionType.FOLD, ActionType.CALL}  # imprevisível no spot parelho
 
 
+def test_mixed_policy_distinguishes_modal_from_sampled_action(tmp_path):
+    path = tmp_path / "expert.onnx"
+    _make_onnx(path, [math.log(4.0), 0.0, -9.0, -9.0, -9.0])
+    bot = MLBot(path, seed=0)
+
+    action = bot.act(_obs({ActionType.FOLD, ActionType.CALL}))
+    insight = bot.insight()
+
+    assert action.type is ActionType.CALL
+    assert insight is not None
+    assert insight.modal_action == "fold"
+    assert insight.executed_action == "check_call"
+    assert insight.modal_probability is not None
+    assert insight.executed_probability is not None
+    assert insight.confidence == insight.modal_probability
+    assert insight.modal_probability > insight.executed_probability
+    assert insight.decision_rule == "sampled"
+    assert insight.policy_entropy is not None and 0.0 < insight.policy_entropy < 1.0
+
+
+def test_manifest_modal_rule_never_samples_a_lower_probability_action(tmp_path):
+    path = tmp_path / "expert.onnx"
+    _make_onnx(
+        path,
+        [math.log(4.0), 0.0, -9.0, -9.0, -9.0],
+        {
+            "decision_rule": "modal",
+            "temperature": 1.0,
+            "min_prob_ratio": 0.0,
+            "sizing_jitter": 0.0,
+        },
+    )
+    bot = MLBot(path, seed=0)
+
+    assert bot.act(_obs({ActionType.FOLD, ActionType.CALL})).type is ActionType.FOLD
+    insight = bot.insight()
+    assert insight is not None
+    assert insight.executed_action == insight.modal_action == "fold"
+    assert insight.decision_rule == "modal"
+
+
+@pytest.mark.parametrize(
+    "raw_output",
+    [
+        np.asarray([[np.nan, *([0.0] * 9)]], dtype=np.float32),
+        np.asarray([[np.inf, *([0.0] * 9)]], dtype=np.float32),
+        np.asarray([[0.0, 0.0]], dtype=np.float32),
+    ],
+)
+def test_invalid_runtime_output_uses_non_aggressive_fail_safe(tmp_path, raw_output):
+    path = tmp_path / "expert.onnx"
+    _make_onnx(path, [0.0] * N_ACTIONS_V2)
+    bot = MLBot(path, seed=0)
+    bot._session = SimpleNamespace(run=lambda *_args, **_kwargs: [raw_output])
+
+    action = bot.act(_obs({ActionType.FOLD, ActionType.CALL, ActionType.RAISE}))
+    insight = bot.insight()
+
+    assert action.type is ActionType.FOLD
+    assert insight is not None
+    assert insight.confidence == 0.0
+    assert insight.probs is None
+    assert "fallback legal determinístico" in insight.label
+
+
+def test_inconsistent_raise_only_observation_raises_closed_fallback_error(tmp_path):
+    path = tmp_path / "expert.onnx"
+    _make_onnx(path, [0.0] * N_ACTIONS_V2)
+    original = _obs({ActionType.RAISE})
+    obs = replace(
+        original,
+        min_raise_to=original.players[0].current_bet + original.players[0].stack,
+    )
+
+    with pytest.raises(ExpertInferenceError) as rejection:
+        MLBot(path).act(obs)
+    assert rejection.value.code == "fallback_legal_state_inconsistent"
+
+
+def test_evaluation_candidate_aborts_instead_of_hiding_invalid_output(tmp_path):
+    path = tmp_path / "candidate.onnx"
+    _make_onnx(path, [0.0] * N_ACTIONS_V2, state="candidate")
+    evaluator = EvaluationMLBot(path, seed=0)
+    evaluator._session = SimpleNamespace(
+        run=lambda *_args, **_kwargs: [np.asarray([[np.nan, *([0.0] * 9)]], dtype=np.float32)]
+    )
+
+    with pytest.raises(ExpertInferenceError) as rejection:
+        evaluator.act(_obs({ActionType.FOLD, ActionType.CALL}))
+    assert rejection.value.code == "output_non_finite"
+
+
 def test_non_neutral_runtime_override_requires_manifest_approval(tmp_path):
     path = tmp_path / "expert.onnx"
     _make_onnx(path, [1.0, 1.0, -9.0, -9.0, -9.0])
-    with pytest.raises(ValueError, match="approved in MANIFEST"):
+    with pytest.raises(ValueError, match="must match the approved manifest"):
         MLBot(path, temperature=0.75)
 
 

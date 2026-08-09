@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "run_id": "poker-expert-v2-20260808t214256z-87f510eb",
+  "project": "POKER",
+  "owner": "codex",
+  "purpose": "expert-v2-pokerbench-history-reconstruction",
+  "release_status": "candidate_only_not_promoted",
+  "lifecycle_status": "terminal_completed_candidate_only",
+  "modal_environment": "poker-arena",
+  "modal_app_name": "poker-arena-expert-v2-poker-expert-v2-20260808t214256z-87f510eb",
+  "experiment": {
+    "control_run_id": "poker-expert-v2-20260808t200954z-19731539",
+    "hypothesis_id": "H-ORDERED-HISTORY-STATE-V1",
+    "primary_change": "exact-order 64x25 history and corrected stack, blind, call and all-in state",
+    "primary_metric": "published_development_cross_entropy",
+    "published_test_status": "development_only_contaminated_by_prior_iteration",
+    "sealed_final_holdout_status": "excluded_from_optimization_selection_and_metrics",
+    "decision_gate": "candidate-only A/B; never promote from this job"
+  },
+  "prelaunch_evidence": {
+    "official_training_observation_scan": {
+      "rows": 563200,
+      "failures": 0,
+      "labels_accessed": false,
+      "max_total_committed_tenths_bb": 1000,
+      "unknown_actor_events": 0,
+      "max_abs_reconstructed_pot_gap_tenths_bb": 135
+    },
+    "official_development_feature_scan": {
+      "rows": 11000,
+      "failures": 0,
+      "expected_actions": 80405,
+      "emitted_actions": 80405,
+      "unknown_actor_events": 0,
+      "feature_shape": [11000, 1846]
+    },
+    "focused_integrated_tests": {"passed": 425, "failed": 0},
+    "modal_path_regression_tests": {"passed": 3, "failed": 0},
+    "independent_adversarial_verdict": "GO_candidate_only_NO_GO_promotion"
+  },
+  "resource": {
+    "gpu": "L4",
+    "gpu_count": 1,
+    "cpu_physical_cores": 4.0,
+    "memory_gib": 16.0,
+    "timeout_seconds": 1800,
+    "configured_retries": 0,
+    "detached": false,
+    "single_use_container": true
+  },
+  "finops": {
+    "max_estimated_usd": 0.60,
+    "gpu_usd_per_second": 0.000222,
+    "cpu_usd_per_core_second": 0.0000131,
+    "memory_usd_per_gib_second": 0.00000222,
+    "maximum_compute_estimate_usd": 0.557892,
+    "pricing_checked_utc": "2026-08-08T20:40:00Z",
+    "pricing_source": "https://modal.com/pricing",
+    "actual_billed_usd": 0.07883605,
+    "billing_observed_at_utc": "2026-08-08T21:52:09Z"
+  },
+  "prepared_at_utc": "2026-08-08T21:42:56Z",
+  "deadline_utc": "2026-08-08T22:17:56Z",
+  "git_commit": "fc1dd768ca7bc4235b8fe39d11a7334fb07a9c4b",
+  "git_dirty_at_preparation": true,
+  "source": {
+    "package_source_sha256": "b36613d0aca3bec1b5a9be22fb04f5da791fb697eb6474635f34a32fd99c3be0",
+    "dependency_lock_sha256": "b77cf93e64ab03f1d9872f3d54a18c33e3d428959ff3307dbaff9bbc17d02e50",
+    "trainer_sha256": "2b061dfa15da652a33a3d462df246b231914baacdd8ce08df32a3ca38ba5eeff",
+    "training_module_sha256": "f95779e57d96eee8a162a47903d3b5f527b08fceeb7f9814ab4a2c14cdd50c19",
+    "source_binding": "996199bf7dd3a323e9ff61b5abbf416256d008d73d55c43252af648340014b16",
+    "binding_method": "sha256(package|trainer|training_module|dependency_lock)"
+  },
+  "expected_output_directory": "backend/models/candidates/poker-expert-v2-20260808t214256z-87f510eb",
+  "ownership_check_before_launch": {
+    "active_apps": [],
+    "active_containers": [],
+    "previous_owned_apps_stopped": 7,
+    "checked_at_utc": "2026-08-08T21:42:00Z"
+  },
+  "dashboard_url": "https://modal.com/apps/felipesp1983work/poker-arena/ap-0RH5N9iS3eQ5XB7LyZFUiJ",
+  "modal_app_id": "ap-0RH5N9iS3eQ5XB7LyZFUiJ",
+  "started_at_utc": "2026-08-08T21:44:07Z",
+  "heartbeat_at_utc": "2026-08-08T21:48:34Z",
+  "completed_at_utc": "2026-08-08T21:48:34Z",
+  "terminal_state": "stopped",
+  "orphan_audit": {
+    "checked_at_utc": "2026-08-08T21:52:09Z",
+    "active_apps_owned_by_run": 0,
+    "app_state": "stopped",
+    "active_tasks": 0,
+    "active_containers_in_environment": 0,
+    "ownerless_apps_in_environment": 0
+  },
+  "artifacts": {
+    "directory": "backend/models/candidates/poker-expert-v2-20260808t214256z-87f510eb",
+    "development_inference_trace_sha256": "2750d7c515ad3b46ae5ebf8cf1fd117a9e79fa541ab9d1eeab54018638a1f1b3",
+    "onnx_sha256": "079e40fdc75421f778e315592ad52b1e1856bace74233d326d1479e4ec3039da",
+    "source_checkpoint_sha256": "831fa404be2a5d06f54dd78431cf736371312843ce4d9481abb9c9a0962729cf",
+    "training_metrics_sha256": "8e6c9ce1984966ee5d60e24e192b830189a152a9dcce1504af714a61feff6660",
+    "training_trace_sha256": "fb754b3816f6e5c0fefaefff7341df6479effa218e3b72eb54471c1d372e3692",
+    "selected_seed": 1701,
+    "published_development_accuracy": 0.6920276665453222,
+    "published_development_top3": 0.9967236985802694,
+    "published_development_cross_entropy": 0.6692026257514954,
+    "published_development_ece_15_bins": 0.01786412566108274,
+    "onnx_max_abs_error": 0.00000286102294921875,
+    "onnx_parity_examples": 17,
+    "elapsed_seconds": 248.719082692,
+    "sealed_final_holdout_rows": 27706,
+    "sealed_final_holdout_unique_groups": 25393,
+    "sealed_final_holdout_group_commitment_sha256": "ba35f439dcc11137accbca46b9034c043c3d63a57bff35b7414bbcdb56a2bb75",
+    "sealed_final_holdout_labels_scored": false
+  },
+  "error": null
+}

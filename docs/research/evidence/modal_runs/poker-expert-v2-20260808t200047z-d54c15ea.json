@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "run_id": "poker-expert-v2-20260808t200047z-d54c15ea",
+  "project": "POKER",
+  "owner": "codex",
+  "purpose": "expert-v2-pokerbench-warmstart",
+  "release_status": "candidate_only_not_promoted",
+  "lifecycle_status": "terminal_failed_dataset_leakage_gate",
+  "modal_environment": "poker-arena",
+  "modal_app_name": "poker-arena-expert-v2-poker-expert-v2-20260808t200047z-d54c15ea",
+  "resource": {
+    "gpu": "L4",
+    "gpu_count": 1,
+    "cpu_physical_cores": 4.0,
+    "memory_gib": 16.0,
+    "ephemeral_disk": "modal_default",
+    "timeout_seconds": 1800,
+    "configured_retries": 0,
+    "detached": false,
+    "single_use_container": true
+  },
+  "finops": {
+    "max_estimated_usd": 0.60,
+    "gpu_usd_per_second": 0.000222,
+    "cpu_usd_per_core_second": 0.0000131,
+    "memory_usd_per_gib_second": 0.00000222,
+    "maximum_compute_estimate_usd": 0.557892,
+    "pricing_checked_utc": "2026-08-08T19:45:00Z",
+    "pricing_source": "https://modal.com/pricing",
+    "billing_snapshot_usd": {
+      "cpu": 0.00757786,
+      "memory": 0.00512167,
+      "gpu": 0.03200003,
+      "total": 0.04469956
+    }
+  },
+  "prepared_at_utc": "2026-08-08T20:00:48Z",
+  "deadline_utc": "2026-08-08T20:35:00Z",
+  "git_commit": "fc1dd768ca7bc4235b8fe39d11a7334fb07a9c4b",
+  "git_dirty_at_preparation": true,
+  "source": {
+    "package_source_sha256": "aa964f9abaa5d6ad00fd918a636dc0b8a16f7920069f75423fa9f6e8a0e0baba",
+    "dependency_lock_sha256": "b77cf93e64ab03f1d9872f3d54a18c33e3d428959ff3307dbaff9bbc17d02e50",
+    "trainer_sha256": "a8dbdec27b0a1035a8c757a21ffcdbab6d22574052682b60589faba2f2c376c8",
+    "training_module_sha256": "cdd2675087c21850a928b4bbefe0849ed7627b8a17ffe65b8cca2425d0373182",
+    "source_binding": "18b9a784ef006d1e43758dcb8f860cdec341454c7998738d33c2ea85de9f9e90"
+  },
+  "expected_output_directory": "backend/models/candidates/poker-expert-v2-20260808t200047z-d54c15ea",
+  "ownership_check_before_launch": {
+    "active_apps": [],
+    "previous_owned_apps": [
+      {"app_id": "ap-QVMO08yCH8BhBs0E22GH2S", "state": "stopped"},
+      {"app_id": "ap-8e8DbOSZjhHmUzcqt0HkPH", "state": "stopped"}
+    ],
+    "checked_at_utc": "2026-08-08T20:00:00Z"
+  },
+  "dashboard_url": "https://modal.com/apps/felipesp1983work/poker-arena/ap-HtXqQPjNepszefxPXn5Q4D",
+  "modal_app_id": "ap-HtXqQPjNepszefxPXn5Q4D",
+  "started_at_utc": "2026-08-08T20:03:49Z",
+  "heartbeat_at_utc": "2026-08-08T20:09:32Z",
+  "completed_at_utc": "2026-08-08T20:09:32Z",
+  "terminal_state": "stopped",
+  "orphan_audit": {
+    "checked_at_utc": "2026-08-08T20:10:00Z",
+    "active_apps_owned_by_run": 0,
+    "app_state": "stopped",
+    "training_started": false,
+    "ownerless_apps_in_environment": 0
+  },
+  "artifacts": {
+    "output_directory_created": false,
+    "partial_directories": 0,
+    "files_written": 0
+  },
+  "error": {
+    "stage": "dataset_decontamination_before_training",
+    "code": "exact_state_groups_overlap_between_official_train_and_test",
+    "message": "The fail-closed leakage gate detected at least one identical encoded state in train and test",
+    "remediation": "exclude every test group from both training and internal validation before fitting",
+    "retry_same_run_id": false
+  }
+}

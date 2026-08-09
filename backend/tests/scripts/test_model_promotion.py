@@ -14,7 +14,13 @@ from scripts.promote_model import (
     build_promoted_manifest,
     write_manifest_proposal,
 )
-from tests.helpers.model_manifest import promotion_evidence_fixture, verified_test_governance
+from tests.helpers.expert_onnx import write_constant_expert_v2
+from tests.helpers.model_manifest import (
+    approve_expert,
+    expert_promotion_evidence_fixture,
+    promotion_evidence_fixture,
+    verified_test_governance,
+)
 
 
 def _write_vision_onnx(path: Path, *, marker: str) -> None:
@@ -97,3 +103,37 @@ def test_receipt_for_another_artifact_is_rejected(tmp_path: Path) -> None:
             manifest_path=candidate,
             receipt_path=tmp_path / evidence["path"],
         )
+
+
+def test_expert_uses_its_own_fail_closed_promotion_profile(tmp_path: Path) -> None:
+    artifact = tmp_path / "expert.onnx"
+    write_constant_expert_v2(artifact, [0.0] * 10)
+    manifest = approve_expert(
+        artifact,
+        state="candidate",
+        inference_policy={
+            "decision_rule": "modal",
+            "temperature": 0.0,
+            "min_prob_ratio": 0.0,
+            "sizing_jitter": 0.0,
+        },
+    )
+    entry = json.loads(manifest.read_text(encoding="utf-8"))["artifacts"][0]
+    evidence = expert_promotion_evidence_fixture(
+        artifact,
+        entry,
+        candidate_manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),
+    )
+
+    proposal = build_promoted_manifest(
+        artifact_path=artifact,
+        manifest_path=manifest,
+        receipt_path=tmp_path / evidence["path"],
+        kind="expert",
+    )
+
+    promoted = proposal["artifacts"][0]
+    assert promoted["state"] == "promoted"
+    assert promoted["promotion_receipt"]["profile_revision"].startswith(
+        "poker-arena-expert-promotion-"
+    )

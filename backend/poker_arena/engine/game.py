@@ -32,6 +32,21 @@ class Pot:
     eligible: list[Player]
 
 
+@dataclass(frozen=True, slots=True)
+class PublicActionEvent:
+    """Immutable public information emitted by one betting transition."""
+
+    seat: int
+    street: str
+    action: str
+    amount_added: int
+    raise_to: int | None
+    pot_before: int
+    to_call_before: int
+    is_full_raise: bool
+    is_forced: bool
+
+
 class Hand:
     def __init__(
         self,
@@ -53,6 +68,7 @@ class Hand:
         self.min_raise = big_blind  # incremento mínimo de um raise
         self._started = False
         self._resolved_winners: list[Player] | None = None
+        self.public_history: list[PublicActionEvent] = []
 
     # ---- helpers de assento ----
     def _next_seat(self, seat: int) -> int:
@@ -78,8 +94,8 @@ class Hand:
         else:
             sb_seat = self._next_seat(self.button)
             bb_seat = self._next_seat(sb_seat)
-        self._post(sb_seat, self.sb)
-        self._post(bb_seat, self.bb)
+        self._post(sb_seat, self.sb, "post_sb")
+        self._post(bb_seat, self.bb, "post_bb")
         # Em HU, se o BB estiver all-in por menos, o único adversário enfrenta o
         # valor efetivamente postado, não o bring-in nominal. Em multiway o BB nominal
         # continua sendo a abertura preflop para os jogadores ainda ativos.
@@ -99,8 +115,23 @@ class Hand:
         first = sb_seat if heads_up else self._next_seat(bb_seat)
         self.to_act = self._first_active_from(first)
 
-    def _post(self, seat: int, amount: int) -> None:
-        self.pot += self.players[seat].bet(amount)
+    def _post(self, seat: int, amount: int, action: str) -> None:
+        pot_before = self.pot
+        added = self.players[seat].bet(amount)
+        self.pot += added
+        self.public_history.append(
+            PublicActionEvent(
+                seat=seat,
+                street="preflop",
+                action=action,
+                amount_added=added,
+                raise_to=self.players[seat].current_bet,
+                pot_before=pot_before,
+                to_call_before=0,
+                is_full_raise=False,
+                is_forced=True,
+            )
+        )
 
     # ---- consultas de aposta ----
     def amount_to_call(self) -> int:
@@ -171,7 +202,13 @@ class Hand:
             raise IllegalActionError("a mão já foi resolvida")
         if action.type not in self.legal_actions():
             raise IllegalActionError(f"{action.type} ilegal; legais: {self.legal_actions()}")
-        p = self.players[self.to_act]
+        acting_seat = self.to_act
+        p = self.players[acting_seat]
+        pot_before = self.pot
+        to_call_before = self.amount_to_call()
+        player_bet_before = p.current_bet
+        table_bet_before = self.current_bet
+        min_raise_before = self.min_raise
         if action.type == ActionType.FOLD:
             p.fold()
         elif action.type == ActionType.CHECK:
@@ -182,6 +219,33 @@ class Hand:
             self._apply_raise(action.amount)
         elif action.type == ActionType.ALL_IN:
             self._apply_all_in()
+        amount_added = p.current_bet - player_bet_before
+        raised_to = (
+            p.current_bet
+            if action.type in {ActionType.RAISE, ActionType.ALL_IN}
+            and p.current_bet > table_bet_before
+            else None
+        )
+        self.public_history.append(
+            PublicActionEvent(
+                seat=acting_seat,
+                street={0: "preflop", 3: "flop", 4: "turn", 5: "river"}[len(self.board)],
+                action=action.type.value,
+                amount_added=amount_added,
+                raise_to=raised_to,
+                pot_before=pot_before,
+                to_call_before=to_call_before,
+                is_full_raise=(
+                    action.type is ActionType.RAISE
+                    or (
+                        action.type is ActionType.ALL_IN
+                        and raised_to is not None
+                        and raised_to - table_bet_before >= min_raise_before
+                    )
+                ),
+                is_forced=False,
+            )
+        )
         p.last_bet_faced = self.current_bet
         p.acted = True
         self._advance()

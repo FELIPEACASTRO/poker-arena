@@ -51,7 +51,7 @@ _HOW = {
         "Ele combina força da mão com psicologia: aprende o seu estilo e usa isso a favor dele (blefa contra medroso, aposta valor contra teimoso).",
     ],
     "expert": [
-        "O Expert é uma política neural experimental: produz escores para cinco ações, sem garantia de estratégia ótima.",
+        "O Expert é uma política neural experimental: produz escores para as ações abstratas do contrato aprovado, sem garantia de estratégia ótima.",
         "O Expert usa um modelo ONNX treinado offline; sua força depende dos dados e benchmarks registrados no model card.",
         "Aqui há aprendizado de máquina, mas a saída é uma recomendação empírica — não uma prova de GTO nem uma solução do jogo.",
     ],
@@ -226,10 +226,22 @@ def _why(
             f"{name} jogou {inf} na loteria — o Iniciante decide no acaso.",
         )
     if level == "expert":
-        s = f" ({sig}%)" if sig is not None else ""
-        return _pick(
-            f"A rede neural deu a maior probabilidade para {inf}{s}, e foi isso que {name} fez.",
-            f"O modelo treinado apontou {inf}{s} como a melhor ação, então {name} {past}.",
+        if insight is not None and insight.executed_probability is not None:
+            sampled = round(insight.executed_probability * 100)
+            modal = round((insight.modal_probability or 0.0) * 100)
+            if insight.decision_rule == "modal":
+                return f"A política modal executou {inf}, a ação de maior massa ({modal}%)."
+            if insight.executed_action != insight.modal_action:
+                return (
+                    f"A política mista sorteou {inf} ({sampled}% de massa); "
+                    f"a ação modal tinha {modal}%. Isso é uma amostra, não a 'melhor ação'."
+                )
+            return (
+                f"A política mista sorteou {inf} ({sampled}% de massa), que também era "
+                f"a ação modal ({modal}%)."
+            )
+        return (
+            f"A inferência neural não forneceu uma distribuição válida; {name} {past} em fallback."
         )
     if level == "adaptive" and insight is not None:
         return _pick(

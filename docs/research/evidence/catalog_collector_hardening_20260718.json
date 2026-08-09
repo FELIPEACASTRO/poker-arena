@@ -4,7 +4,7 @@
   "historical_snapshot": "docs/research/evidence/catalog_search_snapshot_20260718.json",
   "historical_snapshot_collector_sha256": "9865f06769a5ce07330eb4f087cf32c9c1ed9f27596d87e29ca7181c519e4749",
   "hardened_collector": "backend/scripts/catalog_search_receipt.py",
-  "hardened_collector_sha256": "612ab5f2b98e8c68637b678347b8041eb4429543fb5614dcd0bca76a8e8e96e1",
+  "hardened_collector_sha256": "05a48eff44a664b1e3ac680aebcde1c816dad1e1f9c773058311b1b579d2a5eb",
   "transport_controls": {
     "environment_and_system_proxies_disabled": true,
     "redirects_refused": true,

@@ -68,7 +68,8 @@ def eval_bb100(
     """bb/100 do `hero_act` (assento 0) contra `villain` nos demais assentos.
 
     Determinístico por `seed`: comparável entre checkpoints. O herói deve usar a
-    MESMA decisão do deploy (argmax mascarado) pra a avaliação refletir o jogo real.
+    mesma regra declarada no manifesto (`modal` ou `sampled`) e os mesmos seeds;
+    avaliar argmax e implantar amostragem mede políticas diferentes.
     """
     for name, value in (("hands", hands), ("n", n), ("stack", stack), ("sb", sb), ("bb", bb)):
         if type(value) is not int:

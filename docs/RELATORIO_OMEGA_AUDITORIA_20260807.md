@@ -216,7 +216,7 @@ RAM/disco/hardware da banca.
 | Raise incontestável | motor oferecia raise 332; PokerKit rejeitava | repro versionado passa; fuzz ad hoc histórico seed 20260810, 20k casos, `bad=[]`, mantido apenas como apoio | harness ad hoc não foi preservado; não conta como gate reproduzível |
 | Review sizing | raise 40 e raise 60 davam match | mismatch explícito 40≠60 | subconjunto PHH NT |
 | Frontend | 2 warnings ESLint | 80/80 testes; lint sem aviso; build aprovado | browser/hardware local |
-| Copiloto | receipt anterior invalidado pela reconciliação semântica do spot | receipt v5 SHA-256 `38520478FB4F722F7F91A4AFC5CE84D6CADE02B8DEE84BF8E528BB42E40273C5`: P95 máximo 1103,183 ms em 5 cenários, budget 2500 ms | 7 amostras brutas/cenário; scope `local_copilot_spot_latency_only_not_strategy_quality`; binding `b0ee592c…58403111`; versões instaladas e CPU vinculadas; não é comparação entre hosts |
+| Copiloto | receipt anterior invalidado pelo hardening do Expert | receipt v5 SHA-256 `B50FD86402DE6701A877B704F5C968D76F6165685192D2DD87C2FF7C76D0CC2D`: P95 máximo 1077,861 ms em 5 cenários, budget 2500 ms | 7 amostras brutas/cenário; scope `local_copilot_spot_latency_only_not_strategy_quality`; binding `4fcf18db…2c9f8c72`; versões instaladas e CPU vinculadas; não é comparação entre hosts |
 | Contenção do host | execução incidental sob forte carga chegou a 2607,209 ms e falhou | receipt falho descartado; medição Ω48 aprovou mesmo com um processo externo CPU-bound observável | fechar workloads concorrentes no preflight da banca; o run Ω48 não é benchmark isolado |
 | Equity exata | Monte Carlo 400 variava | 990 enumerações; erro numérico 0 no domínio | HU river/range uniforme |
 | Avaliação real F1 | alegação não medida | 0/1 exato, abstenção, 10,08 s; F2 ausente | amostra de conveniência |
@@ -548,7 +548,7 @@ execução sobre árvore limpa.
 46. **Correção enfraqueceu testes?** Não; ONNX ficou mais real e o oracle de raise mais estrito.
 47. **Correção criou regressão?** O primeiro gate revelou Ω46; o gate do candidato Ω47 revelou
     Ω48 e foi reprovado em 1/16. A nova rodada adversarial revelou Ω49–Ω64 antes do commit.
-    O candidato consolidado coleta 1141 backend; a rodada atual possui 174 focais, além das execuções
+    O candidato consolidado coleta 1265 testes backend, além das execuções
     dirigidas de 80 frontend e 13 E2E. A decisão final ainda exige o gate clean-tree
     do próprio commit e não exclui regressão desconhecida.
 48. **Há causa alternativa?** Sim em alguns casos; contradições e house rules preservam alternativas.
@@ -591,7 +591,7 @@ O contrato Ω47 torna o veredito da release executável: sucesso retorna
 `release_decision=GO`, `release_scope=LOCAL_MASTER_DEFENSE` e lista capacidades externas em
 `out_of_scope`; falha retorna `release_decision=BLOCKED`. O wrapper PowerShell só imprime
 `RELEASE_DECISION=GO; SCOPE=LOCAL_MASTER_DEFENSE` depois de receber exit code 0. A suíte final
-contém **1141 testes backend**, **80 frontend** e **13 E2E**. O commit que contém esta seção só
+contém **1265 testes backend**, **80 frontend** e **13 E2E**. O commit que contém esta seção só
 é liberado depois de repetir os 16 gates e o preflight em árvore limpa; qualquer falha revoga
 o GO.
 
@@ -623,7 +623,7 @@ esse requisito.
 - a política dos bots não consome o novo perfil. Predição de range, clustering, transformer,
   filtro de partículas e best response permanecem não promovidos por falta de dataset e
   validação externa apropriados;
-- a coleta atual encontrou 1141 testes backend; 80 testes frontend e 13 E2E passaram em
+- a coleta atual encontrou 1265 testes backend; 80 testes frontend e 13 E2E passaram em
   rodadas dirigidas. Os 16 gates integrais continuam obrigatórios no commit limpo candidato.
 
 ### Rodada Ω66 — reconciliação integral da documentação
@@ -635,11 +635,11 @@ esse requisito.
 - a descrição genérica “Copiloto depois da mão” foi corrigida: o spot informado recebe
   recomendação/valor/opções; PHH é retrospectivo; imagem só recomenda quando o gate visual
   tem autoridade, o que o F1 atual deliberadamente não possui;
-- regressão observada na árvore reconciliada: 1141/1141 backend, 80/80 frontend, build/lint,
+- regressão observada antes do commit: 1264 backend passaram, o único drift OpenAPI foi regenerado e retestado; 80/80 frontend, build/lint,
   13/13 E2E, 96 testes dirigidos Copiloto/API, 11/11 do receipt, OpenAPI sem drift, 57
   Markdown/HTML sem link local quebrado e guia pedagógico sem erro/overflow;
-- o receipt v5 novo tem SHA-256 `38520478FB4F722F7F91A4AFC5CE84D6CADE02B8DEE84BF8E528BB42E40273C5`,
-  P95 máximo 1103,183 ms e todas as 35 amostras dentro do orçamento;
+- o receipt v5 novo tem SHA-256 `B50FD86402DE6701A877B704F5C968D76F6165685192D2DD87C2FF7C76D0CC2D`,
+  P95 máximo 1077,861 ms e todas as 35 amostras dentro do orçamento;
 - esses resultados validam a revisão, mas o gate agregado 16/16 e o preflight clean-tree
   continuam obrigatórios depois de criar o commit candidato.
 

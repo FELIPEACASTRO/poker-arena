@@ -23,6 +23,15 @@ from types import MappingProxyType
 from typing import Any, Final, Literal
 from urllib.parse import urlsplit
 
+from poker_arena.ml.action_space_v2 import REVISION as EXPERT_ACTION_SPACE_V2
+from poker_arena.ml.encoder_v2 import REVISION as EXPERT_ENCODER_V2
+from poker_arena.ml.expert_validation import (
+    PROFILE_REVISION as EXPERT_PROMOTION_PROFILE_REVISION,
+)
+from poker_arena.ml.expert_validation import (
+    ExpertPromotionEvidenceError,
+    verify_expert_promotion_receipt,
+)
 from poker_arena.ml.external_validation import (
     PROFILE_REVISION as PROMOTION_PROFILE_REVISION,
 )
@@ -42,6 +51,7 @@ _ARTIFACT_STATES: Final = frozenset({"approved", "promoted", "candidate", "quara
 _GOVERNANCE_STATUSES: Final = frozenset({"verified", "unresolved"})
 _POLICY_STATES: Final = frozenset({"approved", "promoted", "unapproved"})
 _MAX_MANIFEST_BYTES: Final = 2 * 1024 * 1024
+_MAX_TRAINING_EVIDENCE_BYTES: Final = 8 * 1024 * 1024
 _MAX_ARTIFACT_BYTES: Final = 16 * 1024 * 1024 * 1024
 _MAX_ONNX_PROTO_INSPECTION_BYTES: Final = 512 * 1024 * 1024
 _MAX_ARTIFACTS: Final = 256
@@ -75,7 +85,15 @@ _COMMON_OPTIONAL_ENTRY_FIELDS: Final = frozenset(
     {"size_bytes", "producer", "embedded_metadata", "promotion_receipt"}
 )
 _KIND_OPTIONAL_ENTRY_FIELDS: Final[dict[ArtifactKind, frozenset[str]]] = {
-    "expert": frozenset({"inference_policy", "training_context"}),
+    "expert": frozenset(
+        {
+            "inference_policy",
+            "training_context",
+            "encoder_revision",
+            "action_space_revision",
+            "training_evidence",
+        }
+    ),
     "vision": frozenset({"classes"}),
     "card_reader": frozenset(),
 }
@@ -115,8 +133,19 @@ _TRAINING_CONTEXT_FIELDS: Final = frozenset(
     }
 )
 _INFERENCE_POLICY_FIELDS: Final = frozenset(
-    {"state", "temperature", "min_prob_ratio", "sizing_jitter"}
+    {
+        "state",
+        "decision_rule",
+        "temperature",
+        "min_prob_ratio",
+        "sizing_jitter",
+        "supported_action_indices",
+    }
 )
+_TRAINING_EVIDENCE_FIELDS: Final = frozenset(
+    {"metrics_path", "metrics_sha256", "trace_path", "trace_sha256"}
+)
+_DECISION_RULES: Final = frozenset({"modal", "sampled"})
 _PROMOTION_RECEIPT_FIELDS: Final = frozenset(
     {"path", "sha256", "profile_revision", "artifact_contract_sha256"}
 )
@@ -145,9 +174,11 @@ class ModelArtifactUnavailable(RuntimeError):
 class InferencePolicy:
     """Post-processing applied to Expert probabilities and raise sizing."""
 
+    decision_rule: Literal["modal", "sampled"] = "sampled"
     temperature: float = 1.0
     min_prob_ratio: float = 0.0
     sizing_jitter: float = 0.0
+    supported_action_indices: tuple[int, ...] = ()
     source: Literal["neutral", "manifest"] = "neutral"
 
 
@@ -211,11 +242,24 @@ class _ContractRule:
     class_counts: frozenset[int] = frozenset()
 
 
-_CONTRACTS: Final[dict[ArtifactKind, _ContractRule]] = {
-    "expert": _ContractRule(
-        inputs=(_TensorRule("obs", "float32", (("*batch", 121),)),),
-        outputs=(_TensorRule("logits", "float32", (("*batch", 5),)),),
+_EXPERT_V1_CONTRACT: Final = _ContractRule(
+    inputs=(_TensorRule("obs", "float32", (("*batch", 121),)),),
+    outputs=(_TensorRule("logits", "float32", (("*batch", 5),)),),
+)
+_EXPERT_V2_CONTRACT: Final = _ContractRule(
+    inputs=(
+        _TensorRule("cards", "float32", (("*batch", 208),)),
+        _TensorRule("global", "float32", (("*batch", 24),)),
+        _TensorRule("seats", "float32", (("*batch", 9, 12),)),
+        _TensorRule("history", "float32", (("*batch", 15, 26),)),
+        _TensorRule("history_mask", "float32", (("*batch", 15),)),
+        _TensorRule("legal_mask", "float32", (("*batch", 10),)),
     ),
+    outputs=(_TensorRule("logits", "float32", (("*batch", 10),)),),
+)
+
+_CONTRACTS: Final[dict[ArtifactKind, _ContractRule]] = {
+    "expert": _EXPERT_V1_CONTRACT,
     "vision": _ContractRule(
         inputs=(_TensorRule("images", "float32", (("*batch", 3, 640, 640),)),),
         outputs=(
@@ -537,6 +581,111 @@ def _validate_training_context(raw: object) -> None:
             )
 
 
+def _validate_training_evidence_shape(raw: object) -> None:
+    if not isinstance(raw, dict):
+        raise ModelArtifactUnavailable(
+            "training_evidence_invalid", "training evidence must be an object"
+        )
+    _require_exact_fields(
+        raw,
+        required=_TRAINING_EVIDENCE_FIELDS,
+        allowed=_TRAINING_EVIDENCE_FIELDS,
+        code="training_evidence_invalid",
+    )
+    for field_name in ("metrics_path", "trace_path"):
+        if not _bounded_string(raw.get(field_name), max_chars=_MAX_ARTIFACT_PATH_CHARS):
+            raise ModelArtifactUnavailable("training_evidence_invalid", "evidence path is invalid")
+    for field_name in ("metrics_sha256", "trace_sha256"):
+        value = raw.get(field_name)
+        if not isinstance(value, str) or _SHA256_RE.fullmatch(value) is None:
+            raise ModelArtifactUnavailable(
+                "training_evidence_invalid", "evidence digest is invalid"
+            )
+
+
+def _read_strict_json_file(path: Path, *, code: str) -> dict[str, Any]:
+    try:
+        with path.open("rb") as handle:
+            payload = handle.read(_MAX_TRAINING_EVIDENCE_BYTES + 1)
+    except OSError:
+        raise ModelArtifactUnavailable(code, "training evidence is unreadable") from None
+    if len(payload) > _MAX_TRAINING_EVIDENCE_BYTES:
+        raise ModelArtifactUnavailable(code, "training evidence exceeds its size limit")
+    try:
+        parsed = json.loads(payload, object_pairs_hook=_reject_duplicate_keys)
+    except (_DuplicateManifestKey, UnicodeDecodeError, ValueError, RecursionError):
+        raise ModelArtifactUnavailable(code, "training evidence is not strict JSON") from None
+    if not isinstance(parsed, dict):
+        raise ModelArtifactUnavailable(code, "training evidence root must be an object")
+    return parsed
+
+
+def _verify_expert_training_support(
+    entry: Mapping[str, Any], manifest_root: Path, artifact_sha256: str
+) -> None:
+    raw = entry.get("training_evidence")
+    _validate_training_evidence_shape(raw)
+    if not isinstance(raw, dict):
+        raise ModelArtifactUnavailable(
+            "training_evidence_invalid", "training evidence must be an object"
+        )
+    metrics_path = _canonical_declared_artifact_path(raw["metrics_path"], manifest_root)
+    trace_path = _canonical_declared_artifact_path(raw["trace_path"], manifest_root)
+    for path, digest_field in (
+        (metrics_path, "metrics_sha256"),
+        (trace_path, "trace_sha256"),
+    ):
+        if not path.is_file() or _sha256_file(path) != raw[digest_field]:
+            raise ModelArtifactUnavailable(
+                "training_evidence_mismatch", "training evidence file or digest does not match"
+            )
+    metrics = _read_strict_json_file(metrics_path, code="training_evidence_invalid")
+    artifact_digests = metrics.get("artifact_sha256")
+    metrics_onnx_sha = (
+        artifact_digests.get("onnx") if isinstance(artifact_digests, dict) else artifact_digests
+    )
+    if metrics_onnx_sha != artifact_sha256:
+        raise ModelArtifactUnavailable(
+            "training_evidence_mismatch", "training evidence belongs to another artifact"
+        )
+    try:
+        with trace_path.open("r", encoding="utf-8") as handle:
+            configuration = json.loads(handle.readline(), object_pairs_hook=_reject_duplicate_keys)
+            prepared = json.loads(handle.readline(), object_pairs_hook=_reject_duplicate_keys)
+    except (OSError, UnicodeDecodeError, ValueError, RecursionError, _DuplicateManifestKey):
+        raise ModelArtifactUnavailable(
+            "training_evidence_invalid", "training trace header is invalid"
+        ) from None
+    counts = (
+        prepared.get("optimization_training_class_counts") if isinstance(prepared, dict) else None
+    )
+    if (
+        not isinstance(configuration, dict)
+        or configuration.get("event") != "training_configuration"
+        or not isinstance(prepared, dict)
+        or prepared.get("event") != "dataset_prepared"
+        or not isinstance(counts, list)
+        or len(counts) != 10
+        or any(type(count) is not int or count < 0 for count in counts)
+    ):
+        raise ModelArtifactUnavailable(
+            "training_evidence_invalid", "training trace does not contain valid per-action counts"
+        )
+    source_binding = configuration.get("source_binding")
+    if not isinstance(source_binding, str) or source_binding != metrics.get("source_binding"):
+        raise ModelArtifactUnavailable(
+            "training_evidence_mismatch", "metrics and trace source bindings differ"
+        )
+    supported = tuple(index for index, count in enumerate(counts) if count > 0)
+    policy = entry.get("inference_policy")
+    declared = tuple(policy.get("supported_action_indices", ())) if isinstance(policy, dict) else ()
+    if declared != supported:
+        raise ModelArtifactUnavailable(
+            "expert_action_support_mismatch",
+            "manifest action support must exactly match positive training counts",
+        )
+
+
 def _validate_expected_contract(entry: Mapping[str, Any]) -> None:
     inputs = entry.get("expected_inputs")
     outputs = entry.get("expected_outputs")
@@ -624,6 +773,8 @@ def _validate_manifest_entry_schema(
         _validate_embedded_metadata(entry["embedded_metadata"])
     if "training_context" in entry:
         _validate_training_context(entry["training_context"])
+    if "training_evidence" in entry:
+        _validate_training_evidence_shape(entry["training_evidence"])
     if "inference_policy" in entry:
         _validate_inference_policy_shape(entry["inference_policy"])
     if "classes" in entry:
@@ -656,24 +807,68 @@ def _validate_manifest_entry_schema(
             required=_BASE_ENTRY_FIELDS,
             allowed=exact_fields,
         )
+    if (
+        kind == "expert"
+        and entry.get("encoder_revision") == EXPERT_ENCODER_V2
+        and entry.get("action_space_revision") == EXPERT_ACTION_SPACE_V2
+    ):
+        policy = entry.get("inference_policy")
+        if (
+            not isinstance(policy, dict)
+            or policy.get("state") == "unapproved"
+            or "training_evidence" not in entry
+        ):
+            raise ModelArtifactUnavailable(
+                "expert_action_support_missing",
+                "v2 Expert artifacts require approved, evidence-bound action support",
+            )
+        supported = policy.get("supported_action_indices")
+        if not isinstance(supported, list) or not {0, 1}.issubset(supported):
+            raise ModelArtifactUnavailable(
+                "expert_action_support_unsafe",
+                "v2 Expert support must include fold and check/call",
+            )
+    elif kind == "expert" and state != "promoted":
+        policy = entry.get("inference_policy")
+        supported = policy.get("supported_action_indices") if isinstance(policy, dict) else None
+        if isinstance(supported, list) and any(
+            type(index) is int and index >= 5 for index in supported
+        ):
+            raise ModelArtifactUnavailable(
+                "policy_invalid", "legacy Expert support cannot exceed its five outputs"
+            )
     if kind == "vision":
         if state in _APPROVED_STATES:
-            _validate_promotion_receipt_shape(entry.get("promotion_receipt"))
+            _validate_promotion_receipt_shape(
+                entry.get("promotion_receipt"), PROMOTION_PROFILE_REVISION
+            )
         elif "promotion_receipt" in entry:
             raise ModelArtifactUnavailable(
                 "promotion_evidence_invalid",
                 "non-deployable vision artifacts cannot carry promotion evidence",
             )
+    elif kind == "expert" and state == "promoted":
+        if (
+            entry.get("encoder_revision") != EXPERT_ENCODER_V2
+            or entry.get("action_space_revision") != EXPERT_ACTION_SPACE_V2
+        ):
+            raise ModelArtifactUnavailable(
+                "expert_contract_legacy",
+                "promoted Expert artifacts require the seat/history-aware v2 contract",
+            )
+        _validate_promotion_receipt_shape(
+            entry.get("promotion_receipt"), EXPERT_PROMOTION_PROFILE_REVISION
+        )
     elif "promotion_receipt" in entry:
         raise ModelArtifactUnavailable(
             "promotion_profile_unsupported",
-            "vision evidence cannot authorize a different model task",
+            "promotion evidence cannot authorize this model lifecycle or task",
         )
     if kind == "vision" and "classes" not in entry:
         raise ModelArtifactUnavailable("contract_mismatch", "vision classes are required")
 
 
-def _validate_promotion_receipt_shape(raw: object) -> None:
+def _validate_promotion_receipt_shape(raw: object, expected_profile: str) -> None:
     if not isinstance(raw, dict) or set(raw) != _PROMOTION_RECEIPT_FIELDS:
         raise ModelArtifactUnavailable(
             "promotion_evidence_missing",
@@ -699,17 +894,20 @@ def _validate_promotion_receipt_shape(raw: object) -> None:
         raise ModelArtifactUnavailable(
             "promotion_evidence_invalid", "promotion contract digest is invalid"
         )
-    if raw.get("profile_revision") != PROMOTION_PROFILE_REVISION:
+    if raw.get("profile_revision") != expected_profile:
         raise ModelArtifactUnavailable(
-            "promotion_evidence_invalid", "promotion receipt profile is unsupported"
+            "promotion_profile_unsupported", "promotion receipt profile is unsupported"
         )
 
 
 def _verify_promotion_entry(
-    entry: Mapping[str, Any], manifest_path: Path, artifact_sha256: str
+    entry: Mapping[str, Any], manifest_path: Path, artifact_sha256: str, kind: ArtifactKind
 ) -> None:
     raw = entry.get("promotion_receipt")
-    _validate_promotion_receipt_shape(raw)
+    expected_profile = (
+        EXPERT_PROMOTION_PROFILE_REVISION if kind == "expert" else PROMOTION_PROFILE_REVISION
+    )
+    _validate_promotion_receipt_shape(raw, expected_profile)
     if not isinstance(raw, dict):  # pragma: no cover - narrowed by validator
         raise ModelArtifactUnavailable("promotion_evidence_invalid", "receipt is invalid")
     receipt_path = _canonical_declared_artifact_path(raw["path"], manifest_path.parent.resolve())
@@ -719,13 +917,23 @@ def _verify_promotion_entry(
             "promotion_evidence_invalid", "manifest contract differs from promotion evidence"
         )
     try:
-        verify_promotion_receipt(
-            receipt_path,
-            expected_sha256=raw["sha256"],
-            artifact_sha256=artifact_sha256,
-            artifact_contract_sha256=contract_digest,
-        )
-    except PromotionEvidenceError as exc:
+        if kind == "expert":
+            policy = _manifest_inference_policy(entry)
+            verify_expert_promotion_receipt(
+                receipt_path,
+                expected_sha256=raw["sha256"],
+                artifact_sha256=artifact_sha256,
+                artifact_contract_sha256=contract_digest,
+                decision_rule=policy.decision_rule,
+            )
+        else:
+            verify_promotion_receipt(
+                receipt_path,
+                expected_sha256=raw["sha256"],
+                artifact_sha256=artifact_sha256,
+                artifact_contract_sha256=contract_digest,
+            )
+    except (PromotionEvidenceError, ExpertPromotionEvidenceError) as exc:
         raise ModelArtifactUnavailable(
             "promotion_evidence_invalid", "scientific receipt failed verification"
         ) from exc
@@ -860,6 +1068,23 @@ def _validate_declared_tensors(
 
 def _validate_declared_contract(entry: Mapping[str, Any], kind: ArtifactKind) -> None:
     rule = _CONTRACTS[kind]
+    if kind == "expert":
+        encoder_revision = entry.get("encoder_revision")
+        action_revision = entry.get("action_space_revision")
+        if encoder_revision is None and action_revision is None:
+            if entry.get("state") == "promoted":
+                raise ModelArtifactUnavailable(
+                    "expert_contract_legacy",
+                    "promoted Expert artifacts cannot use the legacy 121x5 contract",
+                )
+            rule = _EXPERT_V1_CONTRACT
+        elif encoder_revision == EXPERT_ENCODER_V2 and action_revision == EXPERT_ACTION_SPACE_V2:
+            rule = _EXPERT_V2_CONTRACT
+        else:
+            raise ModelArtifactUnavailable(
+                "contract_mismatch",
+                "Expert encoder and action-space revisions must form one supported pair",
+            )
     _validate_declared_tensors(entry.get("inputs"), rule.inputs, "inputs")
     _validate_declared_tensors(entry.get("outputs"), rule.outputs, "outputs")
     if rule.class_counts:
@@ -1034,7 +1259,11 @@ def _validate_inference_policy_shape(raw: object) -> None:
             "policy_invalid",
             "inference_policy.state must be approved, promoted or unapproved",
         )
-    numeric_fields = _INFERENCE_POLICY_FIELDS - {"state"}
+    numeric_fields = _INFERENCE_POLICY_FIELDS - {
+        "state",
+        "decision_rule",
+        "supported_action_indices",
+    }
     if state != "unapproved" and not numeric_fields.issubset(raw):
         raise ModelArtifactUnavailable("policy_invalid", "approved inference policy is incomplete")
     if "temperature" in raw:
@@ -1043,6 +1272,25 @@ def _validate_inference_policy_shape(raw: object) -> None:
         _policy_number(raw, "min_prob_ratio", lower=0.0, upper=1.0)
     if "sizing_jitter" in raw:
         _policy_number(raw, "sizing_jitter", lower=0.0, upper=1.0)
+    supported = raw.get("supported_action_indices")
+    if state != "unapproved":
+        if (
+            not isinstance(supported, list)
+            or not supported
+            or any(type(index) is not int or not 0 <= index < 10 for index in supported)
+            or supported != sorted(set(supported))
+        ):
+            raise ModelArtifactUnavailable(
+                "policy_invalid",
+                "supported_action_indices must be a non-empty sorted unique integer subset of [0, 9]",
+            )
+    elif supported is not None and (
+        not isinstance(supported, list) or any(type(index) is not int for index in supported)
+    ):
+        raise ModelArtifactUnavailable("policy_invalid", "unsupported policy metadata is invalid")
+    decision_rule = raw.get("decision_rule", "sampled")
+    if not isinstance(decision_rule, str) or decision_rule not in _DECISION_RULES:
+        raise ModelArtifactUnavailable("policy_invalid", "decision_rule must be modal or sampled")
 
 
 def _manifest_inference_policy(entry: Mapping[str, Any]) -> InferencePolicy:
@@ -1057,9 +1305,11 @@ def _manifest_inference_policy(entry: Mapping[str, Any]) -> InferencePolicy:
         return InferencePolicy()
 
     return InferencePolicy(
+        decision_rule=raw.get("decision_rule", "sampled"),
         temperature=_policy_number(raw, "temperature", lower=0.0, upper=10.0),
         min_prob_ratio=_policy_number(raw, "min_prob_ratio", lower=0.0, upper=1.0),
         sizing_jitter=_policy_number(raw, "sizing_jitter", lower=0.0, upper=1.0),
+        supported_action_indices=tuple(raw["supported_action_indices"]),
         source="manifest",
     )
 
@@ -1104,8 +1354,10 @@ def _verify_model_artifact(
                 artifact_hash == cached.receipt.sha256
                 and manifest_hash == cached.receipt.manifest_sha256
             ):
-                if usage == "deployment" and kind == "vision":
-                    _verify_promotion_entry(cached.receipt.entry, canonical_manifest, artifact_hash)
+                if usage == "deployment" and kind in {"vision", "expert"}:
+                    _verify_promotion_entry(
+                        cached.receipt.entry, canonical_manifest, artifact_hash, kind
+                    )
                 return cached.receipt
         _RECEIPT_CACHE.pop(cache_key, None)
 
@@ -1117,7 +1369,11 @@ def _verify_model_artifact(
             raise ModelArtifactUnavailable(
                 "state_invalid", "state is not a schema-v1 lifecycle value"
             )
-        expected_states = _APPROVED_STATES if usage == "deployment" else frozenset({"candidate"})
+        expected_states = (
+            (frozenset({"promoted"}) if kind == "expert" else _APPROVED_STATES)
+            if usage == "deployment"
+            else frozenset({"candidate"})
+        )
         if state not in expected_states:
             expected = "approved/promoted" if usage == "deployment" else "candidate"
             raise ModelArtifactUnavailable(
@@ -1140,8 +1396,10 @@ def _verify_model_artifact(
                 "sha256_mismatch", "artifact digest differs from the manifest"
             )
         _reject_external_onnx_data(canonical_path, artifact_before.size)
-        if usage == "deployment" and kind == "vision":
-            _verify_promotion_entry(entry, canonical_manifest, actual_sha)
+        if kind == "expert" and entry.get("encoder_revision") == EXPERT_ENCODER_V2:
+            _verify_expert_training_support(entry, canonical_manifest.parent, actual_sha)
+        if usage == "deployment" and kind in {"vision", "expert"}:
+            _verify_promotion_entry(entry, canonical_manifest, actual_sha, kind)
 
         _validate_declared_contract(entry, kind)
         policy = _manifest_inference_policy(entry)

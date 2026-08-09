@@ -1247,15 +1247,15 @@
         "type": "object"
       },
       "CouncilEntrySchema": {
-        "description": "O que um paradigma de IA recomendaria para a SUA jogada atual (o 'conselho').",
+        "description": "Ação amostrada e ação modal de um paradigma para a jogada atual.",
         "properties": {
           "action": {
-            "description": "Ação recomendada (em português, ex.: 'Pagar').",
+            "description": "Ação que seria executada/amostrada (ex.: 'Pagar').",
             "title": "Action",
             "type": "string"
           },
           "amount": {
-            "description": "Valor sugerido (para aumentos).",
+            "description": "Valor da ação amostrada (para aumentos).",
             "title": "Amount",
             "type": "integer"
           },
@@ -1268,13 +1268,87 @@
                 "type": "null"
               }
             ],
-            "description": "Confiança da recomendação, em [0,1].",
+            "description": "Sinal principal do paradigma; não implica acurácia calibrada.",
             "title": "Confidence"
+          },
+          "decision_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Rule"
+          },
+          "executed_probability": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executed Probability"
           },
           "level": {
             "description": "Nível de IA que deu a recomendação.",
             "title": "Level",
             "type": "string"
+          },
+          "modal_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expert: ação modal da política.",
+            "title": "Modal Action"
+          },
+          "modal_amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expert: valor da ação modal.",
+            "title": "Modal Amount"
+          },
+          "modal_probability": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modal Probability"
+          },
+          "policy_entropy": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Entropy"
           }
         },
         "required": [
@@ -1911,7 +1985,7 @@
                 "type": "null"
               }
             ],
-            "description": "Melhor ação segundo o Expert.",
+            "description": "Alias compatível para a ação modal do Expert; não afirma optimalidade.",
             "title": "Best Action"
           },
           "best_amount": {
@@ -1923,7 +1997,7 @@
                 "type": "null"
               }
             ],
-            "description": "Valor da melhor ação.",
+            "description": "Valor associado à ação modal do Expert.",
             "title": "Best Amount"
           },
           "blockers": {
@@ -1950,7 +2024,7 @@
                 "type": "null"
               }
             ],
-            "description": "Confiança do Expert na recomendação, em [0,1].",
+            "description": "Massa da política na ação modal; não é confiança calibrada nem acurácia.",
             "title": "Confidence"
           },
           "council": {
@@ -2012,6 +2086,66 @@
             "description": "EV simplificado do call em fichas, assumindo checkdown e sem apostas futuras.",
             "title": "Ev Call",
             "type": "number"
+          },
+          "expert_decision_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Decision Rule"
+          },
+          "expert_executed_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ação realmente executada pelo Expert.",
+            "title": "Expert Executed Action"
+          },
+          "expert_executed_amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Executed Amount"
+          },
+          "expert_executed_probability": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Executed Probability"
+          },
+          "expert_policy_entropy": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Policy Entropy"
           },
           "hand_name": {
             "anyOf": [
@@ -2173,7 +2307,7 @@
         "type": "object"
       },
       "InsightSchema": {
-        "description": "O raciocínio REAL da última decisão de um bot (a 'caixa de vidro' da IA).",
+        "description": "Sinais observáveis da última decisão de um bot (caixa de vidro).",
         "properties": {
           "bias": {
             "anyOf": [
@@ -2188,12 +2322,50 @@
             "title": "Bias"
           },
           "confidence": {
-            "description": "Confiança da decisão, em [0,1].",
+            "description": "Sinal principal do paradigma, em [0,1]; não implica acurácia calibrada.",
             "examples": [
               0.37
             ],
             "title": "Confidence",
             "type": "number"
+          },
+          "decision_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expert: `modal` ou `sampled`.",
+            "title": "Decision Rule"
+          },
+          "executed_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expert: ação abstrata realmente executada.",
+            "title": "Executed Action"
+          },
+          "executed_probability": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expert: massa da ação executada.",
+            "title": "Executed Probability"
           },
           "fold_to_bet": {
             "anyOf": [
@@ -2219,6 +2391,46 @@
             ],
             "title": "Label",
             "type": "string"
+          },
+          "modal_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expert: ação abstrata de maior massa na política.",
+            "title": "Modal Action"
+          },
+          "modal_probability": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expert: massa da ação modal.",
+            "title": "Modal Probability"
+          },
+          "policy_entropy": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expert: entropia normalizada das ações legais.",
+            "title": "Policy Entropy"
           },
           "probs": {
             "anyOf": [

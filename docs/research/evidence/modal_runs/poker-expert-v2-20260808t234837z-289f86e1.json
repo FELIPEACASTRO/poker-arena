@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "run_id": "poker-expert-v2-20260808t234837z-289f86e1",
+  "project": "POKER",
+  "owner": "codex",
+  "purpose": "expert-v2-weight-calibration-ablation",
+  "release_status": "candidate_only_not_promoted",
+  "lifecycle_status": "terminal_completed_candidate_only",
+  "modal_environment": "poker-arena",
+  "modal_app_name": "poker-arena-expert-v2-poker-expert-v2-20260808t234837z-289f86e1",
+  "experiment": {
+    "hypothesis_id": "H-WEIGHT-UNIFORM-CONTROL-V1",
+    "class_weight_profile": "uniform",
+    "primary_change": "post-fix control with semantic sealed redaction, street-aware cards and causal GRU",
+    "primary_metric": "internal_validation_cross_entropy",
+    "published_test_status": "development_only_contaminated_by_prior_iteration",
+    "sealed_final_holdout_status": "labels_not_consulted_not_scored",
+    "decision_gate": "candidate-only diagnostic; never promote or deploy from this job"
+  },
+  "prelaunch_evidence": {
+    "full_training_scan": {
+      "rows_seen": 563200,
+      "prepared_rows": 559308,
+      "parse_failures": 0,
+      "ambiguous_nonsealed_rows_rejected": 3892,
+      "sealed_rows": 27875,
+      "sealed_labels_exposed": 0,
+      "development_partition_redacted_labels": 0,
+      "feature_shape": [559308, 740],
+      "features_finite_and_bounded_0_1": true,
+      "feature_group_to_multiple_semantic_split_ids": 0
+    },
+    "published_test_input_scan": {
+      "rows_seen": 11000,
+      "parse_failures": 0,
+      "labels_accessed": false,
+      "feature_shape": [11000, 740]
+    },
+    "split_counts": {
+      "training": 427790,
+      "validation": 47302,
+      "calibration_fit": 26503,
+      "calibration_check": 26326,
+      "sealed_final_holdout": 27875,
+      "published_overlap_examples_excluded": 3512
+    },
+    "training_class_counts": [119232, 210329, 79339, 0, 562, 986, 2594, 122, 0, 14626],
+    "effective_class_weights": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+    "focused_integrated_tests": {"passed": 230, "failed": 0},
+    "official_mypy_modules": {"checked": 64, "errors": 0},
+    "independent_adversarial_verdict": "GO_candidate_only_uniform_NO_GO_promotion"
+  },
+  "launch_attempts": [
+    {
+      "attempted_at_utc": "2026-08-08T23:49:22Z",
+      "result": "local_platform_validation_failed_before_resource_creation",
+      "error": "Modal app tag count exceeded the platform limit of eight",
+      "active_apps_after_failure": 0,
+      "active_containers_after_failure": 0,
+      "remediation": "removed redundant git_commit tag and added regression test"
+    },
+    {
+      "attempted_at_utc": "2026-08-08T23:50:19Z",
+      "result": "local_console_encoding_failed_before_gpu_task_creation",
+      "error": "Windows charmap could not encode Modal checkmark output",
+      "modal_app_id": "ap-zAaVyz1llDDyqMmhR1YJWA",
+      "app_stopped_at_utc": "2026-08-08T23:50:58Z",
+      "gpu_tasks_created": 0,
+      "active_containers_after_stop": 0,
+      "remediation": "force UTF-8 for the Modal client process"
+    }
+  ],
+  "resource": {
+    "gpu": "L4",
+    "gpu_count": 1,
+    "cpu_physical_cores": 4.0,
+    "memory_gib": 16.0,
+    "timeout_seconds": 1800,
+    "configured_retries": 0,
+    "detached": false,
+    "single_use_container": true
+  },
+  "finops": {
+    "max_estimated_usd": 0.60,
+    "gpu_usd_per_second": 0.000222,
+    "cpu_usd_per_core_second": 0.0000131,
+    "memory_usd_per_gib_second": 0.00000222,
+    "maximum_compute_estimate_usd": 0.557892,
+    "pricing_checked_utc": "2026-08-08T23:48:37Z",
+    "pricing_source": "https://modal.com/pricing",
+    "actual_billed_usd": 0.13317952,
+    "actual_cost_by_resource_usd": {
+      "L4": 0.09333334,
+      "CPU": 0.02485111,
+      "Memory": 0.01499507
+    },
+    "billing_observed_at_utc": "2026-08-09T00:03:30Z"
+  },
+  "prepared_at_utc": "2026-08-08T23:48:37Z",
+  "deadline_utc": "2026-08-09T00:23:37Z",
+  "git_commit": "fc1dd768ca7bc4235b8fe39d11a7334fb07a9c4b",
+  "git_dirty_at_preparation": true,
+  "source": {
+    "package_source_sha256": "2d97a635140f17209ccd03c19f43f8b449f57eb3371a699a55074bbb287a99f8",
+    "dependency_lock_sha256": "b77cf93e64ab03f1d9872f3d54a18c33e3d428959ff3307dbaff9bbc17d02e50",
+    "trainer_sha256": "d1c2b2eccaee3fb51bcceca2edf5334762663b35b2003c251bc513dc397bae17",
+    "training_module_sha256": "9cad623b8935092aa3018c7a9dbadd9bb007c4d80177ac06aed2f36bffe7e7df",
+    "source_binding": "33d20f659e3bbdb19559ab90891e8b15a2b547933bc24dd76e5633f4e100a718",
+    "binding_method": "sha256(package|trainer|training_module|dependency_lock)"
+  },
+  "expected_output_directory": "backend/models/candidates/poker-expert-v2-20260808t234837z-289f86e1",
+  "ownership_check_before_launch": {
+    "active_apps": [],
+    "active_containers": [],
+    "previous_owned_apps_stopped": 0,
+    "checked_at_utc": "2026-08-08T23:50:19Z"
+  },
+  "dashboard_url": "https://modal.com/apps/felipesp1983work/poker-arena/ap-huJr69iYOJzzyUpQmXUk9F",
+  "modal_app_id": "ap-huJr69iYOJzzyUpQmXUk9F",
+  "started_at_utc": "2026-08-08T23:51:33Z",
+  "heartbeat_at_utc": "2026-08-09T00:03:13Z",
+  "completed_at_utc": "2026-08-09T00:03:13Z",
+  "terminal_state": "stopped",
+  "orphan_audit": {
+    "checked_at_utc": "2026-08-09T00:03:30Z",
+    "active_apps_owned_by_run": 0,
+    "app_state": "stopped",
+    "active_tasks": 0,
+    "active_containers_in_environment": 0,
+    "ownerless_apps_in_environment": 0
+  },
+  "artifacts": {
+    "directory": "backend/models/candidates/poker-expert-v2-20260808t234837z-289f86e1",
+    "development_inference_trace_sha256": "2a85bec71e05b579780ce1c1997283ec3af3c5ac0fcbead085117d4469aa1308",
+    "onnx_sha256": "37535bca9854aa1546d93bba2ae791f0091e6c575cb4d96f1ee4d79e9a9620bf",
+    "source_checkpoint_sha256": "e0ecca5141320a83a5e0adf0e37143bcbdc27d1c31d599e9496256b38bbbe96c",
+    "training_metrics_sha256": "0879127b0af546c28079114e373e6c1da1a918b2a0e2d1136c73a3792b17168e",
+    "training_trace_sha256": "ab7c76d7cd10d14ac3836fc799b5311e367f098c6c9dc4be21dc82193f24d392",
+    "selected_seed": 1701,
+    "selected_best_epoch": 24,
+    "internal_validation_accuracy": 0.854615026848759,
+    "internal_validation_cross_entropy": 0.37383955976412736,
+    "published_development_accuracy": 0.832814502838308,
+    "published_development_cross_entropy": 0.41178610920906067,
+    "published_development_top3_nontrivial": 0.9981178514550456,
+    "published_development_top3_tautological_fraction": 0.36760666544588905,
+    "calibration_temperature": 1.227390170097351,
+    "independent_calibration_check_nll_before": 0.3819144368171692,
+    "independent_calibration_check_nll_after": 0.3719669580459595,
+    "independent_calibration_check_ece_before": 0.029276526102486104,
+    "independent_calibration_check_ece_after": 0.006240917574193758,
+    "onnx_max_abs_error": 0.00000667572021484375,
+    "onnx_parity_examples": 17,
+    "independent_local_onnx_revalidation": {
+      "examples": 10922,
+      "modal_action_divergences": 0,
+      "maximum_probability_absolute_error": 0.00000876,
+      "runtime_legal_mask_applied": true
+    },
+    "elapsed_seconds": 415.397693263,
+    "preparation_elapsed_seconds": 336.502610357,
+    "unobserved_train_action_indices": [3, 8],
+    "sealed_final_holdout_rows": 27875,
+    "sealed_final_holdout_labels_scored": false,
+    "artifact_hashes_match_remote_metadata": true
+  },
+  "error": null
+}

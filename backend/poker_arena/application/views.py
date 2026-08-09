@@ -13,7 +13,7 @@ from .competitive_intelligence import CompetitiveProfile
 
 @dataclass(frozen=True)
 class InsightView:
-    """O raciocínio REAL da última decisão do bot (glass-box)."""
+    """Sinais observáveis da última decisão do bot (glass-box)."""
 
     kind: str
     label: str
@@ -21,6 +21,12 @@ class InsightView:
     probs: list[float] | None = None
     fold_to_bet: float | None = None
     bias: float | None = None
+    modal_action: str | None = None
+    modal_probability: float | None = None
+    executed_action: str | None = None
+    executed_probability: float | None = None
+    decision_rule: str | None = None
+    policy_entropy: float | None = None
 
 
 @dataclass(frozen=True)
@@ -75,12 +81,18 @@ class WinProbView:
 
 @dataclass(frozen=True)
 class CouncilEntryView:
-    """O que um cérebro recomendaria pra jogada atual do humano."""
+    """Ação amostrada e ação modal de um cérebro para a jogada atual."""
 
     level: str
     action: str
     amount: int
     confidence: float | None = None
+    modal_action: str | None = None
+    modal_amount: int | None = None
+    modal_probability: float | None = None
+    executed_probability: float | None = None
+    decision_rule: str | None = None
+    policy_entropy: float | None = None
 
 
 @dataclass(frozen=True)
@@ -113,6 +125,11 @@ class HumanAnalysisView:
     your_profile_fold: float
     your_profile_aggr: float
     your_profile_samples: int
+    expert_executed_action: str | None = None
+    expert_executed_amount: int | None = None
+    expert_executed_probability: float | None = None
+    expert_decision_rule: str | None = None
+    expert_policy_entropy: float | None = None
     # GTO: MDF = frequência mínima de defesa diante da aposta atual (None sem aposta)
     mdf: float | None = None
     # Equity Realization (qualitativa): quanto da equity você tende a realizar

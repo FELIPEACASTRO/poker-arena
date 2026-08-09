@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "run_id": "poker-expert-v2-20260808t194839z-71d5f014",
+  "project": "POKER",
+  "owner": "codex",
+  "purpose": "expert-v2-pokerbench-warmstart",
+  "release_status": "candidate_only_not_promoted",
+  "lifecycle_status": "terminal_failed_before_gpu",
+  "modal_environment": "poker-arena",
+  "modal_app_name": "poker-arena-expert-v2-poker-expert-v2-20260808t194839z-71d5f014",
+  "resource": {
+    "gpu": "L4",
+    "gpu_count": 1,
+    "cpu_physical_cores": 4.0,
+    "memory_gib": 16.0,
+    "ephemeral_disk_gib": 4.0,
+    "timeout_seconds": 1800,
+    "configured_retries": 0,
+    "detached": false,
+    "single_use_container": true
+  },
+  "finops": {
+    "max_estimated_usd": 0.60,
+    "gpu_usd_per_second": 0.000222,
+    "cpu_usd_per_core_second": 0.0000131,
+    "memory_usd_per_gib_second": 0.00000222,
+    "maximum_compute_estimate_usd": 0.557892,
+    "pricing_checked_utc": "2026-08-08T19:45:00Z",
+    "pricing_source": "https://modal.com/pricing",
+    "billing_snapshot_usd": {
+      "cpu": 0.00268703,
+      "memory": 0.00005673,
+      "gpu": 0.0,
+      "total": 0.00274376
+    }
+  },
+  "prepared_at_utc": "2026-08-08T19:48:52Z",
+  "deadline_utc": "2026-08-08T20:25:00Z",
+  "git_commit": "fc1dd768ca7bc4235b8fe39d11a7334fb07a9c4b",
+  "git_dirty_at_preparation": true,
+  "source": {
+    "package_source_sha256": "aa964f9abaa5d6ad00fd918a636dc0b8a16f7920069f75423fa9f6e8a0e0baba",
+    "dependency_lock_sha256": "b77cf93e64ab03f1d9872f3d54a18c33e3d428959ff3307dbaff9bbc17d02e50",
+    "trainer_sha256": "9c5c275730e587d02aae15d937773107db6a1570f99215b7581a8f2e86abca65",
+    "training_module_sha256": "cdd2675087c21850a928b4bbefe0849ed7627b8a17ffe65b8cca2425d0373182",
+    "source_binding": "77a6921d9b9dc209fb8db00826669a7c423e10426741ade25a262ac962ea1b35"
+  },
+  "expected_output_directory": "backend/models/candidates/poker-expert-v2-20260808t194839z-71d5f014",
+  "ownership_check_before_launch": {
+    "modal_environment_apps": [],
+    "checked_at_utc": "2026-08-08T19:47:00Z"
+  },
+  "dashboard_url": "https://modal.com/apps/felipesp1983work/poker-arena/ap-QVMO08yCH8BhBs0E22GH2S",
+  "modal_app_id": "ap-QVMO08yCH8BhBs0E22GH2S",
+  "started_at_utc": "2026-08-08T19:51:04Z",
+  "heartbeat_at_utc": "2026-08-08T19:55:32Z",
+  "completed_at_utc": "2026-08-08T19:55:32Z",
+  "terminal_state": "stopped",
+  "orphan_audit": {
+    "checked_at_utc": "2026-08-08T19:56:00Z",
+    "active_apps_owned_by_run": 0,
+    "app_state": "stopped",
+    "gpu_tasks_started": 0,
+    "ownerless_apps_in_environment": 0
+  },
+  "artifacts": null,
+  "error": {
+    "stage": "function_definition_before_gpu_allocation",
+    "code": "ephemeral_disk_request_below_current_modal_minimum",
+    "message": "4096 MiB was rejected; current SDK reported a 524288 MiB minimum",
+    "retry_same_run_id": false
+  }
+}

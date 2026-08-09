@@ -9,6 +9,12 @@ export interface Insight {
   probs?: number[] | null // expert: 5 probabilidades (fold/pagar/½/pote/all-in)
   fold_to_bet?: number | null // adaptive
   bias?: number | null // adaptive
+  modal_action?: string | null
+  modal_probability?: number | null
+  executed_action?: string | null
+  executed_probability?: number | null
+  decision_rule?: 'modal' | 'sampled' | null
+  policy_entropy?: number | null
 }
 
 export interface Seat {
@@ -57,6 +63,12 @@ export interface CouncilEntry {
   action: string
   amount: number
   confidence: number | null
+  modal_action?: string | null
+  modal_amount?: number | null
+  modal_probability?: number | null
+  executed_probability?: number | null
+  decision_rule?: 'modal' | 'sampled' | null
+  policy_entropy?: number | null
 }
 
 export interface Analysis {
@@ -83,6 +95,11 @@ export interface Analysis {
   best_action: string | null
   best_amount: number | null
   confidence: number | null
+  expert_executed_action?: string | null
+  expert_executed_amount?: number | null
+  expert_executed_probability?: number | null
+  expert_decision_rule?: 'modal' | 'sampled' | null
+  expert_policy_entropy?: number | null
   your_profile_fold: number
   your_profile_aggr: number
   your_profile_samples: number

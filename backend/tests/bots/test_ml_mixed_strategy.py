@@ -41,6 +41,10 @@ def test_temperature_zero_is_argmax():
     assert sample_action(probs, _rng(), temperature=0.0) == 1
 
 
+def test_subnormal_temperature_fails_safe_to_argmax_without_underflow():
+    assert sample_action([0.1, 0.9, 0.0, 0.0, 0.0], _rng(0), temperature=5e-324) == 1
+
+
 def test_neutral_defaults_preserve_raw_probability_intervals():
     assert (TEMPERATURE, MIN_PROB_RATIO, SIZING_JITTER) == (1.0, 0.0, 0.0)
     probs = [0.2, 0.3, 0.5]

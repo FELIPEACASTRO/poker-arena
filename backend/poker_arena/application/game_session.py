@@ -183,6 +183,18 @@ def _insight_dict(ins: BotInsight | None) -> dict | None:
         out["fold_to_bet"] = ins.fold_to_bet
     if ins.bias is not None:
         out["bias"] = ins.bias
+    if ins.modal_action is not None:
+        out["modal_action"] = ins.modal_action
+    if ins.modal_probability is not None:
+        out["modal_probability"] = ins.modal_probability
+    if ins.executed_action is not None:
+        out["executed_action"] = ins.executed_action
+    if ins.executed_probability is not None:
+        out["executed_probability"] = ins.executed_probability
+    if ins.decision_rule is not None:
+        out["decision_rule"] = ins.decision_rule
+    if ins.policy_entropy is not None:
+        out["policy_entropy"] = ins.policy_entropy
     return out
 
 
@@ -1000,6 +1012,12 @@ class GameSession:
             probs=list(ins.probs) if ins.probs is not None else None,
             fold_to_bet=ins.fold_to_bet,
             bias=ins.bias,
+            modal_action=ins.modal_action,
+            modal_probability=ins.modal_probability,
+            executed_action=ins.executed_action,
+            executed_probability=ins.executed_probability,
+            decision_rule=ins.decision_rule,
+            policy_entropy=ins.policy_entropy,
         )
 
 

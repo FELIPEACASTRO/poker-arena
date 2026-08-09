@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "run_id": "poker-expert-v2-20260808t195356z-88982938",
+  "project": "POKER",
+  "owner": "codex",
+  "purpose": "expert-v2-pokerbench-warmstart",
+  "release_status": "candidate_only_not_promoted",
+  "lifecycle_status": "terminal_failed_remote_preflight",
+  "modal_environment": "poker-arena",
+  "modal_app_name": "poker-arena-expert-v2-poker-expert-v2-20260808t195356z-88982938",
+  "resource": {
+    "gpu": "L4",
+    "gpu_count": 1,
+    "cpu_physical_cores": 4.0,
+    "memory_gib": 16.0,
+    "ephemeral_disk": "modal_default",
+    "timeout_seconds": 1800,
+    "configured_retries": 0,
+    "detached": false,
+    "single_use_container": true
+  },
+  "finops": {
+    "max_estimated_usd": 0.60,
+    "gpu_usd_per_second": 0.000222,
+    "cpu_usd_per_core_second": 0.0000131,
+    "memory_usd_per_gib_second": 0.00000222,
+    "maximum_compute_estimate_usd": 0.557892,
+    "pricing_checked_utc": "2026-08-08T19:45:00Z",
+    "pricing_source": "https://modal.com/pricing",
+    "billing_snapshot_usd": {
+      "cpu": 0.00028724,
+      "memory": 0.00019433,
+      "gpu": 0.00121454,
+      "total": 0.00169611
+    }
+  },
+  "prepared_at_utc": "2026-08-08T19:53:58Z",
+  "deadline_utc": "2026-08-08T20:25:00Z",
+  "git_commit": "fc1dd768ca7bc4235b8fe39d11a7334fb07a9c4b",
+  "git_dirty_at_preparation": true,
+  "source": {
+    "package_source_sha256": "aa964f9abaa5d6ad00fd918a636dc0b8a16f7920069f75423fa9f6e8a0e0baba",
+    "dependency_lock_sha256": "b77cf93e64ab03f1d9872f3d54a18c33e3d428959ff3307dbaff9bbc17d02e50",
+    "trainer_sha256": "0bbb9cf62806a66bf0529db5da6b408fbf58916d9fb322a855a4fc0316ab59a8",
+    "training_module_sha256": "cdd2675087c21850a928b4bbefe0849ed7627b8a17ffe65b8cca2425d0373182",
+    "source_binding": "1a6cb1a3e2d6659cc418f9a60ceedd80a0b18d24334af05b80b9904aabfb9c3c"
+  },
+  "expected_output_directory": "backend/models/candidates/poker-expert-v2-20260808t195356z-88982938",
+  "ownership_check_before_launch": {
+    "active_apps": [],
+    "previous_owned_app": {
+      "app_id": "ap-QVMO08yCH8BhBs0E22GH2S",
+      "state": "stopped"
+    },
+    "checked_at_utc": "2026-08-08T19:56:00Z"
+  },
+  "dashboard_url": "https://modal.com/apps/felipesp1983work/poker-arena/ap-8e8DbOSZjhHmUzcqt0HkPH",
+  "modal_app_id": "ap-8e8DbOSZjhHmUzcqt0HkPH",
+  "started_at_utc": "2026-08-08T19:54:36Z",
+  "heartbeat_at_utc": "2026-08-08T19:57:56Z",
+  "completed_at_utc": "2026-08-08T19:57:56Z",
+  "terminal_state": "stopped",
+  "orphan_audit": {
+    "checked_at_utc": "2026-08-08T19:58:00Z",
+    "active_apps_owned_by_run": 0,
+    "app_state": "stopped",
+    "gpu_tasks_started": 1,
+    "training_started": false,
+    "ownerless_apps_in_environment": 0
+  },
+  "artifacts": {
+    "output_directory_created": true,
+    "files_written": 0,
+    "empty_directory_removed_after_verification": true
+  },
+  "error": {
+    "stage": "remote_identity_preflight_before_dataset_download",
+    "code": "nonsecret_run_binding_not_propagated_to_container",
+    "retry_same_run_id": false
+  }
+}
